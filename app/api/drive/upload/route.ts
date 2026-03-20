@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { PassThrough } from "stream";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON) : require("../../../../service-account-drive.json");
+const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON) : null;
 
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
@@ -154,4 +154,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
 

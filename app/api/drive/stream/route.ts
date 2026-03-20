@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const driveServiceAccount = require("../../../../service-account-drive.json");
+const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON) : null;
 
 function getAuthClient() {
   return new google.auth.GoogleAuth({
@@ -68,3 +68,5 @@ export async function GET(req: NextRequest) {
     return new NextResponse(`Error de streaming: ${message}`, { status: 500 });
   }
 }
+
+
