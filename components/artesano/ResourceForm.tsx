@@ -14,7 +14,7 @@ import type {
   TextContent,
   QuizContent,
 } from "@/types";
-import { uploadFileToDrive } from "@/lib/drive-upload";
+import { uploadFileToDrive, uploadVideoDirectToDrive } from "@/lib/drive-upload";
 
 interface Props {
   onSubmit: (title: string, type: ResourceType, content: ResourceContent) => Promise<void>;
@@ -252,9 +252,11 @@ export default function ResourceForm({
 
   async function uploadToDrive(file: File): Promise<string> {
     setDriveUploadPct(0);
-    const toastId = toast.loading("Subiendo archivo...");
+    const isVideo = type === "video";
+    const toastId = toast.loading(isVideo ? "Subiendo video directo a Drive..." : "Subiendo archivo...");
     try {
-      const result = await uploadFileToDrive(file, courseTitle, (pct) =>
+      const uploader = isVideo ? uploadVideoDirectToDrive : uploadFileToDrive;
+      const result = await uploader(file, courseTitle, (pct) =>
         setDriveUploadPct(pct)
       );
       setDriveUploadPct(null);
