@@ -1,35 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
 
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
+  ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
+  : null;
+
 async function getAccessToken(): Promise<string> {
-  const bodyParams = new URLSearchParams({
-    client_id:     process.env.GOOGLE_OAUTH_CLIENT_ID     ?? "",
-    client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "",
-    refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? "",
-    grant_type:    "refresh_token",
+  const auth = new google.auth.GoogleAuth({
+    credentials: driveServiceAccount,
+    scopes: ["https://www.googleapis.com/auth/drive"],
   });
-
-  console.log("[resumable-init] client_id length:", (process.env.GOOGLE_OAUTH_CLIENT_ID ?? "").length);
-  console.log("[resumable-init] secret length:", (process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "").length);
-  console.log("[resumable-init] refresh length:", (process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? "").length);
-
-  const res = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: bodyParams,
-  });
-
-  const data = await res.json() as { access_token?: string; error?: string; error_description?: string };
-  console.log("[resumable-init] token response:", res.status, data.error ?? "OK");
-  if (!data.access_token) {
-    throw new Error(`Error obteniendo access_token: ${data.error} — ${data.error_description}`);
-  }
-  return data.access_token;
+  const client = await auth.getClient();
+  const tokenRes = await client.getAccessToken();
+  if (!tokenRes.token) throw new Error("No se pudo obtener access_token de la cuenta de servicio");
+  return tokenRes.token;
 }
 
 async function findOrCreateFolder(accessToken: string, name: string, parentId: string): Promise<string> {
-  // Buscar carpeta existente
   const q = encodeURIComponent(
     `mimeType='application/vnd.google-apps.folder' and name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and trashed=false`
   );
@@ -40,7 +30,6 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
   const listData = await listRes.json() as { files?: { id: string }[] };
   if (listData.files?.[0]?.id) return listData.files[0].id;
 
-  // Crear carpeta
   const createRes = await fetch(
     "https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true",
     {
@@ -80,24 +69,17 @@ export async function POST(req: NextRequest) {
 
     const folderId = await findOrCreateFolder(accessToken, courseTitle || "General", ROOT_FOLDER_ID);
 
-    // Iniciar resumable upload
-    const metadata = {
-      name: fileName,
-      parents: [folderId],
-      driveId: SHARED_DRIVE_ID,
-    };
-
     const initRes = await fetch(
       "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "X-Upload-Content-Type": mimeType,
+          Authorization:             `Bearer ${accessToken}`,
+          "Content-Type":            "application/json",
+          "X-Upload-Content-Type":   mimeType,
           "X-Upload-Content-Length": String(fileSize),
         },
-        body: JSON.stringify(metadata),
+        body: JSON.stringify({ name: fileName, parents: [folderId] }),
       }
     );
 
@@ -107,8 +89,7 @@ export async function POST(req: NextRequest) {
     }
 
     const uploadUrl = initRes.headers.get("Location");
-    console.log("[resumable-init] initRes.status:", initRes.status);
-    console.log("[resumable-init] uploadUrl:", uploadUrl);
+    console.log("[resumable-init] status:", initRes.status, "| uploadUrl:", uploadUrl?.substring(0, 60));
     if (!uploadUrl) throw new Error("Drive no retornó Location header");
 
     return NextResponse.json({ uploadUrl, folderId });
