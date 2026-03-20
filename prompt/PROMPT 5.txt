@@ -1,0 +1,32 @@
+Lee el archivo CONTEXTO.md antes de empezar.
+
+Construí el panel del Participante. Usá las funciones de /lib/firestore.ts existentes. Sin diseño visual todavía, estilos básicos de Tailwind.
+
+1. /app/(participante)/dashboard/page.tsx
+   - Lista de cursos publicados disponibles
+   - Cada curso muestra: portada (si tiene), título, descripción corta y % de progreso del usuario
+   - Al hacer clic en un curso, ir a la vista del curso
+
+2. /app/(participante)/cursos/[courseId]/page.tsx
+   - Título del curso
+   - Barra de progreso horizontal: "X de Y capítulos completados"
+   - Índice lateral con lista de capítulos:
+     - Ícono ✓ si el capítulo está completado (todos sus recursos completados)
+     - Ícono de candado 🔒 si está bloqueado
+     - Resaltado si es el capítulo activo
+   - Al hacer clic en un capítulo desbloqueado, mostrar sus recursos en el área principal
+
+3. Vista de recursos dentro del capítulo:
+   - Lista de recursos con estado (completado / activo / bloqueado)
+   - Al hacer clic en el recurso activo, mostrar su contenido:
+     - Video: iframe de Google Drive + botón "Marcar como visto"
+     - Presentación: iframe de Google Drive + botón "Marcar como visto"
+     - Texto: contenido renderizado + botón "Marcar como leído"
+     - Cuestionario: preguntas de selección múltiple + botón "Enviar respuestas"
+     - Archivo: botón de descarga + botón "Marcar como descargado"
+   - Al completar un recurso: actualizar Firestore y desbloquear el siguiente sin recargar la página
+
+Lógica de desbloqueo:
+- Un recurso está desbloqueado si todos los anteriores (menor orderIndex) en el mismo capítulo están completados
+- Un capítulo está desbloqueado si todos los recursos del capítulo anterior están completados
+- El primer recurso del primer capítulo siempre está desbloqueado

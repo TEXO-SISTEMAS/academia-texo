@@ -1,0 +1,25 @@
+El iframe de Google Drive tarda mucho en cargar videos grandes porque 
+no hace streaming progresivo.
+
+Solución: en la API route /app/api/drive/upload/route.ts, cuando se sube 
+un video, además del webViewLink retornar también una URL de streaming.
+
+Y en ResourceViewer.tsx para tipo 'video', implementar este approach:
+
+1. Crear una nueva API route /app/api/drive/stream/route.ts que:
+   - Recibe ?fileId=XXX como query param
+   - Usa la cuenta de servicio para hacer fetch del archivo desde Drive
+   - Hace pipe del stream al cliente con los headers correctos:
+     Content-Type: video/mp4 (o el tipo real)
+     Accept-Ranges: bytes
+     Cache-Control: public, max-age=3600
+   - Soporta range requests (para que el video pueda saltar a cualquier parte)
+
+2. En ResourceViewer.tsx, para tipo 'video':
+   - Extraer el fileId de la driveUrl usando extractDriveFileId()
+   - Usar <video> tag nativo con src="/api/drive/stream?fileId=XXX"
+   - Agregar atributos: controls preload="metadata" style={{width:'100%', maxHeight:'500px'}}
+   - Esto permite streaming progresivo — el video empieza a reproducir 
+     sin esperar que cargue todo
+
+3. Mostrar un spinner de carga mientras el video inicializa (onWaiting/onCanPlay events)

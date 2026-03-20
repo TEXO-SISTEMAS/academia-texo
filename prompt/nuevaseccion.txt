@@ -1,0 +1,59 @@
+Crear una nueva sección "La Academia" accesible desde el navbar del Participante.
+
+ESTRUCTURA DE FIRESTORE — nueva colección 'academyContent':
+/academyContent/{docId}
+  - type: 'article' | 'video' | 'news' | 'about'
+  - title: string
+  - body: string (texto enriquecido)
+  - imageUrl: string (opcional, subida a Cloudinary)
+  - videoUrl: string (opcional, link de Drive)
+  - published: boolean
+  - createdBy: userId
+  - createdAt: timestamp
+  - order: number (para ordenar el contenido)
+
+PÁGINAS DEL PARTICIPANTE:
+
+1. /participante/academia — página principal con tabs:
+   - Tab "Noticias" → lista de artículos tipo 'news' y 'article' publicados
+   - Tab "Videos" → grid de videos institucionales tipo 'video'
+   - Tab "¿Quiénes somos?" → contenido tipo 'about' (uno solo, el más reciente)
+   - Cada artículo/noticia muestra: imagen, título, primeras 2 líneas del texto, fecha
+   - Al hacer clic abre el artículo completo en /participante/academia/[docId]
+
+2. /participante/academia/[docId] — artículo completo:
+   - Imagen de portada (si tiene)
+   - Título grande
+   - Cuerpo del texto
+   - Video embebido (si tiene)
+   - Botón "← Volver"
+
+PÁGINAS DEL ARTESANO:
+
+3. /artesano/academia — panel de gestión:
+   - Lista de todo el contenido con tipo, título, estado (publicado/borrador)
+   - Botón "+ Nuevo contenido"
+   - Botones editar y eliminar por item
+
+4. /artesano/academia/nuevo y /artesano/academia/[docId]/editar:
+   - Selector de tipo: Artículo / Video / Noticia / ¿Quiénes somos?
+   - Campo título
+   - Textarea para el cuerpo (por ahora sin editor enriquecido, texto plano)
+   - Upload de imagen a Cloudinary (opcional)
+   - Campo URL de video Drive (opcional)
+   - Toggle publicar/borrador
+   - Botón guardar
+
+NAVBAR:
+- En components/shared/Navbar.tsx para el layout del Participante:
+  agregar link "La Academia" entre "Propedéuticos" y el nombre del usuario
+
+FIRESTORE RULES:
+- academyContent: lectura para autenticados, escritura solo para artesanos
+
+FUNCIONES en lib/firestore.ts:
+- getPublishedAcademyContent(type?) → lista contenido publicado
+- getAllAcademyContent() → para artesanos, todo el contenido
+- createAcademyContent(data, artesanoId)
+- updateAcademyContent(docId, data)
+- deleteAcademyContent(docId)

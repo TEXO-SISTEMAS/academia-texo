@@ -1,0 +1,32 @@
+Agregar numeración automática e iterativa a los propedéuticos.
+
+1. En types/index.ts, agregar campo al tipo Course:
+   - courseNumber: number (número del propedéutico, asignado automáticamente)
+
+2. En lib/firestore.ts, función createCourse():
+   - Antes de crear el curso, contar cuántos cursos existen del mismo artesano
+   - Asignar courseNumber = total + 1
+   - Guardarlo en el documento
+
+3. MOSTRAR el número en formato "Propedéutico TEXO N° X — [título]" en:
+
+   Panel Artesano:
+   - /artesano/dashboard → cada curso en la lista muestra 
+     "Propedéutico TEXO N° X" como subtítulo debajo del título
+   - /artesano/cursos/[courseId] → título de la página
+
+   Panel Participante:
+   - /participante/dashboard → CourseCard muestra 
+     "Propedéutico TEXO N° X" arriba del título en texto pequeño 
+     color texo-amarillo
+   - /participante/cursos/[courseId] → título completo en el header:
+     "Propedéutico TEXO N° X — [título]"
+   - Barra de progreso: "Propedéutico TEXO N° X" como label
+
+   Pantalla de bienvenida:
+   - Si hay propedéuticos disponibles, mostrar 
+     "Tenés X propedéutico(s) disponible(s)"
+
+4. NOTA: los cursos ya existentes en Firestore no tienen courseNumber.
+   En los componentes, si courseNumber es undefined mostrar 
+   solo el título sin el prefijo, sin errores.

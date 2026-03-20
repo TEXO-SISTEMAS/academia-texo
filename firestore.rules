@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isArtesano() {
+      return getUserRole() == 'artesano';
+    }
+
+    function isCourseOwner(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId)).data.createdBy == request.auth.uid;
+    }
+
+    function isCoursePublished(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId)).data.published == true;
+    }
+
+    // ── allowedUsers ──────────────────────────────────────────────────────────
+
+    match /allowedUsers/{email} {
+      // Usuarios autenticados pueden leer (para futuras verificaciones en cliente)
+      allow read: if isAuthenticated();
+      // Solo se escribe desde el Admin SDK / Firebase Console — nunca desde el cliente
+      allow write: if false;
+    }
+
+    // ── Users ─────────────────────────────────────────────────────────────────
+
+    match /users/{userId} {
+      // Cualquier usuario autenticado puede leer su propio documento
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      // Creación: solo el propio usuario (primer login via auth-context)
+      allow create: if isAuthenticated() && isOwner(userId);
+
+      // Actualización: el usuario puede editar su propio doc PERO NO puede
+      // cambiar el campo `role` — ese campo solo lo modifica un admin manualmente
+      allow update: if isAuthenticated()
+        && isOwner(userId)
+        && request.resource.data.role == resource.data.role;
+    }
+
+    // ── Courses ───────────────────────────────────────────────────────────────
+
+    match /courses/{courseId} {
+      // Cualquier usuario autenticado puede leer cursos publicados.
+      // El Artesano dueño puede leer también sus borradores.
+      allow read: if isAuthenticated() && (
+        resource.data.published == true ||
+        resource.data.createdBy == request.auth.uid
+      );
+
+      // Solo Artesanos pueden crear cursos
+      allow create: if isAuthenticated() && isArtesano();
+
+      // Solo el Artesano dueño puede editar o eliminar
+      allow update, delete: if isAuthenticated()
+        && resource.data.createdBy == request.auth.uid;
+
+      // ── Chapters ────────────────────────────────────────────────────────────
+
+      match /chapters/{chapterId} {
+        // Lectura: solo si el curso está publicado o el usuario es el dueño
+        allow read: if isAuthenticated() && (
+          isCoursePublished(courseId) || isCourseOwner(courseId)
+        );
+        // Escritura: solo el Artesano dueño del curso
+        allow write: if isAuthenticated() && isCourseOwner(courseId);
+
+        // ── Resources ─────────────────────────────────────────────────────────
+
+        match /resources/{resourceId} {
+          // Lectura: solo si el curso está publicado o el usuario es el dueño
+          allow read: if isAuthenticated() && (
+            isCoursePublished(courseId) || isCourseOwner(courseId)
+          );
+          // Escritura: solo el Artesano dueño del curso
+          allow write: if isAuthenticated() && isCourseOwner(courseId);
+        }
+      }
+    }
+
+    // ── Progress ──────────────────────────────────────────────────────────────
+
+    match /progress/{userId} {
+      // Cada usuario solo accede a su propio progreso
+      allow read, write: if isAuthenticated() && isOwner(userId);
+
+      match /courses/{courseId} {
+        allow read, write: if isAuthenticated() && isOwner(userId);
+
+        match /resources/{resourceId} {
+          allow read, write: if isAuthenticated() && isOwner(userId);
+        }
+      }
+    }
+  }
+}

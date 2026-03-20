@@ -1,0 +1,30 @@
+Quiero mejorar el diseño visual de la plataforma con estos cambios específicos:
+
+Quiero mejorar el diseño visual de la plataforma con estos cambios específicos: 
+1. CARDS DE CURSOS (dashboard participante):
+   - Hacelas más grandes (min-height 280px para la imagen)
+   - El placeholder cuando no hay imagen: fondo degradado con texo-azul (#31484E) a texo-verde (#3A9688), letra inicial del curso en blanco grande (80px)
+   - Borde sutil amarillo (texo-amarillo) al hacer hover sobre la card
+   - Sombra suave al hacer hover
+
+2. FOOTER en todos los layouts (participante y artesano):
+   - Fondo texo-azul (#31484E)
+   - Texto blanco: "Danilo Sosa | Texo Sistemas"
+   - Año actual a la derecha: "© 2026"
+   - Separador con línea amarilla (texo-amarillo) arriba del footer
+   - Altura: 48px, texto centrado verticalmente
+
+3. SIDEBAR DE CURSO (página /participante/cursos/[courseId]):
+   - Fondo diferenciado: en light mode fondo gris muy claro (#f8f9fa), en dark mode fondo #1a2a2e
+   - Borde derecho de 2px color texo-amarillo
+   - Capítulo activo: fondo texo-amarillo/10 + borde izquierdo 3px texo-amarillo + texto en negrita
+   - Capítulo completado: ícono ✓ en texo-verde
+   - Capítulo bloqueado: ícono 🔒 + texto gris apagado + cursor not-allowed
+
+4. AMARILLO TEXO en más lugares:
+   - Títulos de sección (h1, h2) en las páginas: agregar una línea decorativa de 3px color texo-amarillo debajo del título principal de cada página
+   - Botón "Gestionar" y "Nuevo curso" en panel artesano: fondo texo-amarillo, texto texo-azul
+   - Links de navegación en navbar: underline amarillo al hacer hover
+   - Barra de progreso horizontal: agregar el porcentaje en texto amarillo a la derecha
+
+Aplicá estos cambios manteniendo compatibilidad con dark/light mode en todos los casos.

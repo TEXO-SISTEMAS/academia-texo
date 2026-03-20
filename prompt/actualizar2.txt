@@ -1,0 +1,23 @@
+Quiero mejorar la experiencia del participante con estos cambios específicos:
+
+1. BOTÓN "SIGUIENTE" AL COMPLETAR UN RECURSO:
+   - Cuando el participante completa un recurso y aparece "✓ Completado", mostrar inmediatamente un botón "Siguiente →" en texo-amarillo
+   - Si hay un recurso siguiente en el mismo capítulo: el botón lleva al siguiente recurso
+   - Si era el último recurso del capítulo y hay un capítulo siguiente: el botón dice "Siguiente capítulo →" y navega al primer recurso del siguiente capítulo
+   - Si era el último recurso del último capítulo: mostrar mensaje de felicitación "¡Completaste el curso!" con confetti o animación
+
+2. BARRA DE PROGRESO DOBLE (inspirada en la imagen de referencia):
+   - Barra superior (ya existe): progreso general del CURSO en % con color texo-verde
+   - Agregar una segunda barra o indicador: progreso del CAPÍTULO ACTUAL (X de Y recursos completados en este capítulo) en color texo-amarillo
+   - Mostrar ambas barras debajo del título del curso, con etiquetas claras
+
+3. ÍNDICE DE CAPÍTULOS MEJORADO (inspirado en la imagen de referencia):
+   - Cada capítulo en el sidebar muestra:
+     - Número del capítulo (01, 02, 03...) en un círculo con fondo texo-amarillo si está activo, gris si bloqueado, verde si completado
+     - Título del capítulo en negrita
+     - Íconos de los tipos de recursos que contiene ese capítulo (por ejemplo: 🎬 si tiene video, 📊 si tiene presentación, 📝 si tiene texto, ❓ si tiene cuestionario, 📄 si tiene archivo)
+     - Tiempo estimado del capítulo (calcular: 5 min por recurso como aproximación)
+     - Estado: "Disponible" en verde / "Bloqueado" con candado / "Completado" con ✓
+   - El capítulo activo tiene fondo destacado con borde amarillo
+
+Mantené compatibilidad con dark/light mode en todo.

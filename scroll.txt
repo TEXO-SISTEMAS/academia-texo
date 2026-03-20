@@ -1,0 +1,28 @@
+El PDF sigue mostrando scroll porque usa el iframe de Drive como fallback
+en lugar de las imágenes convertidas por /api/drive/slides.
+
+Por favor:
+1. Agregá logs en el componente PdfResource para ver qué está pasando:
+   console.log('[PDF] slides:', slides)
+   console.log('[PDF] loading:', loading)
+   console.log('[PDF] error:', error)
+   console.log('[PDF] fileId:', fileId)
+
+2. Verificá que /api/drive/slides está siendo llamado correctamente
+   con el fileId extraído de la driveUrl del recurso
+
+3. El problema probable: extractDriveFileId() no está extrayendo 
+   correctamente el fileId de la URL de Drive del Shared Drive.
+   Las URLs de Shared Drive tienen formato diferente:
+   https://drive.google.com/file/d/FILE_ID/view?usp=drive_link
+   Asegurate que extractDriveFileId() maneja este formato.
+
+4. Si slides.length > 0 → mostrar imágenes (sin iframe, sin scroll)
+   Si slides.length === 0 o error → mostrar mensaje de error,
+   NO mostrar iframe como fallback (el iframe tiene scroll nativo 
+   que no podemos controlar)
+
+5. También el contenedor externo de toda la vista del recurso
+   en /participante/cursos/[courseId]/page.tsx tiene overflow-y: auto
+   que permite scroll de toda la página. Cambiar el área de contenido
+   principal a overflow: hidden cuando el recurso activo es PDF o documento.

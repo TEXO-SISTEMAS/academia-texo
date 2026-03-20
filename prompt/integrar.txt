@@ -1,0 +1,41 @@
+Quiero integrar Google Drive API para que el Artesano pueda subir archivos 
+directamente desde el panel, sin salir de la plataforma.
+
+Contexto:
+- Cuenta de servicio: academia-texo-drive@academia-texo-490711.iam.gserviceaccount.com
+- Archivo de credenciales: ./service-account.json (en la raíz del proyecto)
+- Carpeta raíz en Drive: ID = 1nDEit6ZNhKXmZ93cjhSIsydOXap95DU2
+- Variable de entorno: GOOGLE_DRIVE_FOLDER_ID=1nDEit6ZNhKXmZ93cjhSIsydOXap95DU2
+
+Lo que necesito:
+
+1. Instalar dependencia: npm install googleapis
+
+2. Crear /app/api/drive/upload/route.ts (Next.js API Route):
+   - Recibe un archivo via FormData (multipart/upload)
+   - Recibe el nombre del curso (courseTitle) para crear/buscar la subcarpeta
+   - Lógica:
+     a. Buscar si ya existe una subcarpeta con ese nombre dentro de la carpeta raíz
+     b. Si no existe, crearla
+     c. Subir el archivo a esa subcarpeta
+     d. Hacer el archivo público (anyone with link can view)
+     e. Retornar { fileId, webViewLink, directLink }
+   - Autenticación con GoogleAuth usando el service-account.json
+   - Agregar service-account.json al .gitignore
+
+3. Crear /lib/drive-upload.ts en el cliente:
+   - Función uploadFileToDrive(file: File, courseTitle: string): Promise<DriveUploadResult>
+   - Hace POST a /api/drive/upload con FormData
+   - Retorna { fileId, webViewLink, directLink }
+
+4. Actualizar ResourceForm.tsx en el panel Artesano:
+   - Para recursos tipo 'video' y 'presentation': 
+     * Mostrar input de archivo (accept="video/*" para video, accept=".pdf,.ppt,.pptx,.key" para presentación)
+     * Al seleccionar el archivo: mostrar barra de progreso de subida
+     * Al completar: guardar el webViewLink en driveUrl automáticamente
+     * Mostrar el nombre del archivo subido con ícono ✓
+   - Para recursos tipo 'file' (archivo descargable):
+     * Input de archivo que acepta cualquier tipo
+     * Misma lógica de subida y guardado
+
+5. Agregar service-account.json al .gitignore para que no se suba a GitHub

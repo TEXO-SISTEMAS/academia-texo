@@ -1,0 +1,46 @@
+Lee el archivo CONTEXTO.md antes de empezar.
+
+Ahora quiero que apliques el diseño visual completo a toda la plataforma con la identidad de Academia TEXO. Toda la funcionalidad ya está implementada, solo estamos mejorando la apariencia.
+
+PALETA DE COLORES (ya está en tailwind.config.ts):
+- texo-amarillo: #E8B84B → botones primarios, acentos
+- texo-verde: #3A9688 → progreso, estados completados
+- texo-rojo: #C0544A → errores
+- texo-azul: #31484E → navbar y base oscura
+
+COMPONENTES SHARED a crear en /components/shared/:
+1. Navbar:
+   - Fondo texo-azul (#31484E)
+   - Logo Academia TEXO (usar el archivo de logo que está en /public/logo.png)
+   - Nombre del usuario a la derecha
+   - Toggle dark/light mode con next-themes
+   - En móvil: menú hamburguesa
+
+2. Barra de progreso horizontal:
+   - Debajo del navbar en la vista de curso
+   - Color texo-verde para el fill
+   - Texto: "X de Y capítulos completados"
+
+3. Tarjeta de curso (CourseCard):
+   - Imagen de portada o placeholder con color texo-azul
+   - Título, descripción corta, barra de progreso mini
+
+4. Estado de recurso (ResourceStatus):
+   - Ícono ✓ verde para completado
+   - Punto amarillo para activo
+   - Candado gris para bloqueado
+
+5. Botón primario: fondo texo-amarillo, texto texo-azul, hover más oscuro
+6. Botón secundario: borde texo-azul, fondo transparente
+
+RESPONSIVE:
+- Navbar colapsa a hamburguesa en < 768px
+- Índice lateral de capítulos pasa a menú drawer en móvil
+- Tarjetas de curso en grid de 3 columnas en desktop, 1 en móvil
+
+DARK MODE:
+- Implementar con next-themes y Tailwind dark: classes
+- En modo oscuro el fondo principal es #1a2a2e (más oscuro que texo-azul)
+- Los textos, bordes y superficies se adaptan automáticamente
+
+Aplicá estos estilos a TODOS los componentes ya existentes. Inspiración: Platzi / LinkedIn Learning.

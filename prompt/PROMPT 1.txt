@@ -1,0 +1,26 @@
+Lee el archivo CONTEXTO.md que te adjunto antes de empezar.
+
+Quiero que inicialices el proyecto completo de Academia TEXO con esta estructura:
+
+1. Crear un proyecto Next.js 14 con App Router, TypeScript y Tailwind CSS
+2. Instalar dependencias: firebase, next-themes, @types/node
+3. Configurar Tailwind con los colores custom de TEXO:
+   - texo-amarillo: #E8B84B
+   - texo-verde: #3A9688
+   - texo-rojo: #C0544A
+   - texo-azul: #31484E
+4. Crear el archivo de configuración de Firebase en /lib/firebase.ts con las variables de entorno del CONTEXTO.md
+5. Crear los tipos TypeScript para todos los modelos de Firestore definidos en el CONTEXTO.md: User, Course, Chapter, Resource (con sus variantes por tipo), Progress. Guardarlos en /types/index.ts
+6. Crear la estructura de carpetas del proyecto:
+   /app/(participante)/
+   /app/(artesano)/
+   /app/login/
+   /components/participante/
+   /components/artesano/
+   /components/shared/
+   /lib/
+   /types/
+7. Crear el archivo .env.local con las variables vacías listadas en el CONTEXTO.md
+8. Crear el archivo .env.example con las mismas variables vacías
+
+No escribas lógica de negocio todavía. Solo estructura, tipos y configuración.

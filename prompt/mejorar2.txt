@@ -1,0 +1,27 @@
+Quiero mejorar la pantalla de progreso del Artesano en 
+/artesano/cursos/[courseId]/progreso/page.tsx
+
+Actualmente muestra solo 3 stats en una barra. Quiero una pantalla más completa:
+
+1. CARDS DE RESUMEN arriba (4 cards en grid):
+   - Total inscriptos
+   - Completaron 100%
+   - En progreso (inscriptos que iniciaron pero no completaron)
+   - Sin iniciar (inscriptos con 0 recursos completados)
+
+2. TABLA DE PARTICIPANTES más detallada:
+   - Columnas: Nombre / Email / Progreso (barra visual + %) / Capítulo actual / 
+     Recursos completados (X/Y) / Fecha de inscripción
+   - Cada fila expandible: al hacer clic muestra qué capítulos completó 
+     y cuáles le faltan con íconos ✓ y ○
+   - Ordenable por: nombre, progreso, fecha
+   - Si hay muchos participantes, mostrar paginación de 10 por página
+
+3. RESUMEN POR CAPÍTULO abajo:
+   - Tabla con una fila por capítulo
+   - Columnas: Capítulo / Participantes que lo completaron / % de completion
+   - Barra de progreso visual por capítulo
+   - Útil para ver dónde se atasca la gente
+
+Mantené el botón "Ver progreso detallado →" desde la página del curso 
+que ya existe.

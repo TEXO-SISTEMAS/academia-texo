@@ -1,0 +1,29 @@
+Lee el archivo CONTEXTO.md antes de empezar.
+
+Construí el panel del Artesano para gestionar cursos y capítulos. Usá las funciones de /lib/firestore.ts que ya existen. Sin diseño visual todavía, solo funcionalidad con estilos básicos de Tailwind.
+
+1. /app/(artesano)/dashboard/page.tsx
+   - Lista de cursos del artesano con título, estado (publicado/borrador) y botón para entrar
+   - Botón para crear nuevo curso
+   - Formulario modal para crear curso: título, descripción
+
+2. /app/(artesano)/cursos/[courseId]/page.tsx
+   - Detalle del curso: título, descripción, botón publicar/despublicar
+   - Lista de capítulos con su orderIndex
+   - Botón para agregar capítulo
+   - Formulario para crear/editar capítulo: título, descripción
+   - Botones para reordenar capítulos (subir/bajar)
+   - Al hacer clic en un capítulo, ir a la página de recursos
+
+3. /app/(artesano)/cursos/[courseId]/capitulos/[chapterId]/page.tsx
+   - Lista de recursos del capítulo con tipo, título y orderIndex
+   - Botón para agregar recurso con selector de tipo (video / presentación / texto / cuestionario / archivo)
+   - Formulario diferente según el tipo seleccionado:
+     - Video: campo URL de Google Drive
+     - Presentación: campo URL de Google Drive
+     - Texto: textarea para el contenido
+     - Cuestionario: agregar preguntas dinámicamente (texto + 4 opciones + cuál es correcta)
+     - Archivo: upload a Firebase Storage
+   - Botones para reordenar recursos
+
+Usá los componentes de /components/artesano/ para mantener el código organizado.
