@@ -10,7 +10,6 @@ async function getAccessToken(): Promise<string> {
     grant_type:    "refresh_token",
   });
 
-  console.log("[resumable-init] token body keys:", Array.from(bodyParams.keys()));
   console.log("[resumable-init] client_id length:", (process.env.GOOGLE_OAUTH_CLIENT_ID ?? "").length);
   console.log("[resumable-init] secret length:", (process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "").length);
   console.log("[resumable-init] refresh length:", (process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? "").length);
