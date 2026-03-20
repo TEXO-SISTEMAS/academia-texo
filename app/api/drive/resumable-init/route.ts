@@ -3,20 +3,28 @@ import { NextRequest, NextResponse } from "next/server";
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
 async function getAccessToken(): Promise<string> {
+  const bodyParams = new URLSearchParams({
+    client_id:     process.env.GOOGLE_OAUTH_CLIENT_ID     ?? "",
+    client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "",
+    refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? "",
+    grant_type:    "refresh_token",
+  });
+
+  console.log("[resumable-init] token body keys:", [...bodyParams.keys()]);
+  console.log("[resumable-init] client_id length:", (process.env.GOOGLE_OAUTH_CLIENT_ID ?? "").length);
+  console.log("[resumable-init] secret length:", (process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? "").length);
+  console.log("[resumable-init] refresh length:", (process.env.GOOGLE_OAUTH_REFRESH_TOKEN ?? "").length);
+
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id:     process.env.GOOGLE_OAUTH_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
-      refresh_token: process.env.GOOGLE_OAUTH_REFRESH_TOKEN!,
-      grant_type:    "refresh_token",
-    }),
+    body: bodyParams,
   });
 
-  const data = await res.json() as { access_token?: string; error?: string };
+  const data = await res.json() as { access_token?: string; error?: string; error_description?: string };
+  console.log("[resumable-init] token response:", res.status, data.error ?? "OK");
   if (!data.access_token) {
-    throw new Error(`Error obteniendo access_token: ${data.error ?? JSON.stringify(data)}`);
+    throw new Error(`Error obteniendo access_token: ${data.error} — ${data.error_description}`);
   }
   return data.access_token;
 }
