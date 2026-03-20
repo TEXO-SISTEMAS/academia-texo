@@ -1,6 +1,6 @@
 import admin from "firebase-admin";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const serviceAccount = require("../service-account-firebase.json");
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON) : require("../service-account-firebase.json");
 
 function getAdminApp(): admin.app.App {
   if (admin.apps.length > 0) return admin.apps[0]!;
@@ -19,3 +19,4 @@ export function getAdminAuth(): admin.auth.Auth {
 export function getAdminDb(): admin.firestore.Firestore {
   return getAdminApp().firestore();
 }
+
