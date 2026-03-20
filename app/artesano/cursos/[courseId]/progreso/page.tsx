@@ -177,7 +177,7 @@ export default function CourseProgressPage() {
                     outerRadius={90}
                     dataKey="value"
                     label={({ value, percent }) =>
-                      `${value} (${Math.round(percent * 100)}%)`
+                      `${value} (${Math.round((percent ?? 0) * 100)}%)`
                     }
                     labelLine={false}
                   >
@@ -214,7 +214,7 @@ export default function CourseProgressPage() {
                   <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12, fill: C_GRIS }} />
                   <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [`${v}%`, "Completación"]} />
                   <Bar dataKey="pct" fill={C_VERDE} radius={[0, 4, 4, 0]}>
-                    <LabelList dataKey="pct" position="right" formatter={(v: number) => `${v}%`} style={{ fontSize: 11, fill: C_GRIS }} />
+                    <LabelList dataKey="pct" position="right" formatter={(v: any) => `${v}%`} style={{ fontSize: 11, fill: C_GRIS }} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -225,3 +225,5 @@ export default function CourseProgressPage() {
     </div>
   );
 }
+
+

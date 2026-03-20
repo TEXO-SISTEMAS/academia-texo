@@ -341,7 +341,7 @@ function VideoResource({
     return (
       <div>
         <iframe
-          src={toDriveEmbedUrl(driveUrl)}
+          src={toDriveEmbedUrl(driveUrl ?? "")}
           width="100%"
           style={{ height: "500px", border: "none", borderRadius: "8px" }}
           allow="autoplay"
@@ -649,7 +649,7 @@ function TrackedPageViewer({
   const fallbackIframe = (
     <div style={{ height: "600px", overflow: "hidden", userSelect: "none" }} className="rounded-xl">
       <iframe
-        src={toDriveEmbedUrl(driveUrl)}
+        src={toDriveEmbedUrl(driveUrl ?? "")}
         className="w-full h-full rounded-xl border-none"
         scrolling="no"
         allowFullScreen
@@ -1256,7 +1256,7 @@ function IframeDocViewer({
   const iframeEl = (
     <div style={{ height: "600px", overflow: "hidden", userSelect: "none" }} className="rounded-xl">
       <iframe
-        src={toDriveEmbedUrl(driveUrl)}
+        src={toDriveEmbedUrl(driveUrl ?? "")}
         className="w-full h-full rounded-xl border-none"
         scrolling="no"
         allowFullScreen
@@ -1347,3 +1347,6 @@ function CompletedBlock({ nextAction }: { nextAction?: NextAction | null }) {
     </div>
   );
 }
+
+
+
