@@ -515,7 +515,7 @@ export default function ParticipantesPage() {
                         <LabelList
                           dataKey="pct"
                           position="right"
-                          formatter={(v: number | string) => `${v}%`}
+                          formatter={(v: number | string | undefined) => `${v ?? ""}%`}
                           style={{ fontSize: 11, fill: C_GRIS }}
                         />
                       </Bar>
@@ -574,4 +574,5 @@ export default function ParticipantesPage() {
     </div>
   );
 }
+
 
