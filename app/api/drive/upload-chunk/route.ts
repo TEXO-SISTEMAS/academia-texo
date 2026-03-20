@@ -25,7 +25,6 @@ export async function POST(req: NextRequest) {
         "Content-Range":  `bytes ${start}-${end}/${total}`,
         "Content-Length": String(buffer.length),
       },
-      // @ts-expect-error — Node fetch acepta Buffer como body
       body: buffer,
       // No seguir redirects para ver el 308
       redirect: "manual",
