@@ -605,8 +605,8 @@ function TrackedPageViewer({
     return (
       <div style={{ userSelect: "none" }}>
         <div
-          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex items-center justify-center"
-          style={{ height: "600px", overflow: "hidden" }}
+          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
+          style={{ height: "auto", overflow: "visible" }}
         >
           {pages[current - 1].startsWith("data:") ? (
             // Base64 PNG (conversiones futuras con sharp u otro método)
@@ -614,7 +614,7 @@ function TrackedPageViewer({
             <img
               src={pages[current - 1]}
               alt={`Página ${current}`}
-              className="w-full h-full object-contain block"
+              style={{ width: "100%", height: "auto", display: "block", borderRadius: "8px" }}
               draggable={false}
             />
           ) : (

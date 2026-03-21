@@ -432,11 +432,7 @@ export default function CourseViewPage() {
         </aside>
 
         {/* ── Contenido principal ──────────────────────────────────────── */}
-        <main className={`flex-1 p-6 ${
-          activeResource?.type === "pdf" || activeResource?.type === "document"
-            ? "overflow-hidden"
-            : "overflow-y-auto"
-        }`}>
+        <main className="flex-1 p-6 overflow-y-auto">
           {!activeChapterData ? (
             <p className="text-gray-500">Seleccioná un capítulo para comenzar.</p>
           ) : activeResource ? (
