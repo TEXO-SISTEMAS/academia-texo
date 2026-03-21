@@ -14,7 +14,7 @@ import {
   getChapter,
   getCourse,
 } from "@/lib/firestore";
-import type { Resource, ResourceType, ResourceContent } from "@/types";
+import type { Resource, ResourceType, ResourceContent, QuizContent } from "@/types";
 import ResourceForm from "@/components/artesano/ResourceForm";
 import Button from "@/components/shared/Button";
 
@@ -36,6 +36,16 @@ const RESOURCE_TYPE_ICONS: Record<ResourceType, string> = {
   quiz: "❓",
   text: "📝",
   file: "📄",
+};
+
+const RESOURCE_TYPE_BADGE: Record<ResourceType, { bg: string; color: string }> = {
+  video:        { bg: "#1e3a5f", color: "#60a5fa" },
+  presentation: { bg: "#2d1b69", color: "#a78bfa" },
+  document:     { bg: "#1f2937", color: "#9ca3af" },
+  pdf:          { bg: "#450a0a", color: "#fca5a5" },
+  quiz:         { bg: "#451a03", color: "#fcd34d" },
+  text:         { bg: "#1f2937", color: "#9ca3af" },
+  file:         { bg: "#1f2937", color: "#9ca3af" },
 };
 
 export default function ChapterResourcesPage() {
@@ -187,8 +197,17 @@ export default function ChapterResourcesPage() {
                 <p className="font-medium text-gray-900 dark:text-white truncate">
                   {resource.title}
                 </p>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full font-medium"
+                  style={{
+                    backgroundColor: RESOURCE_TYPE_BADGE[resource.type].bg,
+                    color: RESOURCE_TYPE_BADGE[resource.type].color,
+                  }}
+                >
                   {RESOURCE_TYPE_LABELS[resource.type]}
+                  {resource.type === "quiz"
+                    ? (() => { const n = (resource.content as QuizContent).questions.length; return ` · ${n} ${n === 1 ? "pregunta" : "preguntas"}`; })()
+                    : ""}
                 </span>
               </div>
 
