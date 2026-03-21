@@ -300,13 +300,12 @@ function VideoResource({
   }, [userId, courseId, resourceId]);
 
   function handleSeeking() {
+    // Guardar posición antes del salto y marcar seeking
     seekingRef.current = true;
   }
 
   function handleSeeked() {
     seekingRef.current = false;
-    // Actualizar lastTimeRef a la posición destino para que el próximo
-    // timeupdate no crea que es un avance normal de 1 segundo
     const video = videoRef.current;
     if (video) lastTimeRef.current = video.currentTime;
   }
@@ -316,11 +315,17 @@ function VideoResource({
     if (!video || !video.duration) return;
 
     const current = Math.floor(video.currentTime);
-    const last    = Math.floor(lastTimeRef.current);
+    const diff    = video.currentTime - lastTimeRef.current;
 
-    // Solo contar si es reproducción normal (avance de 1 segundo o mismo segundo)
-    // Un salto produce current >> last + 1, así que se ignora aunque seekingRef sea false
-    if (!seekingRef.current && (current === last + 1 || current === last)) {
+    // Si el salto es mayor a 2 segundos es un seek (aunque onSeeking no haya
+    // disparado todavía) — actualizar lastTimeRef y salir sin contar
+    if (diff > 2) {
+      lastTimeRef.current = video.currentTime;
+      return;
+    }
+
+    // Contar solo si no está haciendo seek
+    if (!seekingRef.current) {
       watchedSetRef.current.add(current);
     }
 
