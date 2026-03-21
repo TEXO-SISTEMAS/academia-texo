@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
     const role: string = userData.role ?? "participante";
     const name: string = userData.name ?? "";
 
+    console.log("[verify] role:", role, "| requiresPassword:", role === "artesano");
+
     // 3. Artesanos requieren contraseña — no generar token todavía
     if (role === "artesano") {
       console.log("[verify] artesano detectado, requiere contraseña:", normalizedEmail);

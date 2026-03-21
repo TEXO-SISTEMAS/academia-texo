@@ -16,7 +16,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [step, setStep] = useState<"email" | "password">("email");
+  const [requiresPassword, setRequiresPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
@@ -27,15 +27,20 @@ export default function LoginPage() {
 
     try {
       const result = await login(email.trim().toLowerCase());
+      console.log("[login] result:", result);
 
-      if ("requiresPassword" in result) {
-        // Artesano — pasar a paso 2
-        setStep("password");
+      if ("requiresPassword" in result && result.requiresPassword) {
+        // Artesano — mostrar campo de contraseña
+        setRequiresPassword(true);
         setProcessing(false);
         return;
       }
 
-      router.replace(result.role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
+      router.replace(
+        (result as { role: string }).role === "artesano"
+          ? "/artesano/dashboard"
+          : "/bienvenida"
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);
@@ -84,7 +89,7 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8">
-          {step === "email" ? (
+          {!requiresPassword ? (
             <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4">
               <div>
                 <label
@@ -122,13 +127,13 @@ export default function LoginPage() {
               </Button>
             </form>
           ) : (
-            <form
-              onSubmit={handlePasswordSubmit}
-              className="flex flex-col gap-4"
-            >
+            <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-4">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                  Ingresando como <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
+                  Ingresando como{" "}
+                  <span className="font-medium text-gray-700 dark:text-gray-200">
+                    {email}
+                  </span>
                 </p>
                 <label
                   htmlFor="password"
@@ -167,7 +172,11 @@ export default function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => { setStep("email"); setError(null); setPassword(""); }}
+                onClick={() => {
+                  setRequiresPassword(false);
+                  setError(null);
+                  setPassword("");
+                }}
                 className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-center transition"
               >
                 ← Cambiar correo

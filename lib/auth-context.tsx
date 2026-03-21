@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      console.log("[auth] onAuthStateChanged:", fbUser ? fbUser.email : "null");
       if (fbUser) {
         try {
           // Leer el role del custom token claim para que getOrCreateUser
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  async function login(email: string): Promise<{ role: UserRole }> {
+  async function login(email: string): Promise<{ role: UserRole } | { requiresPassword: true; role: UserRole; name: string }> {
     const res = await fetch("/api/auth/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
