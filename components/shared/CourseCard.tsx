@@ -26,28 +26,46 @@ export default function CourseCard({
   badge,
   action,
 }: CourseCardProps) {
+  const isCompleted = progressPct === 100;
+  const isInProgress = progressPct !== undefined && progressPct > 0 && progressPct < 100;
+  const isNotStarted = progressPct === undefined || progressPct === 0;
+
+  const btnLabel = isCompleted ? "Repasar →" : isInProgress ? "Continuar →" : "Empezar →";
+  const btnStyle = isCompleted
+    ? "bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+    : isInProgress
+    ? "bg-texo-verde text-white"
+    : "bg-texo-amarillo text-texo-azul";
+
   return (
     <Link
       href={href}
       className="group border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden hover:shadow-xl hover:border-texo-amarillo transition-all duration-200 bg-white dark:bg-gray-900 flex flex-col"
     >
       {/* Cover */}
-      {coverImageUrl ? (
-        <div className="relative h-[280px] bg-gray-100 dark:bg-gray-800">
+      <div className="relative h-[280px] bg-gray-100 dark:bg-gray-800">
+        {coverImageUrl ? (
           <Image
             src={coverImageUrl}
             alt={title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
-        </div>
-      ) : (
-        <div className="h-[280px] bg-gradient-to-br from-texo-azul to-texo-verde flex items-center justify-center">
-          <span className="text-white font-bold opacity-30 select-none" style={{ fontSize: "80px", lineHeight: 1 }}>
-            {title.charAt(0).toUpperCase()}
-          </span>
-        </div>
-      )}
+        ) : (
+          <div className="h-full bg-gradient-to-br from-texo-azul to-texo-verde flex items-center justify-center">
+            <span className="text-white font-bold opacity-30 select-none" style={{ fontSize: "80px", lineHeight: 1 }}>
+              {title.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
+
+        {/* Badge completado */}
+        {isCompleted && (
+          <div className="absolute top-3 right-3 bg-texo-verde text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow">
+            ✓ Completado
+          </div>
+        )}
+      </div>
 
       {/* Body */}
       <div className="p-4 flex flex-col gap-2 flex-1">
@@ -69,29 +87,30 @@ export default function CourseCard({
           </p>
         )}
 
-        {/* Progress or CTA */}
-        <div className="mt-auto pt-3">
-          {progressPct !== undefined ? (
-            <>
-              <div className="flex justify-between text-xs text-gray-500 mb-1">
-                <span>{progressLabel ?? `${progressPct}% completado`}</span>
-                <span>{progressPct}%</span>
-              </div>
-              <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-texo-verde rounded-full transition-all duration-500"
-                  style={{ width: `${progressPct}%` }}
-                />
-              </div>
-            </>
-          ) : action ? (
-            action
-          ) : (
-            <span className="text-xs text-texo-amarillo font-semibold">
-              Empezar →
-            </span>
-          )}
-        </div>
+        {/* Progress bar */}
+        {progressPct !== undefined && progressPct > 0 && (
+          <div className="mt-auto pt-2">
+            <div className="flex justify-between text-xs text-gray-500 mb-1">
+              <span>{progressLabel ?? `${progressPct}% completado`}</span>
+              <span>{progressPct}%</span>
+            </div>
+            <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-texo-verde rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Action button */}
+        {action ? (
+          <div className="mt-auto pt-2">{action}</div>
+        ) : (
+          <div className={`mt-auto pt-2 w-full text-center text-sm font-semibold py-2 rounded-lg transition-colors ${btnStyle}`}>
+            {isNotStarted && progressPct === undefined ? "Empezar →" : btnLabel}
+          </div>
+        )}
       </div>
     </Link>
   );

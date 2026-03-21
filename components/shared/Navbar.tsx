@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 
 interface NavbarProps {
@@ -17,6 +19,7 @@ export default function Navbar({ links = [] }: NavbarProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [userName, setUserName] = useState("");
 
   async function handleLogout() {
     await logout();
@@ -25,8 +28,18 @@ export default function Navbar({ links = [] }: NavbarProps) {
 
   useEffect(() => setMounted(true), []);
 
-  const displayName =
-    firebaseUser?.displayName ?? firebaseUser?.email?.split("@")[0] ?? "";
+  useEffect(() => {
+    if (!firebaseUser) return;
+    const uid = firebaseUser.uid;
+    const fallback = uid.includes("@") ? uid.split("@")[0] : (firebaseUser.email?.split("@")[0] ?? uid);
+    getDoc(doc(db, "allowedUsers", uid))
+      .then((snap) => {
+        setUserName(snap.exists() && snap.data().name ? snap.data().name as string : fallback);
+      })
+      .catch(() => setUserName(fallback));
+  }, [firebaseUser]);
+
+  const displayName = userName || firebaseUser?.email?.split("@")[0] || "";
 
   function toggleTheme() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -68,8 +81,8 @@ export default function Navbar({ links = [] }: NavbarProps) {
 
           {/* User display name — desktop */}
           {displayName && (
-            <span className="hidden md:block text-sm text-white/80 max-w-[140px] truncate">
-              {displayName}
+            <span className="hidden md:block text-sm text-white/80 max-w-[160px] truncate">
+              Hola, {displayName}
             </span>
           )}
 
@@ -108,7 +121,7 @@ export default function Navbar({ links = [] }: NavbarProps) {
             </Link>
           ))}
           {displayName && (
-            <p className="px-3 py-1 text-sm text-white/70">{displayName}</p>
+            <p className="px-3 py-1 text-sm text-white/70">Hola, {displayName}</p>
           )}
           {firebaseUser && (
             <button
