@@ -314,28 +314,22 @@ function VideoResource({
     const video = videoRef.current;
     if (!video || !video.duration) return;
 
-    const current = Math.floor(video.currentTime);
-    const diff    = video.currentTime - lastTimeRef.current;
+    const currentSecond = Math.floor(video.currentTime);
 
-    console.log('[video-track] diff:', (video.currentTime - lastTimeRef.current).toFixed(2),
-      'seeking:', seekingRef.current,
-      'watched size:', watchedSetRef.current.size,
-      'duration:', Math.floor(video.duration));
+    // Solo contar segundos consecutivos al máximo ya visto.
+    // Si el usuario salta del segundo 5 al 60, currentSecond (60) > maxWatched (5) + 1
+    // y no se agrega — independientemente de seekingRef o diff.
+    const maxWatched = watchedSetRef.current.size > 0
+      ? Math.max(...watchedSetRef.current)
+      : -1;
 
-    // Salto adelante o atrás mayor a 1.5s → es seek, no contar
-    if (Math.abs(diff) > 1.5) {
-      lastTimeRef.current = video.currentTime;
-      return;
-    }
-
-    // Contar solo si no está haciendo seek
-    if (!seekingRef.current) {
-      watchedSetRef.current.add(current);
+    if (currentSecond <= maxWatched + 1) {
+      watchedSetRef.current.add(currentSecond);
     }
 
     lastTimeRef.current = video.currentTime;
 
-    const pct = Math.min(100, Math.round((watchedSetRef.current.size / video.duration) * 100));
+    const pct = Math.min(100, Math.round((watchedSetRef.current.size / Math.floor(video.duration)) * 100));
     setWatchedPct(pct);
 
     const now = Date.now();
