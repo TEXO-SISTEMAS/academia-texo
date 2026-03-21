@@ -1,18 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import Button from "@/components/shared/Button";
 
 export default function LoginPage() {
   const { login, loginWithPassword } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    router.prefetch("/bienvenida");
-    router.prefetch("/artesano/dashboard");
-  }, [router]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,11 +29,8 @@ export default function LoginPage() {
         return;
       }
 
-      router.replace(
-        (result as { role: string }).role === "artesano"
-          ? "/artesano/dashboard"
-          : "/bienvenida"
-      );
+      const role = (result as { role: string }).role;
+      window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);
@@ -54,7 +44,7 @@ export default function LoginPage() {
 
     try {
       const { role } = await loginWithPassword(email.trim().toLowerCase(), password);
-      router.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
+      window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);
