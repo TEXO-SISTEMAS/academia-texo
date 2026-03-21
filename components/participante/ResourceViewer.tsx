@@ -322,9 +322,8 @@ function VideoResource({
       'watched size:', watchedSetRef.current.size,
       'duration:', Math.floor(video.duration));
 
-    // Si el salto es mayor a 2 segundos es un seek (aunque onSeeking no haya
-    // disparado todavía) — actualizar lastTimeRef y salir sin contar
-    if (diff > 2) {
+    // Salto adelante o atrás mayor a 1.5s → es seek, no contar
+    if (Math.abs(diff) > 1.5) {
       lastTimeRef.current = video.currentTime;
       return;
     }
