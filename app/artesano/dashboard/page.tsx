@@ -78,15 +78,20 @@ export default function ArtesanoDashboard() {
           ))}
         </div>
       ) : courses.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-          <p className="text-4xl mb-3">📚</p>
-          <p className="font-medium text-gray-700 dark:text-gray-300">
+        <div className="text-center py-20 flex flex-col items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/LA_ACADEMIA_NEWSLETTER.png"
+            alt="Academia TEXO"
+            style={{ height: 120, width: "auto", opacity: 0.3, marginBottom: "1.5rem", borderRadius: 8 }}
+          />
+          <p className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">
             Todavía no tenés propedéuticos
           </p>
-          <p className="text-sm text-gray-400 mt-1 mb-4">
-            Creá tu primer curso para comenzar
+          <p className="text-sm text-gray-400 mb-6 max-w-xs">
+            Creá tu primer propedéutico y comenzá a formar a tu equipo.
           </p>
-          <Button onClick={() => setShowModal(true)} variant="primary" size="sm">
+          <Button onClick={() => setShowModal(true)} variant="primary">
             + Crear primer propedéutico
           </Button>
         </div>
@@ -123,10 +128,20 @@ export default function ArtesanoDashboard() {
                 <button
                   onClick={() => handleDeleteClick(course)}
                   disabled={deletingId === course.id}
-                  className="text-sm px-3 py-1.5 border border-texo-rojo/40 text-texo-rojo rounded-lg hover:bg-texo-rojo/10 transition-colors disabled:opacity-40"
-                  title="Eliminar curso"
+                  title="Archivar propedéutico"
+                  className="flex items-center justify-center border border-texo-rojo/30 text-texo-rojo rounded-lg hover:bg-texo-rojo/10 transition-colors disabled:opacity-40"
+                  style={{ width: 36, height: 36 }}
                 >
-                  {deletingId === course.id ? "Eliminando..." : "🗑️ Eliminar"}
+                  {deletingId === course.id ? (
+                    <span className="text-xs">...</span>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                  )}
                 </button>
                 <Link
                   href={`/artesano/cursos/${course.id}`}
