@@ -320,7 +320,7 @@ function VideoResource({
     // Si el usuario salta del segundo 5 al 60, currentSecond (60) > maxWatched (5) + 1
     // y no se agrega — independientemente de seekingRef o diff.
     const maxWatched = watchedSetRef.current.size > 0
-      ? Math.max(...watchedSetRef.current)
+      ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
       : -1;
 
     if (currentSecond <= maxWatched + 1) {
