@@ -304,7 +304,7 @@ export default function CourseViewPage() {
             </p>
           )}
           <h1 className="text-base font-bold text-gray-900 dark:text-white">
-            {course.title}
+            {course.title.replace(/^Propedéutico TEXO N°\s*\d+\s*[—–-]\s*/i, "")}
           </h1>
 
           {/* Barra de progreso general del curso */}
