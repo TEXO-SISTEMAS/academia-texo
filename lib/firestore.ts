@@ -14,8 +14,9 @@ import {
   writeBatch,
   documentId,
   Timestamp,
+  increment,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 
 /** Elimina recursivamente todos los campos undefined de un objeto antes de enviarlo a Firestore. */
 function removeUndefined(obj: Record<string, unknown>): Record<string, unknown> {
@@ -41,6 +42,40 @@ import type {
   ResourceProgress,
   CourseEnrollment,
 } from "@/types";
+
+// ─── Auditoría silenciosa ──────────────────────────────────────────────────────
+
+export async function addAuditLog(data: {
+  type: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  resourceType: string;
+  resourceTitle: string;
+}): Promise<void> {
+  await addDoc(collection(db, "auditLog"), { ...data, timestamp: serverTimestamp() });
+}
+
+function silentAudit(data: {
+  userId: string;
+  userEmail: string;
+  action: string;
+  resourceType: string;
+  resourceTitle: string;
+}): void {
+  addAuditLog({ type: "content", ...data }).catch(() => {});
+}
+
+export function recordLoginBackground(userId: string, userAgent: string): void {
+  updateDoc(doc(db, "users", userId), {
+    lastLoginAt: serverTimestamp(),
+    loginCount: increment(1),
+  }).catch(() => {});
+  addDoc(collection(db, "loginHistory", userId, "sessions"), {
+    loginAt: serverTimestamp(),
+    userAgent,
+  }).catch(() => {});
+}
 
 // ─── Tipos de retorno auxiliares ──────────────────────────────────────────────
 
@@ -113,6 +148,13 @@ export async function createCourse(
   };
 
   const ref = await addDoc(collection(db, "courses"), payload);
+  silentAudit({
+    userId: artesanoId,
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Creó propedéutico: ${data.title}`,
+    resourceType: "course",
+    resourceTitle: data.title,
+  });
   return { id: ref.id, ...payload } as unknown as Course;
 }
 
@@ -164,6 +206,13 @@ export async function updateCourse(
   data: Partial<Pick<Course, "title" | "description" | "coverImageUrl">>
 ): Promise<void> {
   await updateDoc(doc(db, "courses", courseId), data);
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Editó propedéutico: ${data.title ?? courseId}`,
+    resourceType: "course",
+    resourceTitle: data.title ?? courseId,
+  });
 }
 
 export async function toggleCoursePublished(courseId: string): Promise<void> {
@@ -175,6 +224,8 @@ export async function toggleCoursePublished(courseId: string): Promise<void> {
 
 export async function deleteCourse(courseId: string): Promise<void> {
   const deletedAt = serverTimestamp();
+  const courseSnap = await getDoc(doc(db, "courses", courseId));
+  const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
   const batch = writeBatch(db);
 
   const chaptersSnap = await getDocs(
@@ -193,6 +244,13 @@ export async function deleteCourse(courseId: string): Promise<void> {
 
   batch.update(doc(db, "courses", courseId), { deleted: true, deletedAt });
   await batch.commit();
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Archivó propedéutico: ${courseTitle}`,
+    resourceType: "course",
+    resourceTitle: courseTitle,
+  });
 }
 
 // ─── Capítulos ────────────────────────────────────────────────────────────────
@@ -218,6 +276,13 @@ export async function createChapter(
     collection(db, "courses", courseId, "chapters"),
     payload
   );
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Creó capítulo: ${data.title}`,
+    resourceType: "chapter",
+    resourceTitle: data.title,
+  });
   return { id: ref.id, ...payload } as unknown as Chapter;
 }
 
@@ -243,6 +308,13 @@ export async function updateChapter(
     doc(db, "courses", courseId, "chapters", chapterId),
     data
   );
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Editó capítulo: ${data.title ?? chapterId}`,
+    resourceType: "chapter",
+    resourceTitle: data.title ?? chapterId,
+  });
 }
 
 export async function reorderChapters(
@@ -282,6 +354,13 @@ export async function createResource(
     collection(db, "courses", courseId, "chapters", chapterId, "resources"),
     removeUndefined(payload as Record<string, unknown>)
   );
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Creó recurso: ${data.title} (${data.type})`,
+    resourceType: data.type,
+    resourceTitle: data.title,
+  });
   return { id: ref.id, ...payload } as unknown as Resource;
 }
 
@@ -306,17 +385,16 @@ export async function updateResource(
   data: Partial<Pick<Resource, "title" | "type" | "content">>
 ): Promise<void> {
   await updateDoc(
-    doc(
-      db,
-      "courses",
-      courseId,
-      "chapters",
-      chapterId,
-      "resources",
-      resourceId
-    ),
+    doc(db, "courses", courseId, "chapters", chapterId, "resources", resourceId),
     removeUndefined(data as Record<string, unknown>)
   );
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Editó recurso: ${data.title ?? resourceId}`,
+    resourceType: data.type ?? "resource",
+    resourceTitle: data.title ?? resourceId,
+  });
 }
 
 export async function deleteResource(
@@ -324,10 +402,18 @@ export async function deleteResource(
   chapterId: string,
   resourceId: string
 ): Promise<void> {
-  await updateDoc(
-    doc(db, "courses", courseId, "chapters", chapterId, "resources", resourceId),
-    { deleted: true, deletedAt: serverTimestamp() }
-  );
+  const resourceRef = doc(db, "courses", courseId, "chapters", chapterId, "resources", resourceId);
+  const snap = await getDoc(resourceRef);
+  const resourceTitle = snap.exists() ? (snap.data().title as string) : resourceId;
+  const resourceType = snap.exists() ? (snap.data().type as string) : "resource";
+  await updateDoc(resourceRef, { deleted: true, deletedAt: serverTimestamp() });
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Archivó recurso: ${resourceTitle}`,
+    resourceType,
+    resourceTitle,
+  });
 }
 
 export async function reorderResources(
@@ -668,9 +754,10 @@ export async function updateResourceEngagement(
   data: EngagementData
 ): Promise<void> {
   const ref = doc(db, "progress", userId, "courses", courseId, "resources", resourceId);
-  await setDoc(
-    ref,
-    { ...data, updatedAt: serverTimestamp() },
-    { merge: true }
-  );
+  await setDoc(ref, { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  if (data.timeSpent && data.timeSpent > 0) {
+    updateDoc(doc(db, "progress", userId, "courses", courseId), {
+      totalTimeSpent: increment(data.timeSpent),
+    }).catch(() => {});
+  }
 }

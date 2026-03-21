@@ -14,7 +14,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { getOrCreateUser } from "@/lib/firestore";
+import { getOrCreateUser, recordLoginBackground } from "@/lib/firestore";
 import { setCookie, deleteCookie } from "@/lib/cookies";
 import type { UserRole } from "@/types";
 
@@ -105,6 +105,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const role = data.role as UserRole;
     setCookie("user-role", role);
 
+    const uid = auth.currentUser?.uid;
+    if (uid) recordLoginBackground(uid, navigator.userAgent);
+
     return { role };
   }
 
@@ -138,6 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const role = data.role as UserRole;
     setCookie("user-role", role);
+
+    const uid = auth.currentUser?.uid;
+    if (uid) recordLoginBackground(uid, navigator.userAgent);
 
     return { role };
   }
