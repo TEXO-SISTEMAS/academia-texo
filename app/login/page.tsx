@@ -6,29 +6,50 @@ import { useAuth } from "@/lib/auth-context";
 import Button from "@/components/shared/Button";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithPassword } = useAuth();
   const router = useRouter();
 
-  // Pre-compilar /bienvenida para que cargue instantáneo al redirigir
   useEffect(() => {
     router.prefetch("/bienvenida");
     router.prefetch("/artesano/dashboard");
   }, [router]);
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<"email" | "password">("email");
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setProcessing(true);
 
     try {
-      const { role } = await login(email.trim().toLowerCase());
-      router.replace(
-        role === "artesano" ? "/artesano/dashboard" : "/bienvenida"
-      );
+      const result = await login(email.trim().toLowerCase());
+
+      if ("requiresPassword" in result) {
+        // Artesano — pasar a paso 2
+        setStep("password");
+        setProcessing(false);
+        return;
+      }
+
+      router.replace(result.role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
+      setProcessing(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setProcessing(true);
+
+    try {
+      const { role } = await loginWithPassword(email.trim().toLowerCase(), password);
+      router.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);
@@ -63,49 +84,96 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8">
-          {/* <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-            Ingresá a tu cuenta
-          </h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Solo correos autorizados pueden acceder.
-          </p> */}
+          {step === "email" ? (
+            <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="tu@grupotexo.com"
+                  required
+                  autoComplete="email"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent transition"
+                />
+              </div>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              {error && (
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg">
+                  {error}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={processing}
               >
-                Correo electrónico
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@grupotexo.com"
-                required
-                autoComplete="email"
-                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent transition"
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg">
-                {error}
-              </p>
-            )}
-
-            <Button
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              disabled={processing}
+                Continuar
+              </Button>
+            </form>
+          ) : (
+            <form
+              onSubmit={handlePasswordSubmit}
+              className="flex flex-col gap-4"
             >
-              Ingresar
-            </Button>
-          </form>
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Ingresando como <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
+                </p>
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  autoFocus
+                  autoComplete="current-password"
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent transition"
+                />
+              </div>
+
+              {error && (
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg">
+                  {error}
+                </p>
+              )}
+
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                className="w-full"
+                disabled={processing}
+              >
+                Ingresar
+              </Button>
+
+              <button
+                type="button"
+                onClick={() => { setStep("email"); setError(null); setPassword(""); }}
+                className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-center transition"
+              >
+                ← Cambiar correo
+              </button>
+            </form>
+          )}
         </div>
 
         <p className="text-center text-white/40 text-xs mt-6">

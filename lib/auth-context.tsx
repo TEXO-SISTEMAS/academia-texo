@@ -22,7 +22,8 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   userRole: UserRole | null;
   loading: boolean;
-  login: (email: string) => Promise<{ role: UserRole }>;
+  login: (email: string) => Promise<{ role: UserRole } | { requiresPassword: true; role: UserRole; name: string }>;
+  loginWithPassword: (email: string, password: string) => Promise<{ role: UserRole }>;
   logout: () => Promise<void>;
 }
 
@@ -86,10 +87,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Error al verificar acceso. Intentá de nuevo.");
     }
 
+    // Artesano: requiere contraseña — no hay token todavía
+    if (data.requiresPassword) {
+      return { requiresPassword: true, role: data.role as UserRole, name: data.name as string };
+    }
+
     await signInWithCustomToken(auth, data.token);
 
-    // Setear la cookie ANTES de retornar para que el middleware la lea
-    // correctamente al hacer el redirect — no esperar a onAuthStateChanged
+    const role = data.role as UserRole;
+    setCookie("user-role", role);
+
+    return { role };
+  }
+
+  async function loginWithPassword(email: string, password: string): Promise<{ role: UserRole }> {
+    const res = await fetch("/api/auth/login-artesano", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      if (data.error === "invalid_password") {
+        throw new Error("Contraseña incorrecta.");
+      }
+      if (data.error === "not_authorized") {
+        throw new Error("Tu correo no está autorizado. Contactá al administrador.");
+      }
+      throw new Error("Error al verificar acceso. Intentá de nuevo.");
+    }
+
+    await signInWithCustomToken(auth, data.token);
+
     const role = data.role as UserRole;
     setCookie("user-role", role);
 
@@ -103,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userRole, loading, login, logout }}
+      value={{ firebaseUser, userRole, loading, login, loginWithPassword, logout }}
     >
       {children}
     </AuthContext.Provider>

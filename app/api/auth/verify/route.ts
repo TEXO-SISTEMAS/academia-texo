@@ -65,7 +65,13 @@ export async function POST(req: NextRequest) {
     const role: string = userData.role ?? "participante";
     const name: string = userData.name ?? "";
 
-    // 3. Generar Custom Token (uid = email normalizado)
+    // 3. Artesanos requieren contraseña — no generar token todavía
+    if (role === "artesano") {
+      console.log("[verify] artesano detectado, requiere contraseña:", normalizedEmail);
+      return NextResponse.json({ requiresPassword: true, role, name });
+    }
+
+    // 4. Participantes → generar Custom Token directamente
     const adminAuth = getAdminAuth();
     const token = await adminAuth.createCustomToken(normalizedEmail, { role });
 
