@@ -317,6 +317,11 @@ function VideoResource({
     const current = Math.floor(video.currentTime);
     const diff    = video.currentTime - lastTimeRef.current;
 
+    console.log('[video-track] diff:', (video.currentTime - lastTimeRef.current).toFixed(2),
+      'seeking:', seekingRef.current,
+      'watched size:', watchedSetRef.current.size,
+      'duration:', Math.floor(video.duration));
+
     // Si el salto es mayor a 2 segundos es un seek (aunque onSeeking no haya
     // disparado todavía) — actualizar lastTimeRef y salir sin contar
     if (diff > 2) {

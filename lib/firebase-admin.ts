@@ -1,10 +1,24 @@
 import admin from "firebase-admin";
 
 function getServiceAccount() {
-  if (!process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON no está definida");
+  // En Vercel: env var con el JSON en una sola línea
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+    } catch {
+      // Env var truncada (multi-línea en .env.local) — caer al archivo
+    }
   }
-  return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  // En local: leer el archivo directamente
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return require("../service-account-firebase.json");
+  } catch {
+    throw new Error(
+      "No se pudo cargar el service account de Firebase. " +
+      "Definí FIREBASE_SERVICE_ACCOUNT_JSON (una línea) o asegurate que service-account-firebase.json exista."
+    );
+  }
 }
 
 function getAdminApp(): admin.app.App {
