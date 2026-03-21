@@ -61,7 +61,7 @@ export default function BienvenidaPage() {
         <img
           src="/LA ACADEMIA_NEWSLETTER.png"
           alt="Academia TEXO"
-          style={{ height: "120px", width: "auto", margin: "0 auto 24px" }}
+          style={{ height: "160px", width: "auto", margin: "0 auto 2rem", borderRadius: "12px", boxShadow: "0 0 0 3px rgba(255,255,255,0.1)" }}
         />
 
         {/* Bienvenida */}
