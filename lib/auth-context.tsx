@@ -95,6 +95,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await signInWithCustomToken(auth, data.token);
 
+    // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
+    await new Promise<void>((resolve) => {
+      const unsub = onAuthStateChanged(auth, (user) => {
+        if (user) { unsub(); resolve(); }
+      });
+    });
+
     const role = data.role as UserRole;
     setCookie("user-role", role);
 
@@ -121,6 +128,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await signInWithCustomToken(auth, data.token);
+
+    // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
+    await new Promise<void>((resolve) => {
+      const unsub = onAuthStateChanged(auth, (user) => {
+        if (user) { unsub(); resolve(); }
+      });
+    });
 
     const role = data.role as UserRole;
     setCookie("user-role", role);
