@@ -703,44 +703,70 @@ function PdfResource({
   resourceId,
   onComplete,
 }: EngagementProps & { content: PdfContent }) {
-  const { driveUrl, totalPages } = content;
+  const { driveUrl } = content;
   const fileId = extractDriveFileId(driveUrl);
 
-  const [slides,       setSlides]       = useState<string[] | null>(null);
+  const [slides,      setSlides]      = useState<string[] | null>(null);
+  const [loadingMsg,  setLoadingMsg]  = useState("Descargando PDF...");
   const [loadingSlides, setLoadingSlides] = useState(true);
-  const [slidesError,  setSlidesError]  = useState<string | null>(null);
-  const [ready,        setReady]        = useState(false);
-  const [completing,   setCompleting]   = useState(false);
+  const [slidesError, setSlidesError] = useState<string | null>(null);
+  const [ready,       setReady]       = useState(false);
+  const [completing,  setCompleting]  = useState(false);
 
-  // Fetch con logs para diagnóstico
   useEffect(() => {
-    console.log("[PDF] fileId:", fileId, "driveUrl:", driveUrl);
     if (!fileId) {
-      console.log("[PDF] error: no se pudo extraer fileId de:", driveUrl);
       setSlidesError("No se pudo extraer el ID del archivo de Drive.");
       setLoadingSlides(false);
       return;
     }
-    setLoadingSlides(true);
-    setSlidesError(null);
-    const apiUrl = `/api/drive/slides?fileId=${fileId}${totalPages ? `&totalPages=${totalPages}` : ""}`;
-    fetch(apiUrl)
-      .then((r) => r.json())
-      .then((data: { slides?: string[]; error?: string }) => {
-        console.log("[PDF] slides:", data.slides?.length ?? 0, "error:", data.error ?? null);
-        if (data.slides?.length) {
-          setSlides(data.slides);
-        } else {
-          setSlidesError(data.error ?? "No se pudieron cargar las páginas del PDF.");
+    let cancelled = false;
+
+    async function convertPdf() {
+      try {
+        setLoadingMsg("Descargando PDF...");
+        const res = await fetch(`/api/drive/stream?fileId=${fileId}`);
+        if (!res.ok) throw new Error(`Error al descargar PDF (${res.status})`);
+        const arrayBuffer = await res.arrayBuffer();
+        if (cancelled) return;
+
+        setLoadingMsg("Procesando páginas...");
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+        const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const numPages = pdfDoc.numPages;
+        const result: string[] = [];
+
+        for (let i = 1; i <= numPages; i++) {
+          if (cancelled) return;
+          setLoadingMsg(`Procesando página ${i} de ${numPages}...`);
+          const page = await pdfDoc.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement("canvas");
+          canvas.width  = viewport.width;
+          canvas.height = viewport.height;
+          const ctx = canvas.getContext("2d")!;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          result.push(canvas.toDataURL("image/png"));
         }
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.log("[PDF] fetch error:", msg);
-        setSlidesError("Error de red al cargar el PDF.");
-      })
-      .finally(() => setLoadingSlides(false));
-  }, [fileId, driveUrl]);
+
+        if (!cancelled) {
+          setSlides(result);
+          setLoadingSlides(false);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setSlidesError(msg);
+          setLoadingSlides(false);
+        }
+      }
+    }
+
+    convertPdf();
+    return () => { cancelled = true; };
+  }, [fileId]);
 
   const handleSave = useCallback(
     (pagesViewed: number[]) => {
@@ -777,7 +803,7 @@ function PdfResource({
     );
   }
 
-  // Cargando
+  // Cargando / procesando
   if (loadingSlides) {
     return (
       <div>
@@ -786,7 +812,7 @@ function PdfResource({
           style={{ height: "600px" }}
         >
           <div className="w-10 h-10 border-2 border-texo-amarillo/30 border-t-texo-amarillo rounded-full animate-spin" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Cargando PDF...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{loadingMsg}</p>
         </div>
         {renderBottom({ current: 0, total: 0, allReady: false })}
       </div>
@@ -820,11 +846,6 @@ function PdfResource({
         <p className="text-xs text-gray-500 dark:text-gray-400 text-center max-w-sm">
           {slidesError}
         </p>
-        {!totalPages && (
-          <p className="text-xs text-texo-amarillo text-center font-medium">
-            El Artesano debe editar este recurso e ingresar el número de páginas.
-          </p>
-        )}
       </div>
       {renderBottom({ current: 0, total: 0, allReady: false })}
     </div>
