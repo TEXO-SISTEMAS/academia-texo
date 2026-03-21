@@ -961,9 +961,22 @@ function PresentationResource({
   resourceId,
   onComplete,
 }: EngagementProps & { content: PresentationContent }) {
-  const { driveUrl, totalSlides } = content;
+  const { driveUrl, totalSlides, pdfFileId } = content;
   const [ready,      setReady]      = useState(false);
   const [completing, setCompleting] = useState(false);
+
+  // PPT convertido a PDF → mostrar con pdfjs-dist (sin iframe, sin scroll)
+  if (pdfFileId) {
+    return (
+      <PdfResource
+        content={{ driveUrl: `https://drive.google.com/file/d/${pdfFileId}/view` }}
+        userId={userId}
+        courseId={courseId}
+        resourceId={resourceId}
+        onComplete={onComplete}
+      />
+    );
+  }
 
   const slidesMatch    = driveUrl.match(/presentation\/d\/([^/?#\s]+)/);
   const isGoogleSlides = !!slidesMatch;
@@ -1192,7 +1205,20 @@ function DocumentResource({
   resourceId,
   onComplete,
 }: EngagementProps & { content: DocumentContent }) {
-  const { body, driveUrl } = content;
+  const { body, driveUrl, pdfFileId } = content;
+
+  // DOCX convertido a PDF → mostrar con pdfjs-dist (sin iframe, sin scroll)
+  if (pdfFileId) {
+    return (
+      <PdfResource
+        content={{ driveUrl: `https://drive.google.com/file/d/${pdfFileId}/view` }}
+        userId={userId}
+        courseId={courseId}
+        resourceId={resourceId}
+        onComplete={onComplete}
+      />
+    );
+  }
 
   // Documento de texto escrito → paginación por secciones
   if (body) {

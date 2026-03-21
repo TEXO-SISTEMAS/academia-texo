@@ -2,6 +2,7 @@ export interface DriveUploadResult {
   fileId: string;
   webViewLink: string;
   directLink: string;
+  pdfFileId?: string; // presente si el archivo fue convertido a PDF (DOCX/PPT)
 }
 
 export async function uploadVideoDirectToDrive(

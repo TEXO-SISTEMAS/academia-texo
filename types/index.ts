@@ -46,6 +46,7 @@ export interface VideoContent {
 export interface PresentationContent {
   driveUrl: string;
   totalSlides?: number;
+  pdfFileId?: string; // PDF generado automáticamente al subir PPT/PPTX
 }
 
 /** Documento: texto escrito, archivo DOC/DOCX/TXT o link de Drive */
@@ -54,6 +55,7 @@ export interface DocumentContent {
   driveUrl?: string;    // archivo subido a Drive o link externo
   fileName?: string;    // nombre original del archivo (si se subió)
   totalPages?: number;  // para navegación manual en iframe (opcional)
+  pdfFileId?: string;   // PDF generado automáticamente al subir DOCX/DOC
 }
 
 /** PDF: subido a Drive o link externo, con navegación de páginas */

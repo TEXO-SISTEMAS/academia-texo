@@ -250,7 +250,7 @@ export default function ResourceForm({
 
   // ── Upload ────────────────────────────────────────────────────────────────
 
-  async function uploadToDrive(file: File): Promise<string> {
+  async function uploadToDrive(file: File): Promise<{ directLink: string; pdfFileId?: string }> {
     setDriveUploadPct(0);
     const isVideo = type === "video";
     const toastId = toast.loading(isVideo ? "Subiendo video directo a Drive..." : "Subiendo archivo...");
@@ -262,7 +262,7 @@ export default function ResourceForm({
       setDriveUploadPct(null);
       setDriveUploadedName(file.name);
       toast.success("Archivo subido correctamente", { id: toastId });
-      return result.directLink;
+      return { directLink: result.directLink, pdfFileId: result.pdfFileId };
     } catch (err) {
       setDriveUploadPct(null);
       toast.error("Error al subir el archivo. Intentá de nuevo.", { id: toastId });
@@ -283,17 +283,26 @@ export default function ResourceForm({
       switch (type) {
         case "video": {
           let url = driveUrl;
-          if (driveFile) url = await uploadToDrive(driveFile);
+          if (driveFile) url = (await uploadToDrive(driveFile)).directLink;
           if (!url) { setError("Seleccioná un archivo de video."); setLoading(false); return; }
           content = { driveUrl: url };
           break;
         }
         case "presentation": {
           let url = driveUrl;
-          if (driveFile) url = await uploadToDrive(driveFile);
+          let presPdfFileId: string | undefined;
+          if (driveFile) {
+            const res = await uploadToDrive(driveFile);
+            url = res.directLink;
+            presPdfFileId = res.pdfFileId;
+          }
           if (!url) { setError("Seleccioná un archivo de presentación."); setLoading(false); return; }
           const parsed = parseInt(totalSlides);
-          content = { driveUrl: url, ...(parsed > 0 ? { totalSlides: parsed } : {}) };
+          content = {
+            driveUrl: url,
+            ...(parsed > 0 ? { totalSlides: parsed } : {}),
+            ...(presPdfFileId ? { pdfFileId: presPdfFileId } : {}),
+          };
           break;
         }
         case "document": {
@@ -303,11 +312,12 @@ export default function ResourceForm({
           } else {
             const docPages = parseInt(totalPages);
             if (driveFile) {
-              const url = await uploadToDrive(driveFile);
+              const { directLink: url, pdfFileId: docPdfFileId } = await uploadToDrive(driveFile);
               content = {
                 driveUrl: url,
                 fileName: driveFile.name,
                 ...(docPages > 0 ? { totalPages: docPages } : {}),
+                ...(docPdfFileId ? { pdfFileId: docPdfFileId } : {}),
               };
             } else if (isEditing && (initialResource.type === "document" || initialResource.type === "text")) {
               const existing = initialResource.content as DocumentContent;
@@ -324,7 +334,7 @@ export default function ResourceForm({
           let pdfUrl = driveUrl;
           let pdfFileName: string | undefined;
           if (driveFile) {
-            pdfUrl = await uploadToDrive(driveFile);
+            pdfUrl = (await uploadToDrive(driveFile)).directLink;
             pdfFileName = driveFile.name;
           } else if (isEditing && initialResource.type === "pdf") {
             pdfFileName = (initialResource.content as PdfContent).fileName;

@@ -116,22 +116,93 @@ export async function POST(req: NextRequest) {
       throw new Error("Drive no retornó fileId después del upload.");
     }
 
-    // Hacer público (anyone with link can view)
+    // Hacer público el archivo original
     await drive.permissions.create({
       fileId,
-      requestBody: {
-        role: "reader",
-        type: "anyone",
-      },
+      requestBody: { role: "reader", type: "anyone" },
       supportsAllDrives: true,
     });
 
     console.log("[drive/upload] Permisos públicos establecidos.");
 
     const directLink = `https://drive.google.com/file/d/${fileId}/preview`;
-    console.log("[drive/upload] OK — directLink:", directLink);
 
-    return NextResponse.json({ fileId, webViewLink, directLink });
+    // ── Conversión automática a PDF para DOCX/DOC/PPT/PPTX ──────────────────
+    const DOCX_MIMES = [
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+    ];
+    const PPT_MIMES = [
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "application/vnd.ms-powerpoint",
+    ];
+    const fileMime = file.type || "";
+    const isDocx   = DOCX_MIMES.includes(fileMime);
+    const isPpt    = PPT_MIMES.includes(fileMime);
+
+    let pdfFileId: string | undefined;
+
+    if (isDocx || isPpt) {
+      try {
+        console.log("[drive/upload] Convirtiendo a Google format para exportar PDF...");
+        const googleMime = isDocx
+          ? "application/vnd.google-apps.document"
+          : "application/vnd.google-apps.presentation";
+
+        // Copiar el archivo a formato Google Docs/Slides (auto-convierte)
+        const copyRes = await drive.files.copy({
+          fileId,
+          requestBody: {
+            name:     `${file.name}_converted`,
+            mimeType: googleMime,
+            parents:  [folderId],
+          },
+          fields: "id",
+          supportsAllDrives: true,
+        });
+        const googleFileId = copyRes.data.id!;
+        console.log("[drive/upload] Google file creado:", googleFileId);
+
+        // Exportar como PDF
+        const exportRes = await drive.files.export(
+          { fileId: googleFileId, mimeType: "application/pdf" },
+          { responseType: "arraybuffer" }
+        );
+        const pdfBuffer = Buffer.from(exportRes.data as ArrayBuffer);
+        console.log("[drive/upload] PDF exportado, tamaño:", pdfBuffer.length);
+
+        // Eliminar el archivo Google Docs/Slides intermedio
+        await drive.files.delete({ fileId: googleFileId, supportsAllDrives: true }).catch(() => {});
+
+        // Subir el PDF a Drive
+        const pdfStream = new PassThrough();
+        pdfStream.end(pdfBuffer);
+        const pdfName = file.name.replace(/\.(docx?|pptx?)$/i, ".pdf");
+        const pdfUploadRes = await drive.files.create({
+          requestBody: { name: pdfName, parents: [folderId] },
+          media: { mimeType: "application/pdf", body: pdfStream },
+          fields: "id",
+          supportsAllDrives: true,
+        });
+        pdfFileId = pdfUploadRes.data.id!;
+        console.log("[drive/upload] PDF subido, pdfFileId:", pdfFileId);
+
+        // Hacer público el PDF
+        await drive.permissions.create({
+          fileId: pdfFileId,
+          requestBody: { role: "reader", type: "anyone" },
+          supportsAllDrives: true,
+        });
+        console.log("[drive/upload] PDF público OK.");
+      } catch (convErr) {
+        // La conversión es best-effort — no fallar el upload original
+        console.error("[drive/upload] Error al convertir a PDF (no fatal):", convErr);
+      }
+    }
+
+    console.log("[drive/upload] OK — directLink:", directLink, "pdfFileId:", pdfFileId ?? "none");
+
+    return NextResponse.json({ fileId, webViewLink, directLink, ...(pdfFileId ? { pdfFileId } : {}) });
   } catch (err: unknown) {
     let detail = "Error desconocido";
     if (err instanceof Error) {
