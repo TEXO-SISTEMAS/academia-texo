@@ -8,6 +8,7 @@ import { confirmToast } from "@/components/shared/ConfirmToast";
 import {
   getCourse,
   getChaptersByCourse,
+  getResourcesByChapter,
   toggleCoursePublished,
   deleteCourse,
   createChapter,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/firestore";
 import type { Course, Chapter } from "@/types";
 import ChapterForm from "@/components/artesano/ChapterForm";
+import CourseFormModal from "@/components/artesano/CourseFormModal";
 import Button from "@/components/shared/Button";
 
 export default function CourseDetailPage() {
@@ -24,9 +26,11 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [resourceCounts, setResourceCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showChapterForm, setShowChapterForm] = useState(false);
   const [editingChapter, setEditingChapter] = useState<Chapter | null>(null);
+  const [showEditCourse, setShowEditCourse] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -43,6 +47,15 @@ export default function CourseDetailPage() {
       }
       setCourse(courseData);
       setChapters(chaptersData);
+      // Load resource counts per chapter
+      const counts: Record<string, number> = {};
+      await Promise.all(
+        chaptersData.map(async (ch) => {
+          const resources = await getResourcesByChapter(courseId, ch.id);
+          counts[ch.id] = resources.length;
+        })
+      );
+      setResourceCounts(counts);
     } finally {
       setLoading(false);
     }
@@ -153,37 +166,63 @@ export default function CourseDetailPage() {
       </Link>
 
       {/* Course header */}
-      <div className="mt-4 mb-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          {course.courseNumber !== undefined && (
-            <p className="text-sm font-semibold text-texo-amarillo mb-1">
-              Propedéutico TEXO N° {course.courseNumber}
+      <div className="mt-4 mb-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            {course.courseNumber !== undefined && (
+              <p className="text-sm font-semibold text-texo-amarillo mb-1">
+                Propedéutico TEXO N° {course.courseNumber}
+              </p>
+            )}
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
+              {course.title}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+              {course.description}
             </p>
-          )}
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
-            {course.title}
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-            {course.description}
-          </p>
-          <span
-            className={`inline-block mt-2 text-xs px-2.5 py-1 rounded-full font-medium ${
-              course.published
-                ? "bg-texo-verde/15 text-texo-verde"
-                : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-            }`}
-          >
-            {course.published ? "● Publicado" : "○ Borrador"}
-          </span>
+            <span
+              className={`inline-block mt-2 text-xs px-2.5 py-1 rounded-full font-medium ${
+                course.published
+                  ? "bg-texo-verde/15 text-texo-verde"
+                  : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+              }`}
+            >
+              {course.published ? "● Publicado" : "○ Borrador"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowEditCourse(true)}
+              className="text-sm px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300"
+            >
+              ✏️ Editar
+            </button>
+            <Button
+              onClick={handleTogglePublished}
+              disabled={toggling}
+              variant={course.published ? "secondary" : "primary"}
+              size="sm"
+            >
+              {toggling ? "..." : course.published ? "Despublicar" : "Publicar"}
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={handleTogglePublished}
-          disabled={toggling}
-          variant={course.published ? "secondary" : "primary"}
-          size="sm"
-        >
-          {toggling ? "..." : course.published ? "Despublicar" : "Publicar"}
-        </Button>
+        {/* Eliminar — dentro de la card */}
+        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <button
+            onClick={handleDeleteClick}
+            disabled={deleting}
+            className="text-xs text-texo-rojo hover:text-texo-rojo/80 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            {deleting ? "Eliminando..." : "Archivar propedéutico"}
+          </button>
+        </div>
       </div>
 
       {/* Chapters */}
@@ -231,12 +270,19 @@ export default function CourseDetailPage() {
                 {index + 1}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white truncate">
-                  {chapter.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-gray-900 dark:text-white truncate">
+                    {chapter.title}
+                  </p>
+                  {resourceCounts[chapter.id] !== undefined && (
+                    <span className="shrink-0 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                      {resourceCounts[chapter.id]} {resourceCounts[chapter.id] === 1 ? "recurso" : "recursos"}
+                    </span>
+                  )}
+                </div>
                 {chapter.description && (
                   <p className="text-sm text-gray-400 truncate">
-                    {chapter.description}
+                    {chapter.description.slice(0, 60)}{chapter.description.length > 60 ? "…" : ""}
                   </p>
                 )}
               </div>
@@ -274,17 +320,15 @@ export default function CourseDetailPage() {
           onCancel={() => setEditingChapter(null)}
         />
       )}
-
-      {/* Zona de peligro */}
-      <div className="mt-10 border-t border-gray-200 dark:border-gray-700 pt-6">
-        <button
-          onClick={handleDeleteClick}
-          disabled={deleting}
-          className="text-sm px-4 py-2 border border-texo-rojo/40 text-texo-rojo rounded-lg hover:bg-texo-rojo/10 transition-colors disabled:opacity-40"
-        >
-          {deleting ? "Eliminando..." : "🗑️ Eliminar curso"}
-        </button>
-      </div>
+      {showEditCourse && (
+        <CourseFormModal
+          editCourseId={courseId}
+          initialTitle={course.title}
+          initialDescription={course.description ?? ""}
+          onCreated={() => { setShowEditCourse(false); loadData(); }}
+          onClose={() => setShowEditCourse(false)}
+        />
+      )}
     </div>
   );
 }

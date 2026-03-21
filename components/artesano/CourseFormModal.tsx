@@ -2,18 +2,23 @@
 
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { createCourse } from "@/lib/firestore";
+import { createCourse, updateCourse } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 
 interface Props {
   onCreated: () => void;
   onClose: () => void;
+  /** If provided, switches to edit mode */
+  editCourseId?: string;
+  initialTitle?: string;
+  initialDescription?: string;
 }
 
-export default function CourseFormModal({ onCreated, onClose }: Props) {
+export default function CourseFormModal({ onCreated, onClose, editCourseId, initialTitle = "", initialDescription = "" }: Props) {
   const { firebaseUser } = useAuth();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const isEdit = !!editCourseId;
+  const [title, setTitle] = useState(isEdit ? initialTitle : "");
+  const [description, setDescription] = useState(isEdit ? initialDescription : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,12 +28,17 @@ export default function CourseFormModal({ onCreated, onClose }: Props) {
     setLoading(true);
     setError(null);
     try {
-      await createCourse({ title, description }, firebaseUser.uid);
-      toast.success("Propedéutico creado correctamente");
+      if (isEdit) {
+        await updateCourse(editCourseId, { title, description });
+        toast.success("Propedéutico actualizado");
+      } else {
+        await createCourse({ title, description }, firebaseUser.uid);
+        toast.success("Propedéutico creado correctamente");
+      }
       onCreated();
     } catch (err) {
       console.error(err);
-      setError("Error al crear el curso. Intentá de nuevo.");
+      setError(isEdit ? "Error al actualizar. Intentá de nuevo." : "Error al crear el curso. Intentá de nuevo.");
     } finally {
       setLoading(false);
     }
@@ -38,7 +48,7 @@ export default function CourseFormModal({ onCreated, onClose }: Props) {
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Nuevo propedéutico</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isEdit ? "Editar propedéutico" : "Nuevo propedéutico"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl leading-none">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
@@ -80,7 +90,7 @@ export default function CourseFormModal({ onCreated, onClose }: Props) {
               disabled={loading}
               className="px-4 py-2 text-sm bg-texo-amarillo text-texo-azul font-semibold rounded-lg hover:bg-texo-amarillo/90 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Creando..." : "Crear propedéutico"}
+              {loading ? (isEdit ? "Guardando..." : "Creando...") : (isEdit ? "Guardar cambios" : "Crear propedéutico")}
             </button>
           </div>
         </form>
