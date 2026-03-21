@@ -59,12 +59,12 @@ export default function BienvenidaPage() {
         <img
           src="/LA_ACADEMIA_NEWSLETTER.png"
           alt="La Academia TEXO"
-          style={{ height: "180px", width: "auto", borderRadius: "12px", marginBottom: "1.5rem" }}
+          style={{ height: "180px", width: "auto", borderRadius: "12px", marginBottom: "1.5rem", display: "block", margin: "0 auto 1.5rem" }}
         />
 
         {/* Bienvenida */}
         <h1 className="text-3xl font-bold text-white mb-3">
-          ¡Bienvenido/a, {displayName}!
+          ¡Bienvenido/a, {displayName.includes("@") ? displayName.split("@")[0] : displayName}!
         </h1>
         <p className="text-white/70 text-base mb-4 leading-relaxed">
           Estás ingresando a la plataforma de autoformación del Grupo TEXO.
