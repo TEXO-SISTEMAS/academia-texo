@@ -57,19 +57,12 @@ export default function BienvenidaPage() {
     <div className="min-h-screen bg-texo-azul flex items-center justify-center px-4">
       <div className="w-full max-w-md text-center">
         {/* Logo */}
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", justifyContent: "center", marginBottom: "1.5rem" }}>
-          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-            <circle cx="24" cy="24" r="22" stroke="#E8B84B" strokeWidth="2"/>
-            <line x1="24" y1="2" x2="24" y2="46" stroke="#E8B84B" strokeWidth="2"/>
-            <line x1="2" y1="24" x2="46" y2="24" stroke="#E8B84B" strokeWidth="2"/>
-            <line x1="8" y1="8" x2="40" y2="40" stroke="#E8B84B" strokeWidth="1.5"/>
-            <line x1="40" y1="8" x2="8" y2="40" stroke="#E8B84B" strokeWidth="1.5"/>
-          </svg>
-          <div>
-            <div style={{ color: "white", fontSize: "22px", fontWeight: "800", letterSpacing: "0.06em", lineHeight: 1 }}>ACADEMIA</div>
-            <div style={{ color: "#E8B84B", fontSize: "14px", fontWeight: "600", letterSpacing: "0.15em" }}>TEXO</div>
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/LA_ACADEMIA_NEWSLETTER.png"
+          alt="La Academia TEXO"
+          style={{ height: "180px", width: "auto", borderRadius: "12px", marginBottom: "1.5rem" }}
+        />
 
         {/* Bienvenida */}
         <h1 className="text-3xl font-bold text-white mb-3">
