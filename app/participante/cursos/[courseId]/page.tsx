@@ -311,19 +311,15 @@ export default function CourseViewPage() {
 
           {/* Barra de progreso general del curso */}
           <div className="mt-2 flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">Tu progreso:</span>
+            <div className="flex-1 h-2.5 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
               <div
                 className="h-full bg-texo-verde rounded-full transition-all duration-500"
                 style={{ width: `${coursePct}%` }}
               />
             </div>
-            <span className="text-xs font-semibold text-texo-verde whitespace-nowrap shrink-0">
+            <span className="text-sm font-bold text-texo-verde whitespace-nowrap shrink-0">
               {coursePct}%
-            </span>
-            <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">
-              {course.courseNumber !== undefined
-                ? `Propedéutico TEXO N° ${course.courseNumber}`
-                : `${completedChapters}/${totalChapters} capítulos`}
             </span>
           </div>
         </div>
@@ -345,8 +341,8 @@ export default function CourseViewPage() {
             sidebarOpen ? "flex" : "hidden"
           } md:flex flex-col w-full md:w-72 border-r border-gray-200 dark:border-gray-700 overflow-y-auto shrink-0 fixed md:static inset-0 md:inset-auto bg-[#f8f9fa] dark:bg-texo-dark z-40`}
         >
-          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            Contenido del curso
+          <p className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400" style={{ fontSize: "13px", fontWeight: 500 }}>
+            Índice
           </p>
           <nav className="flex flex-col gap-1 p-2 pb-4">
             {chaptersData.map(({ chapter, resources }, idx) => {
@@ -474,6 +470,11 @@ export default function CourseViewPage() {
                   {activeChapterData.resources.map((resource, resourceIdx) => {
                     const unlocked = isResourceUnlocked(activeChapterIdx, resourceIdx);
                     const completed = progress[resource.id] === true;
+                    // Próximo recurso: primer recurso no completado y desbloqueado
+                    const isNext = !completed && unlocked && activeChapterData.resources
+                      .slice(0, resourceIdx)
+                      .every((r) => progress[r.id] === true);
+
                     return (
                       <li key={resource.id}>
                         <button
@@ -481,15 +482,31 @@ export default function CourseViewPage() {
                             selectResource(resource.id, activeChapterIdx, resourceIdx)
                           }
                           disabled={!unlocked}
-                          className={`w-full text-left px-4 py-3 rounded-xl border flex items-center gap-3 transition-colors ${
-                            completed
-                              ? "border-texo-verde/40 bg-texo-verde/5 dark:border-texo-verde/30"
-                              : unlocked
-                              ? "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-texo-amarillo/40"
-                              : "border-gray-200 dark:border-gray-700 opacity-40 cursor-not-allowed"
-                          }`}
+                          className="w-full text-left px-4 py-3 rounded-xl border flex items-center gap-3 transition-colors"
+                          style={{
+                            background: completed
+                              ? "color-mix(in srgb, #3A9688 8%, transparent)"
+                              : isNext
+                              ? "color-mix(in srgb, #E8B84B 8%, transparent)"
+                              : !unlocked
+                              ? "rgba(0,0,0,0.03)"
+                              : undefined,
+                            borderLeft: completed
+                              ? "3px solid #3A9688"
+                              : isNext
+                              ? "3px solid #E8B84B"
+                              : undefined,
+                            borderColor: completed
+                              ? undefined
+                              : isNext
+                              ? undefined
+                              : !unlocked
+                              ? "rgb(229 231 235)"
+                              : undefined,
+                            cursor: !unlocked ? "not-allowed" : undefined,
+                          }}
                         >
-                          <span className="text-lg shrink-0">
+                          <span className="shrink-0" style={{ fontSize: !unlocked ? "20px" : "18px" }}>
                             {completed ? (
                               <span className="w-6 h-6 rounded-full bg-texo-verde/15 text-texo-verde flex items-center justify-center text-sm font-bold">✓</span>
                             ) : !unlocked ? (
@@ -499,8 +516,10 @@ export default function CourseViewPage() {
                             )}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                              {resource.title}
+                            <p className="font-medium text-sm truncate" style={{ opacity: !unlocked ? 0.4 : 1, color: !unlocked ? undefined : undefined }} >
+                              <span className={!unlocked ? "text-gray-500 dark:text-gray-400" : "text-gray-900 dark:text-white"}>
+                                {resource.title}
+                              </span>
                             </p>
                             <p className="text-xs text-gray-400">
                               {TYPE_LABELS[resource.type]}
@@ -509,6 +528,11 @@ export default function CourseViewPage() {
                           {completed && (
                             <span className="text-xs text-texo-verde shrink-0 font-medium">
                               Completado
+                            </span>
+                          )}
+                          {isNext && (
+                            <span className="text-xs bg-texo-amarillo text-texo-azul font-semibold px-2 py-0.5 rounded-full shrink-0">
+                              Continuar aquí
                             </span>
                           )}
                         </button>
