@@ -23,6 +23,8 @@ export default function BienvenidaPage() {
 
     async function fetchName() {
       const uid = firebaseUser!.uid;
+      // uid es el email cuando se usa custom token (ej. "danilo.sosa@texo.com.py")
+      const emailFallback = uid.includes("@") ? uid.split("@")[0] : uid;
 
       // Intentar leer el nombre completo desde allowedUsers (ej. "Danilo Sosa")
       const allowedSnap = await getDoc(doc(db, "allowedUsers", uid));
@@ -32,12 +34,8 @@ export default function BienvenidaPage() {
         return;
       }
 
-      // Fallback: leer displayName desde users/{uid}
-      const userSnap = await getDoc(doc(db, "users", uid));
-      const name: string = userSnap.exists()
-        ? (userSnap.data().displayName as string) || uid
-        : uid;
-      setDisplayName(name);
+      // Fallback: email sin dominio
+      setDisplayName(emailFallback);
       setNameLoading(false);
     }
 
