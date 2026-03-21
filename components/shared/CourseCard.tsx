@@ -52,11 +52,12 @@ export default function CourseCard({
             className="object-cover group-hover:scale-105 transition-transform duration-300"
           />
         ) : (
-          <div className="h-full bg-gradient-to-br from-texo-azul to-texo-verde flex items-center justify-center">
-            <span className="text-white font-bold opacity-30 select-none" style={{ fontSize: "80px", lineHeight: 1 }}>
-              {title.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src="/LA_ACADEMIA_NEWSLETTER.png"
+            alt="Academia TEXO"
+            style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+          />
         )}
 
         {/* Badge completado */}
