@@ -68,7 +68,7 @@ export default function LoginPage() {
         {/* Logo + Brand */}
         <div className="text-center mb-8">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/LA ACADEMIA_NEWSLETTER.png" alt="Academia TEXO" style={{ height: "140px", width: "auto", margin: "0 auto 16px", borderRadius: "12px" }} />
+          <img src="/LA_ACADEMIA_NEWSLETTER.png" alt="Academia TEXO" style={{ height: "140px", width: "auto", margin: "0 auto 16px", borderRadius: "12px" }} />
           <p className="text-white/60 text-sm mt-1">
             Plataforma de autoformación interna
           </p>
