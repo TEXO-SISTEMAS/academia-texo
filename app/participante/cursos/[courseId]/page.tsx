@@ -304,9 +304,7 @@ export default function CourseViewPage() {
             </p>
           )}
           <h1 className="text-base font-bold text-gray-900 dark:text-white">
-            {course.courseNumber !== undefined
-              ? `Propedéutico TEXO N° ${course.courseNumber} — ${course.title}`
-              : course.title}
+            {course.title}
           </h1>
 
           {/* Barra de progreso general del curso */}
