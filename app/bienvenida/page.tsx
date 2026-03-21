@@ -59,9 +59,9 @@ export default function BienvenidaPage() {
         {/* Logo */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/LA ACADEMIA_NEWSLETTER.png"
+          src="/logo.png"
           alt="Academia TEXO"
-          style={{ height: "160px", width: "auto", margin: "0 auto 2rem", borderRadius: "12px", boxShadow: "0 0 0 3px rgba(255,255,255,0.1)" }}
+          style={{ height: "80px", width: "auto", margin: "0 auto 24px" }}
         />
 
         {/* Bienvenida */}
