@@ -280,7 +280,8 @@ function VideoResource({
   const videoRef        = useRef<HTMLVideoElement>(null);
   const watchedSetRef   = useRef(new Set<number>());
   const lastSavedRef    = useRef(0);
-  const seekingRef      = useRef(false); // true mientras el usuario adelanta/retrocede
+  const seekingRef      = useRef(false);
+  const lastTimeRef     = useRef(0);
 
   const [watchedPct,  setWatchedPct]  = useState(0);
   const [useFallback, setUseFallback] = useState(!streamSrc);
@@ -298,22 +299,33 @@ function VideoResource({
     }).catch(() => {});
   }, [userId, courseId, resourceId]);
 
-  // onSeeking: el usuario inicia un adelanto/retroceso — pausar tracking
   function handleSeeking() {
     seekingRef.current = true;
   }
 
-  // onSeeked: terminó el salto — reanudar tracking (sin contar el segundo destino)
   function handleSeeked() {
     seekingRef.current = false;
+    // Actualizar lastTimeRef a la posición destino para que el próximo
+    // timeupdate no crea que es un avance normal de 1 segundo
+    const video = videoRef.current;
+    if (video) lastTimeRef.current = video.currentTime;
   }
 
   function handleTimeUpdate() {
-    // Si está haciendo seek, no contar esos segundos
-    if (seekingRef.current) return;
     const video = videoRef.current;
     if (!video || !video.duration) return;
-    watchedSetRef.current.add(Math.floor(video.currentTime));
+
+    const current = Math.floor(video.currentTime);
+    const last    = Math.floor(lastTimeRef.current);
+
+    // Solo contar si es reproducción normal (avance de 1 segundo o mismo segundo)
+    // Un salto produce current >> last + 1, así que se ignora aunque seekingRef sea false
+    if (!seekingRef.current && (current === last + 1 || current === last)) {
+      watchedSetRef.current.add(current);
+    }
+
+    lastTimeRef.current = video.currentTime;
+
     const pct = Math.min(100, Math.round((watchedSetRef.current.size / video.duration) * 100));
     setWatchedPct(pct);
 
