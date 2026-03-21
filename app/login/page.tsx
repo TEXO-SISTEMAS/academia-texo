@@ -71,7 +71,7 @@ export default function LoginPage() {
           <img
             src="/LA_ACADEMIA_NEWSLETTER.png"
             alt="La Academia TEXO"
-            style={{ height: "160px", width: "auto", borderRadius: "12px", marginBottom: "1.5rem" }}
+            style={{ height: "160px", width: "auto", borderRadius: "12px", display: "block", margin: "0 auto 1.5rem" }}
           />
           <p className="text-white/60 text-sm mt-1">
             Plataforma de autoformación interna
