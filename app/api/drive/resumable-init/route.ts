@@ -58,16 +58,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "GOOGLE_DRIVE_FOLDER_ID no configurado" }, { status: 500 });
     }
 
-    const { fileName, mimeType, fileSize, courseTitle } = await req.json() as {
+    const { fileName, mimeType, fileSize, courseTitle, courseId } = await req.json() as {
       fileName: string;
       mimeType: string;
       fileSize: number;
       courseTitle: string;
+      courseId?: string;
     };
+
+    const folderName = courseId
+      ? `${courseTitle || "General"} [${courseId.slice(0, 6)}]`
+      : (courseTitle || "General");
 
     const accessToken = await getAccessToken();
 
-    const folderId = await findOrCreateFolder(accessToken, courseTitle || "General", ROOT_FOLDER_ID);
+    const folderId = await findOrCreateFolder(accessToken, folderName, ROOT_FOLDER_ID);
 
     const initRes = await fetch(
       "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",

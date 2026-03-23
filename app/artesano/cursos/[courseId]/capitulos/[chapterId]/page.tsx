@@ -239,6 +239,7 @@ export default function ChapterResourcesPage() {
           onSubmit={handleCreateResource}
           onCancel={() => setShowCreateForm(false)}
           courseTitle={courseTitle}
+          courseId={courseId}
         />
       )}
 
@@ -248,6 +249,7 @@ export default function ChapterResourcesPage() {
           onSubmit={handleEditResource}
           onCancel={() => setEditingResource(null)}
           courseTitle={courseTitle}
+          courseId={courseId}
         />
       )}
     </div>

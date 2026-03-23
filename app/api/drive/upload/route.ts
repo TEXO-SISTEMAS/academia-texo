@@ -63,9 +63,13 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const courseTitle = (formData.get("courseTitle") as string | null) ?? "General";
+    const courseId = (formData.get("courseId") as string | null) ?? "";
+    const folderName = courseId
+      ? `${courseTitle} [${courseId.slice(0, 6)}]`
+      : courseTitle;
 
     console.log("[drive/upload] Archivo recibido:", file?.name, "| tamaño:", file?.size, "| tipo:", file?.type);
-    console.log("[drive/upload] courseTitle:", courseTitle);
+    console.log("[drive/upload] courseTitle:", courseTitle, "| courseId:", courseId, "| folderName:", folderName);
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -75,11 +79,11 @@ export async function POST(req: NextRequest) {
     const drive = google.drive({ version: "v3", auth });
 
     // Buscar o crear subcarpeta del curso en el Shared Drive
-    console.log("[drive/upload] Buscando carpeta:", courseTitle, "en", ROOT_FOLDER_ID);
-    let folderId = await findFolder(drive, courseTitle, ROOT_FOLDER_ID);
+    console.log("[drive/upload] Buscando carpeta:", folderName, "en", ROOT_FOLDER_ID);
+    let folderId = await findFolder(drive, folderName, ROOT_FOLDER_ID);
     if (!folderId) {
       console.log("[drive/upload] Carpeta no encontrada, creando...");
-      folderId = await createFolder(drive, courseTitle, ROOT_FOLDER_ID);
+      folderId = await createFolder(drive, folderName, ROOT_FOLDER_ID);
       console.log("[drive/upload] Carpeta creada:", folderId);
     } else {
       console.log("[drive/upload] Carpeta existente:", folderId);

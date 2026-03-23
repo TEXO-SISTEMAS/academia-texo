@@ -21,6 +21,7 @@ interface Props {
   onCancel: () => void;
   initialResource?: Resource;
   courseTitle?: string;
+  courseId?: string;
 }
 
 type SourceMode = "upload" | "text";
@@ -123,6 +124,7 @@ export default function ResourceForm({
   onCancel,
   initialResource,
   courseTitle = "General",
+  courseId = "",
 }: Props) {
   const isEditing = !!initialResource;
 
@@ -257,7 +259,8 @@ export default function ResourceForm({
     try {
       const uploader = isVideo ? uploadVideoDirectToDrive : uploadFileToDrive;
       const result = await uploader(file, courseTitle, (pct) =>
-        setDriveUploadPct(pct)
+        setDriveUploadPct(pct),
+        courseId
       );
       setDriveUploadPct(null);
       setDriveUploadedName(file.name);

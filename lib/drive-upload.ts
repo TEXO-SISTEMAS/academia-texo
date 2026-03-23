@@ -8,7 +8,8 @@ export interface DriveUploadResult {
 export async function uploadVideoDirectToDrive(
   file: File,
   courseTitle: string,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  courseId = ""
 ): Promise<DriveUploadResult> {
   // 1. Iniciar resumable upload — obtiene la uploadUrl de Drive
   const initRes = await fetch("/api/drive/resumable-init", {
@@ -19,6 +20,7 @@ export async function uploadVideoDirectToDrive(
       mimeType:    file.type || "video/mp4",
       fileSize:    file.size,
       courseTitle: courseTitle,
+      courseId:    courseId,
     }),
   });
 
@@ -86,12 +88,14 @@ export async function uploadVideoDirectToDrive(
 export async function uploadFileToDrive(
   file: File,
   courseTitle: string,
-  onProgress?: (pct: number) => void
+  onProgress?: (pct: number) => void,
+  courseId = ""
 ): Promise<DriveUploadResult> {
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("courseTitle", courseTitle);
+    formData.append("courseId", courseId);
 
     const xhr = new XMLHttpRequest();
 
