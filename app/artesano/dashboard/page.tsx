@@ -3,19 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { getCoursesByArtesano, deleteCourse } from "@/lib/firestore";
+import { getCoursesByArtesano } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import type { Course } from "@/types";
 import CourseFormModal from "@/components/artesano/CourseFormModal";
 import Button from "@/components/shared/Button";
-import { confirmToast } from "@/components/shared/ConfirmToast";
-
 export default function ArtesanoDashboard() {
   const { firebaseUser } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     if (!firebaseUser) return;
@@ -31,26 +28,6 @@ export default function ArtesanoDashboard() {
   useEffect(() => {
     loadCourses();
   }, [loadCourses]);
-
-  function handleDeleteClick(course: Course) {
-    confirmToast(
-      "⚠️ Esto eliminará el propedéutico y todo su contenido. No se puede deshacer.",
-      () => doDelete(course.id)
-    );
-  }
-
-  async function doDelete(courseId: string) {
-    setDeletingId(courseId);
-    try {
-      await deleteCourse(courseId);
-      setCourses((prev) => prev.filter((c) => c.id !== courseId));
-      toast.success("Propedéutico eliminado");
-    } catch {
-      toast.error("Ocurrió un error. Intentá de nuevo.");
-    } finally {
-      setDeletingId(null);
-    }
-  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -125,24 +102,6 @@ export default function ArtesanoDashboard() {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <button
-                  onClick={() => handleDeleteClick(course)}
-                  disabled={deletingId === course.id}
-                  title="Archivar propedéutico"
-                  className="flex items-center justify-center border border-texo-rojo/30 text-texo-rojo rounded-lg hover:bg-texo-rojo/10 transition-colors disabled:opacity-40"
-                  style={{ width: 36, height: 36 }}
-                >
-                  {deletingId === course.id ? (
-                    <span className="text-xs">...</span>
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3 6 5 6 21 6"/>
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                      <path d="M10 11v6M14 11v6"/>
-                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                    </svg>
-                  )}
-                </button>
                 <Link
                   href={`/artesano/cursos/${course.id}`}
                   className="text-sm px-4 py-1.5 bg-texo-amarillo text-texo-azul font-semibold rounded-lg hover:bg-texo-amarillo/90 transition-colors whitespace-nowrap"

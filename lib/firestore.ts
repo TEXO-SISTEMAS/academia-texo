@@ -64,16 +64,7 @@ function silentAudit(data: {
   resourceTitle: string;
 }): void {
   const run = async () => {
-    let userEmail = data.userEmail;
-    // Fallback 1: si userId es un email (custom token con email como UID)
-    if (!userEmail && data.userId?.includes("@")) {
-      userEmail = data.userId;
-    }
-    // Fallback 2: buscar email en Firestore users/{userId}
-    if (!userEmail && data.userId) {
-      const snap = await getDoc(doc(db, "users", data.userId));
-      if (snap.exists()) userEmail = (snap.data().email as string) ?? "";
-    }
+    const userEmail = data.userEmail || (data.userId?.includes("@") ? data.userId : "");
     await addAuditLog({ type: "content", ...data, userEmail });
   };
   run().catch(() => {});
