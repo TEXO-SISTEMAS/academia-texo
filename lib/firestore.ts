@@ -325,6 +325,34 @@ export async function updateChapter(
   });
 }
 
+export async function deleteChapter(
+  courseId: string,
+  chapterId: string
+): Promise<void> {
+  const deletedAt = serverTimestamp();
+  const chapterRef = doc(db, "courses", courseId, "chapters", chapterId);
+  const snap = await getDoc(chapterRef);
+  const chapterTitle = snap.exists() ? (snap.data().title as string) : chapterId;
+
+  const resourcesSnap = await getDocs(
+    collection(db, "courses", courseId, "chapters", chapterId, "resources")
+  );
+  const batch = writeBatch(db);
+  for (const resourceDoc of resourcesSnap.docs) {
+    batch.update(resourceDoc.ref, { deleted: true, deletedAt });
+  }
+  batch.update(chapterRef, { deleted: true, deletedAt });
+  await batch.commit();
+
+  silentAudit({
+    userId: auth.currentUser?.uid ?? "",
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Archivó capítulo: ${chapterTitle}`,
+    resourceType: "chapter",
+    resourceTitle: chapterTitle,
+  });
+}
+
 export async function reorderChapters(
   courseId: string,
   orderedIds: string[]
@@ -463,6 +491,16 @@ export async function enrollParticipant(
     courseId,
     userId,
   });
+
+  const courseSnap = await getDoc(doc(db, "courses", courseId));
+  const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
+  silentAudit({
+    userId,
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Participante inscripto en: ${courseTitle}`,
+    resourceType: "course",
+    resourceTitle: courseTitle,
+  });
 }
 
 export async function markResourceCompleted(
@@ -490,6 +528,14 @@ export async function markResourceCompleted(
   };
 
   await setDoc(progressRef, payload);
+
+  silentAudit({
+    userId,
+    userEmail: auth.currentUser?.email ?? "",
+    action: `Completó recurso: ${resourceId}`,
+    resourceType: "resource",
+    resourceTitle: resourceId,
+  });
 }
 
 export async function getResourceProgress(
