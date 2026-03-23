@@ -128,7 +128,9 @@ export default function CourseViewPage() {
 
   const completedChapters = chaptersData.filter((_, i) => isChapterCompleted(i)).length;
   const totalChapters = chaptersData.length;
-  const coursePct = totalChapters > 0 ? Math.round((completedChapters / totalChapters) * 100) : 0;
+  const totalResources = chaptersData.reduce((sum, { resources }) => sum + resources.length, 0);
+  const completedResources = chaptersData.flatMap(({ resources }) => resources).filter((r) => progress[r.id] === true).length;
+  const coursePct = totalResources > 0 ? Math.round((completedResources / totalResources) * 100) : 0;
 
   const activeChapterData = chaptersData[activeChapterIdx] ?? null;
   const activeResource =
