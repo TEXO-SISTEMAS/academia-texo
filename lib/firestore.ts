@@ -63,7 +63,15 @@ function silentAudit(data: {
   resourceType: string;
   resourceTitle: string;
 }): void {
-  addAuditLog({ type: "content", ...data }).catch(() => {});
+  const run = async () => {
+    let userEmail = data.userEmail;
+    if (!userEmail && data.userId) {
+      const snap = await getDoc(doc(db, "users", data.userId));
+      if (snap.exists()) userEmail = (snap.data().email as string) ?? "";
+    }
+    await addAuditLog({ type: "content", ...data, userEmail });
+  };
+  run().catch(() => {});
 }
 
 export function recordLoginBackground(userId: string, userAgent: string): void {
