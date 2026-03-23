@@ -172,6 +172,26 @@ export type TypedResource =
   | TextResource
   | FileResource;
 
+// ─── Admin ────────────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: string;
+  type: string;
+  userId: string;
+  userEmail: string;
+  action: string;
+  resourceType: string;
+  resourceTitle: string;
+  timestamp: Timestamp;
+}
+
+export interface AllowedUser {
+  id: string; // document ID = email (uid para custom tokens)
+  name: string;
+  role: UserRole;
+  createdAt?: Timestamp;
+}
+
 // ─── Progress ─────────────────────────────────────────────────────────────────
 
 export interface CourseEnrollment {

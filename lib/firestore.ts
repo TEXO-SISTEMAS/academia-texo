@@ -15,7 +15,14 @@ import {
   documentId,
   Timestamp,
   increment,
+  limit,
+  startAfter,
+  deleteDoc,
+  deleteField,
 } from "firebase/firestore";
+import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
+
+export type AuditCursor = QueryDocumentSnapshot<DocumentData>;
 import { db, auth } from "@/lib/firebase";
 
 /** Elimina recursivamente todos los campos undefined de un objeto antes de enviarlo a Firestore. */
@@ -41,6 +48,8 @@ import type {
   ResourceType,
   ResourceProgress,
   CourseEnrollment,
+  AuditLogEntry,
+  AllowedUser,
 } from "@/types";
 
 // ─── Auditoría silenciosa ──────────────────────────────────────────────────────
@@ -810,4 +819,50 @@ export async function updateResourceEngagement(
       totalTimeSpent: increment(data.timeSpent),
     }).catch(() => {});
   }
+}
+
+// ─── Admin ─────────────────────────────────────────────────────────────────────
+
+export async function getAuditLogs(
+  pageSize: number,
+  cursor?: AuditCursor
+): Promise<{ logs: AuditLogEntry[]; nextCursor: AuditCursor | null }> {
+  const q = cursor
+    ? query(collection(db, "auditLog"), orderBy("timestamp", "desc"), startAfter(cursor), limit(pageSize))
+    : query(collection(db, "auditLog"), orderBy("timestamp", "desc"), limit(pageSize));
+  const snap = await getDocs(q);
+  const logs = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AuditLogEntry));
+  const nextCursor = snap.docs.length > 0 ? snap.docs[snap.docs.length - 1] : null;
+  return { logs, nextCursor };
+}
+
+export async function getArchivedCourses(): Promise<Course[]> {
+  const q = query(collection(db, "courses"), where("deleted", "==", true), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course));
+}
+
+export async function restoreCourse(courseId: string): Promise<void> {
+  await updateDoc(doc(db, "courses", courseId), {
+    deleted: false,
+    deletedAt: deleteField(),
+  });
+}
+
+export async function getAllowedUsers(): Promise<AllowedUser[]> {
+  const snap = await getDocs(collection(db, "allowedUsers"));
+  return snap.docs.map((d) => ({
+    id: d.id,
+    name: (d.data().name as string) ?? "",
+    role: ((d.data().role as string) ?? "participante") as UserRole,
+    createdAt: d.data().createdAt as Timestamp | undefined,
+  }));
+}
+
+export async function addAllowedUser(email: string, name: string, role: UserRole): Promise<void> {
+  await setDoc(doc(db, "allowedUsers", email), { name, role, createdAt: serverTimestamp() });
+}
+
+export async function removeAllowedUser(uid: string): Promise<void> {
+  await deleteDoc(doc(db, "allowedUsers", uid));
 }

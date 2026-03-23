@@ -40,6 +40,9 @@ export default function Navbar({ links = [] }: NavbarProps) {
   }, [firebaseUser]);
 
   const displayName = userName || firebaseUser?.email?.split("@")[0] || "";
+  const isAdmin =
+    firebaseUser?.uid === "danilo.sosa@texo.com.py" ||
+    firebaseUser?.email === "danilo.sosa@texo.com.py";
 
   function toggleTheme() {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -55,7 +58,7 @@ export default function Navbar({ links = [] }: NavbarProps) {
         </Link>
 
         {/* Desktop links */}
-        {links.length > 0 && (
+        {(links.length > 0 || isAdmin) && (
           <div className="hidden md:flex items-center gap-1 ml-4">
             {links.map((link) => (
               <Link
@@ -66,6 +69,14 @@ export default function Navbar({ links = [] }: NavbarProps) {
                 {link.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="px-3 py-1.5 rounded text-sm bg-texo-amarillo/20 text-texo-amarillo hover:bg-texo-amarillo/30 transition-colors font-medium"
+              >
+                Admin
+              </Link>
+            )}
           </div>
         )}
 
@@ -120,6 +131,15 @@ export default function Navbar({ links = [] }: NavbarProps) {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setMenuOpen(false)}
+              className="px-3 py-2 rounded text-sm text-texo-amarillo font-medium hover:bg-white/10 transition-colors"
+            >
+              Admin
+            </Link>
+          )}
           {displayName && (
             <p className="px-3 py-1 text-sm text-white/70">Hola, {displayName}</p>
           )}

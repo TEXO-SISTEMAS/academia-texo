@@ -45,6 +45,13 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Ruta admin: solo artesanos (la página verifica el email exacto)
+  if (pathname.startsWith("/admin") && role !== "artesano") {
+    return NextResponse.redirect(
+      new URL(role === "participante" ? "/participante/dashboard" : "/login", request.url)
+    );
+  }
+
   // Acceso por rol: artesanos no acceden a rutas de participante y viceversa
   if (pathname.startsWith("/artesano") && role !== "artesano") {
     return NextResponse.redirect(
