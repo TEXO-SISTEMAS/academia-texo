@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Primer login: requiere cambio de contraseña obligatorio
     if (data.requiresPasswordChange) {
       if (typeof window !== "undefined") {
-        sessionStorage.setItem(PENDING_TOKEN_KEY, data.tempToken as string);
+        sessionStorage.setItem(PENDING_TOKEN_KEY, data.idToken as string);
       }
       return { requiresPasswordChange: true };
     }

@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { signInWithCustomToken } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
 import {
   getPendingPasswordChangeToken,
   clearPendingPasswordChangeToken,
@@ -12,8 +11,18 @@ import { recordLoginBackground } from "@/lib/firestore";
 import { setCookie } from "@/lib/cookies";
 import Button from "@/components/shared/Button";
 
+function decodeEmailFromIdToken(idToken: string): string | null {
+  try {
+    const payload = JSON.parse(atob(idToken.split(".")[1]));
+    return typeof payload.email === "string" ? payload.email : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function CambiarContrasenaPage() {
   const [ready, setReady] = useState(false);
+  const [idToken, setIdToken] = useState<string | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -27,17 +36,11 @@ export default function CambiarContrasenaPage() {
       window.location.replace("/login");
       return;
     }
-
-    signInWithCustomToken(auth, token)
-      .then((cred) => {
-        clearPendingPasswordChangeToken();
-        setCookie("user-role", "artesano");
-        setEmail(cred.user.email);
-        setReady(true);
-      })
-      .catch(() => {
-        window.location.replace("/login");
-      });
+    clearPendingPasswordChangeToken();
+    const decodedEmail = decodeEmailFromIdToken(token);
+    setIdToken(token);
+    setEmail(decodedEmail);
+    setReady(true);
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,38 +56,56 @@ export default function CambiarContrasenaPage() {
       return;
     }
 
+    if (!idToken) {
+      setError("Sesión expirada. Volvé a iniciar sesión.");
+      return;
+    }
+
     setProcessing(true);
 
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) throw new Error("Sesión inválida.");
-
-      const idToken = await user.getIdToken();
       const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 
-      const res = await fetch(
+      // 1. Cambiar contraseña con el idToken de Firebase
+      const updateRes = await fetch(
         `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ idToken, password: newPassword, returnSecureToken: false }),
+          body: JSON.stringify({ idToken, password: newPassword, returnSecureToken: true }),
         }
       );
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        console.error("[cambiar-contrasena] Firebase error:", errData);
+      if (!updateRes.ok) {
+        const errData = await updateRes.json().catch(() => ({}));
+        console.error("[cambiar-contrasena] accounts:update error:", errData);
         throw new Error("Error al cambiar la contraseña. Intentá de nuevo.");
       }
 
-      // Marcar como completado en Firestore
-      const emailKey = user.email.toLowerCase();
-      await updateDoc(doc(db, "allowedUsers", emailKey), {
-        forcePasswordChange: false,
+      const updateData = await updateRes.json() as { idToken?: string };
+      const newIdToken = updateData.idToken ?? "";
+
+      // 2. Verificar nuevo idToken en el servidor, limpiar forcePasswordChange, obtener custom token
+      const completeRes = await fetch("/api/auth/complete-password-change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: newIdToken }),
       });
 
+      if (!completeRes.ok) {
+        const errData = await completeRes.json().catch(() => ({}));
+        console.error("[cambiar-contrasena] complete-password-change error:", errData);
+        throw new Error("Error al finalizar el cambio. Intentá de nuevo.");
+      }
+
+      const { token: customToken } = await completeRes.json() as { token: string };
+
+      // 3. Establecer sesión Firebase con el custom token
+      await signInWithCustomToken(auth, customToken);
+
       setCookie("user-role", "artesano");
-      recordLoginBackground(user.uid, navigator.userAgent);
+      const uid = auth.currentUser?.uid;
+      if (uid) recordLoginBackground(uid, navigator.userAgent);
 
       setSuccess(true);
       setTimeout(() => {

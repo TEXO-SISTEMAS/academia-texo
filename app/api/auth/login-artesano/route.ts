@@ -59,18 +59,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "auth_error" }, { status: 500 });
     }
 
-    // 3. Contraseña correcta → generar custom token
+    // 3. Leer idToken de la respuesta de Firebase
+    const firebaseData = await firebaseRes.json() as { idToken?: string };
+    const firebaseIdToken = firebaseData.idToken ?? "";
+
+    // 4. Si requiere cambio de contraseña, retornar idToken real (no custom token)
+    const forcePasswordChange = userData.forcePasswordChange === true;
+    if (forcePasswordChange) {
+      console.log("[login-artesano] forcePasswordChange para:", email);
+      return NextResponse.json({ requiresPasswordChange: true, idToken: firebaseIdToken, role, name });
+    }
+
+    // 5. Login normal → generar custom token
     const adminAuth = getAdminAuth();
     const token = await adminAuth.createCustomToken(email, { role });
 
     console.log("[login-artesano] token generado para:", email);
-
-    // 4. Si requiere cambio de contraseña, retornar tempToken sin hacer login
-    const forcePasswordChange = userData.forcePasswordChange === true;
-    if (forcePasswordChange) {
-      return NextResponse.json({ requiresPasswordChange: true, tempToken: token, role, name });
-    }
-
     return NextResponse.json({ token, role, name });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";
