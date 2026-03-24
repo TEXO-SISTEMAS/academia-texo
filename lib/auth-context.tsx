@@ -8,15 +8,18 @@ import {
   ReactNode,
 } from "react";
 
-// Almacenamiento temporal del token durante el flujo de cambio de contraseña obligatorio
-let _pendingPasswordChangeToken: string | null = null;
+// Almacenamiento temporal del token durante el flujo de cambio de contraseña obligatorio.
+// Usa sessionStorage para sobrevivir la navegación completa de window.location.replace().
+const PENDING_TOKEN_KEY = "pending-password-change-token";
 
 export function getPendingPasswordChangeToken(): string | null {
-  return _pendingPasswordChangeToken;
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(PENDING_TOKEN_KEY);
 }
 
 export function clearPendingPasswordChangeToken(): void {
-  _pendingPasswordChangeToken = null;
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(PENDING_TOKEN_KEY);
 }
 import {
   User as FirebaseUser,
@@ -143,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Primer login: requiere cambio de contraseña obligatorio
     if (data.requiresPasswordChange) {
-      _pendingPasswordChangeToken = data.tempToken as string;
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(PENDING_TOKEN_KEY, data.tempToken as string);
+      }
       return { requiresPasswordChange: true };
     }
 

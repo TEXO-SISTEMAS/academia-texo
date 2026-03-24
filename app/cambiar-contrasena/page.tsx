@@ -31,6 +31,7 @@ export default function CambiarContrasenaPage() {
     signInWithCustomToken(auth, token)
       .then((cred) => {
         clearPendingPasswordChangeToken();
+        setCookie("user-role", "artesano");
         setEmail(cred.user.email);
         setReady(true);
       })
