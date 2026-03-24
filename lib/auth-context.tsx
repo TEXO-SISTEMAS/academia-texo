@@ -7,6 +7,17 @@ import {
   useState,
   ReactNode,
 } from "react";
+
+// Almacenamiento temporal del token durante el flujo de cambio de contraseña obligatorio
+let _pendingPasswordChangeToken: string | null = null;
+
+export function getPendingPasswordChangeToken(): string | null {
+  return _pendingPasswordChangeToken;
+}
+
+export function clearPendingPasswordChangeToken(): void {
+  _pendingPasswordChangeToken = null;
+}
 import {
   User as FirebaseUser,
   onAuthStateChanged,
@@ -23,7 +34,7 @@ interface AuthContextType {
   userRole: UserRole | null;
   loading: boolean;
   login: (email: string) => Promise<{ role: UserRole } | { requiresPassword: true; role: UserRole; name: string }>;
-  loginWithPassword: (email: string, password: string) => Promise<{ role: UserRole }>;
+  loginWithPassword: (email: string, password: string) => Promise<{ role: UserRole } | { requiresPasswordChange: true }>;
   logout: () => Promise<void>;
 }
 
@@ -111,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { role };
   }
 
-  async function loginWithPassword(email: string, password: string): Promise<{ role: UserRole }> {
+  async function loginWithPassword(email: string, password: string): Promise<{ role: UserRole } | { requiresPasswordChange: true }> {
     const res = await fetch("/api/auth/login-artesano", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -128,6 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error("Tu correo no está autorizado. Contactá al administrador.");
       }
       throw new Error("Error al verificar acceso. Intentá de nuevo.");
+    }
+
+    // Primer login: requiere cambio de contraseña obligatorio
+    if (data.requiresPasswordChange) {
+      _pendingPasswordChangeToken = data.tempToken as string;
+      return { requiresPasswordChange: true };
     }
 
     await signInWithCustomToken(auth, data.token);

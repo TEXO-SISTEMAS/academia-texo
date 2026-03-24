@@ -43,7 +43,12 @@ export default function LoginPage() {
     setProcessing(true);
 
     try {
-      const { role } = await loginWithPassword(email.trim().toLowerCase(), password);
+      const result = await loginWithPassword(email.trim().toLowerCase(), password);
+      if ("requiresPasswordChange" in result && result.requiresPasswordChange) {
+        window.location.replace("/cambiar-contrasena");
+        return;
+      }
+      const { role } = result as { role: string };
       window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");

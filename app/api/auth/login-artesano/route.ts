@@ -64,6 +64,13 @@ export async function POST(req: NextRequest) {
     const token = await adminAuth.createCustomToken(email, { role });
 
     console.log("[login-artesano] token generado para:", email);
+
+    // 4. Si requiere cambio de contraseña, retornar tempToken sin hacer login
+    const forcePasswordChange = userData.forcePasswordChange === true;
+    if (forcePasswordChange) {
+      return NextResponse.json({ requiresPasswordChange: true, tempToken: token, role, name });
+    }
+
     return NextResponse.json({ token, role, name });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";

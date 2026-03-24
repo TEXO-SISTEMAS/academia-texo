@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
       .get();
 
     console.log("[verify] allowedUsers doc exists:", docSnap.exists, "| email:", normalizedEmail);
+    console.log('[verify] buscando email:', normalizedEmail);
+    console.log('[verify] doc exists:', docSnap.exists);
+    console.log('[verify] doc data:', docSnap.data());
 
     if (!docSnap.exists) {
       return NextResponse.json({ error: "not_authorized" }, { status: 403 });
