@@ -6,7 +6,11 @@
       "Bash(npx tsc:*)",
       "Bash(ls:*)",
       "Bash(node:*)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(mv:*)",
+      "Bash(xxd:*)",
+      "Bash(iconv:*)",
+      "Bash(python3:*)"
     ]
   }
 }

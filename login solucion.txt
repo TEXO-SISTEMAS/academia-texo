@@ -1,0 +1,33 @@
+Al hacer login, la pantalla se queda en "Verificando acceso..." 
+y no redirige automáticamente. Hay que recargar la página manualmente.
+
+El problema está en lib/auth-context.tsx, función login() o loginWithPassword():
+Después de signInWithCustomToken, la redirección no ocurre correctamente.
+
+Por favor:
+1. Mostrá el código actual de login() y loginWithPassword() completos
+2. Verificá que después de signInWithCustomToken se ejecuta router.push()
+3. El problema probable: router.push() se ejecuta antes de que 
+   onAuthStateChanged detecte el nuevo usuario y setee la cookie user-role
+   
+Solución: esperar a que onAuthStateChanged confirme la sesión antes de redirigir:
+
+En login() y loginWithPassword(), después de signInWithCustomToken:
+- Esperar a que el estado de auth cambie usando una Promise:
+
+await new Promise<void>((resolve) => {
+  const unsubscribe = auth.onAuthStateChanged((user) => {
+    if (user) {
+      unsubscribe()
+      resolve()
+    }
+  })
+})
+
+// Ahora sí redirigir
+if (role === 'participante') router.push('/bienvenida')
+if (role === 'artesano') router.push('/artesano/dashboard')
+
+git add .
+git commit -m "fix: wait for auth state before redirect"
+git push origin main

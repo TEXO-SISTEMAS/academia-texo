@@ -8,20 +8,20 @@ Agregar numeración automática e iterativa a los propedéuticos.
    - Asignar courseNumber = total + 1
    - Guardarlo en el documento
 
-3. MOSTRAR el número en formato "Propedéutico TEXO N° X — [título]" en:
+3. MOSTRAR el número en formato "PROPEDÉUTICO TEXO N° X — [título]" en:
 
    Panel Artesano:
    - /artesano/dashboard → cada curso en la lista muestra 
-     "Propedéutico TEXO N° X" como subtítulo debajo del título
+     "PROPEDÉUTICO TEXO N° X" como subtítulo debajo del título
    - /artesano/cursos/[courseId] → título de la página
 
    Panel Participante:
    - /participante/dashboard → CourseCard muestra 
-     "Propedéutico TEXO N° X" arriba del título en texto pequeño 
+     "PROPEDÉUTICO TEXO N° X" arriba del título en texto pequeño 
      color texo-amarillo
    - /participante/cursos/[courseId] → título completo en el header:
-     "Propedéutico TEXO N° X — [título]"
-   - Barra de progreso: "Propedéutico TEXO N° X" como label
+     "PROPEDÉUTICO TEXO N° X — [título]"
+   - Barra de progreso: "PROPEDÉUTICO TEXO N° X" como label
 
    Pantalla de bienvenida:
    - Si hay propedéuticos disponibles, mostrar 

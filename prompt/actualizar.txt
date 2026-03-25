@@ -10,7 +10,6 @@ Quiero mejorar el diseño visual de la plataforma con estos cambios específicos
 2. FOOTER en todos los layouts (participante y artesano):
    - Fondo texo-azul (#31484E)
    - Texto blanco: "Danilo Sosa | Texo Sistemas"
-   - Año actual a la derecha: "© 2026"
    - Separador con línea amarilla (texo-amarillo) arriba del footer
    - Altura: 48px, texto centrado verticalmente
 
