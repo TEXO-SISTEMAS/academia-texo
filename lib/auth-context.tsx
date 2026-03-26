@@ -94,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const data = await res.json();
+    console.log("[LOGIN] response del verify:", data);
+    console.log("[LOGIN] token recibido:", data.token ? data.token.slice(0, 40) + "..." : "null/undefined");
 
     if (!res.ok || data.error) {
       if (data.error === "not_authorized") {
@@ -107,17 +109,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { requiresPassword: true, role: data.role as UserRole, name: data.name as string };
     }
 
-    await signInWithCustomToken(auth, data.token);
+    console.log("[LOGIN] llamando signInWithCustomToken...");
+    try {
+      await signInWithCustomToken(auth, data.token);
+      console.log("[LOGIN] signInWithCustomToken OK, auth.currentUser:", auth.currentUser?.uid ?? "null");
+    } catch (signInErr) {
+      console.error("[LOGIN] signInWithCustomToken ERROR:", signInErr);
+      throw signInErr;
+    }
 
     // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
+    console.log("[LOGIN] esperando onAuthStateChanged...");
     await new Promise<void>((resolve) => {
       const unsub = onAuthStateChanged(auth, (user) => {
+        console.log("[LOGIN] onAuthStateChanged fired:", user ? user.uid : "null");
         if (user) { unsub(); resolve(); }
       });
     });
 
     const role = data.role as UserRole;
     setCookie("user-role", role);
+    console.log("[LOGIN] cookie seteada, role:", role);
+    console.log("[LOGIN] antes de redirect");
 
     const uid = auth.currentUser?.uid;
     if (uid) recordLoginBackground(uid, navigator.userAgent);
