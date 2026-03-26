@@ -5,7 +5,7 @@ export interface DriveUploadResult {
   pdfFileId?: string; // presente si el archivo fue convertido a PDF (DOCX/PPT)
 }
 
-export async function uploadVideoDirectToDrive(
+export async function uploadFileResumable(
   file: File,
   courseTitle: string,
   onProgress?: (pct: number) => void,
