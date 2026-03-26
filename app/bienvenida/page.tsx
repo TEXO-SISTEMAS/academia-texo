@@ -8,6 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { getAllPublishedCourses } from "@/lib/firestore";
 
 export default function BienvenidaPage() {
+  console.log("[BIENVENIDA] COMPONENTE MONTADO");
+  if (typeof document !== "undefined") {
+    console.log("[BIENVENIDA] cookies:", document.cookie);
+  }
+
   const { firebaseUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState<string>("");
