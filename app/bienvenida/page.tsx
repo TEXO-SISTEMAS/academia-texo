@@ -13,6 +13,7 @@ export default function BienvenidaPage() {
   const [displayName, setDisplayName] = useState<string>("");
   const [nameLoading, setNameLoading] = useState(true);
   const [courseCount, setCourseCount] = useState<number | null>(null);
+  const [destHref, setDestHref] = useState("/participante/dashboard");
 
   useEffect(() => {
     if (authLoading) return;
@@ -26,16 +27,22 @@ export default function BienvenidaPage() {
       // uid es el email cuando se usa custom token (ej. "danilo.sosa@texo.com.py")
       const emailFallback = uid.includes("@") ? uid.split("@")[0] : uid;
 
-      // Intentar leer el nombre completo desde allowedUsers (ej. "Danilo Sosa")
+      // Leer rol y nombre desde allowedUsers
       const allowedSnap = await getDoc(doc(db, "allowedUsers", uid));
-      if (allowedSnap.exists() && allowedSnap.data().name) {
-        setDisplayName(allowedSnap.data().name as string);
-        setNameLoading(false);
-        return;
+      if (allowedSnap.exists()) {
+        const data = allowedSnap.data();
+        if (data.name) setDisplayName(data.name as string);
+        else setDisplayName(emailFallback);
+
+        const role = data.role as string | undefined;
+        if (role === "admin") setDestHref("/admin");
+        else if (role === "artesano") setDestHref("/artesano/dashboard");
+        else setDestHref("/participante/dashboard");
+      } else {
+        setDisplayName(emailFallback);
+        setDestHref("/participante/dashboard");
       }
 
-      // Fallback: email sin dominio
-      setDisplayName(emailFallback);
       setNameLoading(false);
     }
 
@@ -76,7 +83,7 @@ export default function BienvenidaPage() {
         )}
 
         <button
-          onClick={() => router.replace("/participante/dashboard")}
+          onClick={() => router.replace(destHref)}
           className="inline-flex items-center gap-2 bg-texo-amarillo text-texo-azul font-bold px-8 py-3 rounded-xl text-base hover:bg-texo-amarillo/90 transition-colors shadow-lg"
         >
           Ingresar →
