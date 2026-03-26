@@ -1,0 +1,38 @@
+El timer funciona correctamente pero el guardado se queda trabado.
+
+Los logs muestran:
+"[PDF] Guardando página completa... RSG5lXGpu3MWtOKqDEkF"
+pero nunca aparece "[PDF] Guardado exitoso"
+
+Problema:
+La función que guarda el progreso en Firestore está fallando silenciosamente 
+o el await nunca se resuelve.
+
+Por favor:
+
+1. En TrackedPageViewer.tsx, en la función que se ejecuta cuando se completa 
+   la última página (donde dice "Guardando página completa..."):
+   
+   - Agregá un try/catch completo alrededor de todo el await
+   - Agregá estos logs:
+     console.log('[PDF] Antes de updateResourceProgress')
+     console.log('[PDF] courseId:', courseId, 'resourceId:', resourceId)
+     
+   - Después del await:
+     console.log('[PDF] updateResourceProgress completado')
+     console.log('[PDF] Guardado exitoso')
+     
+   - En el catch:
+     console.error('[PDF] ERROR al guardar:', error)
+
+2. Verificá que updateResourceProgress en lib/firestore.ts:
+   - Esté retornando una Promise correctamente
+   - No tenga código que bloquea el resolve
+   - Tenga su propio try/catch interno con logs
+
+3. El botón "Guardando..." debe cambiar a "Puede avanzar" o similar
+   INMEDIATAMENTE después del await exitoso, no esperar otra cosa
+
+git add .
+git commit -m "debug: add detailed logs for PDF save process"
+git push origin main

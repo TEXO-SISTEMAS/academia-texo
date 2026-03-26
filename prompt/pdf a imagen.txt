@@ -1,0 +1,49 @@
+Implementar conversión de PDF a imágenes usando Google Drive Export API.
+Sin Ghostscript, sin binarios externos, funciona en Vercel.
+
+CÓMO FUNCIONA:
+Google Drive puede exportar archivos como imágenes usando:
+GET https://www.googleapis.com/drive/v3/files/{fileId}/export?mimeType=image/png
+Esto exporta SOLO la primera página. Para las demás páginas no hay export directo.
+
+ALTERNATIVA REAL que funciona para múltiples páginas:
+Usar pdf-lib + sharp en Vercel (ambos son pure JavaScript/WebAssembly):
+npm install pdf-lib @pdf-lib/fontkit
+
+O mejor aún: usar la librería pdfjs-dist en el CLIENTE (browser)
+no en el servidor — en el browser sí funciona perfectamente.
+
+SOLUCIÓN: convertir PDF a imágenes EN EL BROWSER con pdfjs-dist:
+
+1. En ResourceViewer.tsx, para tipo 'pdf':
+   - Descargar el PDF desde Drive como blob usando /api/drive/stream
+   - Usar pdfjs-dist en el cliente para renderizar cada página en un canvas
+   - Convertir cada canvas a base64 PNG
+   - Mostrar las imágenes con el sistema de navegación actual
+
+2. Instalar solo en el cliente:
+   npm install pdfjs-dist
+
+3. En TrackedPageViewer o PdfResource:
+   - Cargar pdfjs-dist dinámicamente: 
+     const pdfjsLib = await import('pdfjs-dist')
+   - Configurar el worker:
+     pdfjsLib.GlobalWorkerOptions.workerSrc = 
+       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+   - Renderizar cada página en un canvas offscreen
+   - Retornar array de dataURL (base64)
+
+4. Mostrar spinner "Procesando PDF..." mientras convierte
+
+5. Una vez convertido a imágenes:
+   - NO hay scroll posible (son imágenes, no iframe)
+   - Los botones ← / → funcionan perfectamente
+   - El timer de 60 segundos por página funciona
+   - Control total sobre lo que ve el participante
+
+6. Para presentaciones PPT subidas como PDF: mismo proceso
+   Para documentos Word subidos: el Artesano debe exportar a PDF primero
+
+git add .
+git commit -m "feat: PDF to images using pdfjs-dist in browser"
+git push origin main

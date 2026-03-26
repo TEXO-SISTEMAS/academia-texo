@@ -1,0 +1,33 @@
+Dos problemas en TrackedPageViewer:
+
+1. BOTÓN "GUARDANDO..." TRABADO:
+   El botón se queda en "Guardando..." y nunca termina.
+   
+   Verificá en la función que guarda el progreso parcial (handlePageComplete o similar):
+   - Debe hacer el await correctamente al llamar updateResourceProgress de Firestore
+   - Después del await exitoso, debe cambiar el estado a "guardado" o volver a "normal"
+   - Si hay error en el try/catch, debe mostrar el error en consola
+   - Agregá logs: console.log('[PDF] Guardando página...', pageNum)
+                  console.log('[PDF] Guardado exitoso')
+
+2. TIMER LENTO/BUGUEADO:
+   El contador de segundos tarda mucho en avanzar o se congela.
+   
+   Cambios:
+   - Reducir el tiempo requerido de 60 segundos a 20 segundos (para testing)
+   - Verificar que el setInterval esté limpiándose correctamente en el useEffect cleanup
+   - El timer debe correr solo cuando la página está visible (no en background)
+   - Agregá log cada segundo: console.log('[Timer] segundo:', currentSecond)
+
+3. VERIFICAR FIRESTORE:
+   Cuando se guarda progreso parcial, debe escribir en:
+   progress/{userId}/courses/{courseId}
+   
+   Dentro del documento, debe actualizar:
+   resources.{resourceId}.lastCompletedPage = número de página
+   
+   Y NO debe marcar completed: true hasta que sea la última página
+
+git add .
+git commit -m "fix: saving button stuck and slow timer in PDF viewer"
+git push origin main

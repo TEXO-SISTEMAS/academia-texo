@@ -1,0 +1,39 @@
+La consola se llena de logs cada segundo. Necesito eliminar todos los logs 
+de debugging que ya no sirven.
+
+Por favor:
+
+1. ELIMINAR estos logs completamente (todo el console.log):
+
+   En TrackedPageViewer.tsx:
+   - Todos los logs que digan "[Timer] página X — segundo: Y/20"
+   - "[Timer] página X completada"
+   - Cualquier otro log de timer
+
+   En PdfResource.tsx:
+   - "[PDF] Guardando página completa..."
+   - "[PDF] Antes de updateResourceEngagement"
+   - "[PDF] courseId:"
+   - Todos los logs de guardado
+
+   En lib/firestore.ts:
+   - "[Firestore] updateResourceEngagement llamado:"
+   - "[Firestore] Ruta completa:"
+   - "[Firestore] Datos a guardar:"
+   - "[Firestore] setDoc completado exitosamente"
+   - Cualquier log de Firestore excepto los de ERROR
+
+2. MANTENER solo estos logs:
+
+   En /app/participante/cursos/[courseId]/page.tsx:
+   - "[Progress] progressData cargado:"
+   - "[Progress] completedResources:"
+   
+   En lib/firestore.ts:
+   - Solo los console.error en los catch
+
+3. Después de limpiar:
+
+git add .
+git commit -m "cleanup: remove unnecessary console logs"
+git push origin main

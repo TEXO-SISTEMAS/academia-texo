@@ -1,0 +1,24 @@
+El upload de video sigue dando error 413 — el archivo pasa por Vercel 
+en lugar de ir directo a Google Drive.
+
+Por favor revisá lib/drive-upload.ts, función uploadVideoDirectToDrive:
+
+1. Mostrá el código completo actual
+2. Verificá que el XHR está apuntando a la uploadUrl de Google Drive 
+   directamente (debe ser una URL que empiece con 
+   https://www.googleapis.com/upload/drive/v3/files)
+   NO a /api/drive/upload ni a ninguna ruta de Vercel
+
+3. El flujo correcto es:
+   a. POST a /api/drive/resumable-init → recibe { uploadUrl }
+      (este request es pequeño, solo metadatos — OK pasar por Vercel)
+   b. XHR.open('PUT', uploadUrl) donde uploadUrl es la URL de Google Drive
+      (este request va DIRECTO a Google, no pasa por Vercel)
+
+4. Verificá que resumable-init retorna la uploadUrl correctamente:
+   - Agregá console.log('[resumable-init] uploadUrl:', uploadUrl)
+   - La URL debe empezar con https://www.googleapis.com/upload/...
+
+5. Si el XHR está haciendo PUT a una ruta local (/api/...) 
+   en lugar de a googleapis.com, corregilo para que use 
+   la uploadUrl recibida del servidor

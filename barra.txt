@@ -1,0 +1,57 @@
+La barra de progreso superior sigue en 0% aunque Firestore tiene los datos guardados.
+
+SOLUCIÓN DEFINITIVA - dos cambios críticos:
+
+1. En /app/participante/cursos/[courseId]/page.tsx:
+
+   a. En el useEffect que carga el progreso inicial, REEMPLAZAR completamente
+      la lógica de lectura para usar la subcolección:
+      
+      const userId = auth.currentUser?.uid
+      if (!userId) return
+      
+      const resourcesRef = collection(db, `progress/${userId}/courses/${courseId}/resources`)
+      const snapshot = await getDocs(resourcesRef)
+      
+      const progressData = {}
+      snapshot.forEach(doc => {
+        const data = doc.data()
+        progressData[doc.id] = {
+          completed: data.completed || false,
+          lastCompletedPage: data.lastCompletedPage || 0,
+          partialProgress: data.partialProgress || 0
+        }
+      })
+      
+      setProgress(progressData)
+   
+   b. En el listener de cambios en tiempo real (onSnapshot),
+      TAMBIÉN usar la subcolección resources en lugar del documento padre
+
+2. Verificar que el cálculo de completedResources (línea ~133) use correctamente:
+   
+   const completedResources = chaptersData.flatMap(({ resources }) => resources)
+     .reduce((sum, r) => {
+       const prog = progress[r.id]
+       
+       if (!prog) return sum
+       
+       // Recurso completado = 1 punto completo
+       if (prog.completed === true) return sum + 1
+       
+       // PDF/documento con progreso parcial
+       if ((r.type === 'pdf' || r.type === 'document') && r.totalPages) {
+         const lastPage = prog.lastCompletedPage || 0
+         return sum + (lastPage / r.totalPages)
+       }
+       
+       return sum
+     }, 0)
+
+3. Agregar log temporal para debugging:
+   console.log('[Progress] progressData cargado:', progressData)
+   console.log('[Progress] completedResources:', completedResources, 'total:', totalResources)
+
+git add .
+git commit -m "fix: read progress from resources subcollection"
+git push origin main

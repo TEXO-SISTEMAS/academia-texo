@@ -302,7 +302,7 @@ export default function CourseViewPage() {
           </Link>
           {course.courseNumber !== undefined && (
             <p className="text-sm font-semibold text-texo-amarillo mt-0.5">
-              Propedéutico TEXO N° {course.courseNumber}
+              Propedéutico TEXO N° {/* {course.courseNumber} */}
             </p>
           )}
           <h1 className="text-base font-bold text-gray-900 dark:text-white">

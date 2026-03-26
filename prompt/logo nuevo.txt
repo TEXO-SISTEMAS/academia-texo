@@ -1,0 +1,27 @@
+El archivo LA_ACADEMIA_NEWSLETTER.png no está en el repositorio.
+
+Por favor:
+1. Verificá si existe en /public:
+   ls public/
+
+2. Si no existe, descargarlo desde la URL que está en el código
+   o creá un placeholder con los colores TEXO.
+
+3. En realidad el usuario quiere usar ese logo en login y bienvenida.
+   Como el archivo no está disponible, crear un componente 
+   LogoAcademia.tsx en /components/shared/ que muestre 
+   el logo usando solo CSS y texto, inspirado en el diseño 
+   "LA ACADEMIA TEXO" con:
+   - Fondo: gradiente con los colores TEXO (amarillo, verde, rojo)
+   - Texto "LA ACADEMIA" grande en blanco bold
+   - Texto "⊕ TEXO" más pequeño en blanco
+   - Formas geométricas decorativas en las esquinas (cuadrados rotados)
+   - Border-radius: 12px
+   - Tamaño: 300px x 160px aproximadamente
+   
+   Usarlo en login/page.tsx y bienvenida/page.tsx 
+   en lugar de cualquier archivo de imagen.
+
+git add .
+git commit -m "feat: CSS logo component replacing missing image"
+git push origin main

@@ -1,0 +1,35 @@
+Implementar cambio de contraseña obligatorio en el primer login del artesano.
+
+1. En allowedUsers, agregar campo:
+   - forcePasswordChange: boolean (default: false)
+   Cuando vos creás un artesano nuevo, podés setear este campo en true 
+   desde Firebase Console.
+
+2. En /app/api/auth/login-artesano/route.ts:
+   Después de verificar la contraseña correctamente, antes de generar el token:
+   - Verificar si allowedUsers/{email}.forcePasswordChange === true
+   - Si es true: retornar { requiresPasswordChange: true, tempToken: token }
+   - Si es false: retornar el token normal
+
+3. NUEVA PÁGINA /app/cambiar-contrasena/page.tsx:
+   - Título: "Cambiá tu contraseña"
+   - Subtítulo: "Por seguridad, establecé una contraseña personal."
+   - Campos: nueva contraseña + confirmar contraseña
+   - Validación: mínimo 8 caracteres, ambas deben coincidir
+   - Al guardar:
+     a. Llamar a Firebase Auth REST API para cambiar la contraseña:
+        POST https://identitytoolkit.googleapis.com/v1/accounts:update
+        con { idToken, password: nuevaContraseña }
+     b. Actualizar allowedUsers/{email}.forcePasswordChange = false
+     c. Redirigir a /artesano/dashboard con toast "Contraseña actualizada ✓"
+
+4. En lib/auth-context.tsx:
+   - Si loginWithPassword retorna requiresPasswordChange: true
+     guardar el tempToken en memoria y redirigir a /cambiar-contrasena
+
+5. En middleware.ts:
+   - Agregar /cambiar-contrasena a rutas públicas (no redirigir al login)
+
+git add .
+git commit -m "feat: force password change on first artesano login"
+git push origin main

@@ -1,0 +1,40 @@
+El panel Admin de "Visualización de Progreso" está vacío.
+
+Necesito que muestre:
+- Participantes inscritos en cada propedéutico
+- Gráfico de inscripciones acumuladas en el tiempo
+
+SOLUCIÓN usando la estructura actual de Firestore:
+
+1. En /app/admin/progreso/page.tsx:
+
+   a. PARTICIPANTES:
+      - Leer de: progress/{userId}/courses/{courseId}
+      - Si existe el documento → el usuario está inscrito
+      - Mostrar lista de participantes con:
+        * Email (userId es el email sin @)
+        * Fecha de inscripción (enrolledAt del documento)
+        * NO mostrar porcentaje de progreso (lo deshabilitamos)
+   
+   b. PROPEDÉUTICOS:
+      - Leer todos los cursos publicados
+      - Para cada curso, contar cuántos documentos existen en:
+        progress/*/courses/{courseId}
+      - Mostrar: nombre del curso + cantidad de inscritos
+   
+   c. GRÁFICO DE INSCRIPCIONES:
+      - Agrupar las fechas de enrolledAt por semana
+      - Mostrar solo los 5 propedéuticos más recientes
+      - Si no hay suficientes datos, mostrar mensaje informativo
+
+2. DESCOMENTAR las funciones de lectura necesarias:
+   - getCourseProgressStats (solo la parte de enrolledAt, NO porcentajes)
+   - Cualquier otra que lea inscripciones sin calcular progreso
+
+3. NO hacer escrituras, solo lecturas de:
+   - Colección courses
+   - Colección progress (solo para contar inscripciones)
+
+git add .
+git commit -m "fix: show enrollments in admin progress dashboard"
+git push origin main

@@ -1,0 +1,28 @@
+Corregir los tres problemas de navegación identificados:
+
+1. PDFs — usar Opción A: extender /api/drive/slides para convertir PDFs:
+   El endpoint ya tiene código para pdf-to-img pero algo falla.
+   Por favor:
+   - Revisá /app/api/drive/slides/route.ts completo
+   - Verificá que pdf-to-img esté instalado: npm list pdf-to-img
+   - Si no está: npm install pdf-to-img
+   - Agregá console.log al inicio:
+     console.log('[slides] fileId:', fileId, 'mimeType:', mimeType)
+   - Si el archivo es PDF y la conversión falla, logear el error exacto
+   - El fallback iframe debe mostrar también botones de navegación manual
+     donde el Artesano define el número de páginas al crear el recurso
+     (campo 'totalPages' en el content del recurso)
+
+2. DOCUMENTOS de texto corto (≤300 palabras):
+   - Eliminar la condición total > 1 para mostrar botones
+   - Siempre mostrar botones Anterior/Siguiente aunque sea 1 sola sección
+   - En sección única: "Anterior" deshabilitado, "Siguiente" deshabilitado 
+     hasta que termine el timer, al terminar cambia a "Podés avanzar"
+
+3. DOCUMENTOS con driveUrl (iframe):
+   - Agregar campo 'totalPages' opcional en DocumentContent
+   - En ResourceForm.tsx para tipo 'document' con archivo subido:
+     agregar campo "Número de páginas" opcional
+   - En IframeDocViewer: si tiene totalPages, mostrar navegación manual
+     con timer de 20 segundos por página
+   - Si no tiene totalPages: mostrar solo timer de 60 segundos total

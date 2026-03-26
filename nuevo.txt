@@ -1,0 +1,50 @@
+ERROR CRÍTICO: Quota exceeded en Firestore por loop infinito de lecturas.
+
+SOLUCIÓN DE EMERGENCIA:
+
+1. En /app/participante/cursos/[courseId]/page.tsx:
+
+   a. ELIMINAR completamente cualquier onSnapshot o listener en tiempo real 
+      para el progreso. Solo cargar UNA VEZ al montar el componente.
+   
+   b. El useEffect de progreso debe quedar así:
+   
+   useEffect(() => {
+     if (!courseId || !auth.currentUser) return
+     
+     const loadProgress = async () => {
+       try {
+         const userId = auth.currentUser.uid
+         const resourcesRef = collection(db, `progress/${userId}/courses/${courseId}/resources`)
+         const snapshot = await getDocs(resourcesRef)
+         
+         const progressData = {}
+         snapshot.forEach(doc => {
+           progressData[doc.id] = doc.data()
+         })
+         
+         console.log('[Progress] progressData cargado:', progressData)
+         setProgress(progressData)
+       } catch (error) {
+         console.error('[Progress] Error cargando:', error)
+       }
+     }
+     
+     loadProgress()
+   }, [courseId]) // Solo cuando cambia courseId, NO auth.currentUser
+   
+   c. ELIMINAR cualquier otro useEffect que escuche cambios de progreso
+
+2. En TrackedPageViewer.tsx y PdfResource.tsx:
+   
+   Cuando se complete una página y se guarde en Firestore,
+   ACTUALIZAR el estado local inmediatamente SIN esperar a Firestore:
+   
+   onProgressUpdate(newPct)
+   // Y además actualizar el progress del componente padre directamente
+
+3. VERIFICAR que NO haya múltiples componentes montados que lean el mismo progreso
+
+git add .
+git commit -m "fix: remove infinite loop causing quota exceeded"
+git push origin maing

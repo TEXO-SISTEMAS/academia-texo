@@ -435,7 +435,7 @@ export default function ParticipantesPage() {
                       <div className="min-w-0">
                         {course.courseNumber !== undefined && (
                           <p className="text-[13px] text-texo-amarillo font-semibold mb-0.5">
-                            PROPEDÉUTICO TEXO N° {course.courseNumber}
+                            PROPEDÉUTICO TEXO N° {/* {course.courseNumber} */}
                           </p>
                         )}
                         <p className="font-medium text-gray-900 dark:text-white truncate">

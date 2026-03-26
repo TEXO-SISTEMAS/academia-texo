@@ -1,0 +1,47 @@
+El progreso parcial de PDFs se guarda correctamente en Firestore 
+pero NO se refleja en la barra superior de /participante/cursos/[courseId]/page.tsx
+
+Problema:
+- Dentro del PDF (TrackedPageViewer) la barra funciona correctamente
+- En la página del propedéutico, "Tu progreso: 0%" no se actualiza
+  aunque el usuario ya completó páginas parciales del PDF
+
+Causa probable:
+En /app/participante/cursos/[courseId]/page.tsx, el cálculo de coursePct 
+solo cuenta recursos con completed: true, no considera lastCompletedPage
+
+Solución necesaria:
+
+1. En la función que carga el progreso (useEffect inicial o donde se lee Firestore),
+   además de leer progress[resourceId] = true/false, leer también:
+   progress[resourceId] = { completed: boolean, lastCompletedPage?: number }
+
+2. Modificar el cálculo de completedResources en línea ~133:
+   
+   const completedResources = chaptersData.flatMap(({ resources }) => resources)
+     .reduce((sum, r) => {
+       const prog = progress[r.id];
+       
+       // Si es un recurso completado normalmente
+       if (prog === true || prog?.completed === true) return sum + 1;
+       
+       // Si es PDF/documento con progreso parcial
+       if (r.type === 'pdf' || r.type === 'document') {
+         const lastPage = prog?.lastCompletedPage || 0;
+         const totalPages = r.totalPages || 1;
+         return sum + (lastPage / totalPages);
+       }
+       
+       return sum;
+     }, 0);
+
+3. Asegurate de que cuando se lee el progreso de Firestore,
+   se está leyendo el objeto completo { completed, lastCompletedPage },
+   no solo el booleano
+
+4. La barra debe actualizarse en tiempo real cuando se completa una página
+   (el listener de Firestore ya debería estar funcionando)
+
+git add .
+git commit -m "fix: reflect partial PDF progress in course progress bar"
+git push origin main
