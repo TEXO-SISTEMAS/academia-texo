@@ -13,52 +13,50 @@ export default function BienvenidaPage() {
   const [displayName, setDisplayName] = useState<string>("");
   const [nameLoading, setNameLoading] = useState(true);
   const [courseCount, setCourseCount] = useState<number | null>(null);
-  const [destHref, setDestHref] = useState("/participante/dashboard");
+  const [destHref, setDestHref] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return;
-    if (!firebaseUser) {
+    // Leer role directamente de la cookie user-role (seteada en login)
+    const cookies = document.cookie.split(";");
+    const roleCookie = cookies.find((c) => c.trim().startsWith("user-role="));
+    const role = roleCookie ? decodeURIComponent(roleCookie.split("=")[1].trim()) : null;
+
+    console.log("[BIENVENIDA] cookies:", document.cookie);
+    console.log("[BIENVENIDA] role desde cookie:", role);
+
+    let ruta = "/participante/dashboard";
+    if (role === "admin") ruta = "/admin";
+    else if (role === "artesano") ruta = "/artesano/dashboard";
+    else if (!role) {
+      console.log("[BIENVENIDA] no hay cookie user-role, redirigiendo a /login");
       router.replace("/login");
       return;
     }
 
+    console.log("[BIENVENIDA] redirecting to:", ruta);
+    setDestHref(ruta);
+  }, [router]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!firebaseUser) return;
+
     async function fetchName() {
       const uid = firebaseUser!.uid;
-      console.log("[BIENVENIDA DEBUG] firebaseUser completo:", JSON.stringify({ uid: firebaseUser!.uid, email: firebaseUser!.email }));
-
-      // uid es el email cuando se usa custom token (ej. "danilo.sosa@texo.com.py")
       const emailFallback = uid.includes("@") ? uid.split("@")[0] : uid;
 
-      // Leer rol y nombre desde allowedUsers
       const allowedSnap = await getDoc(doc(db, "allowedUsers", uid));
-      console.log("[BIENVENIDA DEBUG] allowedUsers snap exists:", allowedSnap.exists(), "data:", JSON.stringify(allowedSnap.exists() ? allowedSnap.data() : null));
-
-      if (allowedSnap.exists()) {
-        const data = allowedSnap.data();
-        if (data.name) setDisplayName(data.name as string);
-        else setDisplayName(emailFallback);
-
-        const role = data.role as string | undefined;
-        console.log("[BIENVENIDA DEBUG] role:", role);
-
-        let ruta = "/participante/dashboard";
-        if (role === "admin") ruta = "/admin";
-        else if (role === "artesano") ruta = "/artesano/dashboard";
-
-        console.log("[BIENVENIDA DEBUG] redirecting to:", ruta);
-        setDestHref(ruta);
+      if (allowedSnap.exists() && allowedSnap.data().name) {
+        setDisplayName(allowedSnap.data().name as string);
       } else {
-        console.log("[BIENVENIDA DEBUG] no allowedUsers doc found for uid:", uid);
         setDisplayName(emailFallback);
-        setDestHref("/participante/dashboard");
       }
-
       setNameLoading(false);
     }
 
     fetchName();
     getAllPublishedCourses().then((courses) => setCourseCount(courses.length)).catch(() => {});
-  }, [firebaseUser, authLoading, router]);
+  }, [firebaseUser, authLoading]);
 
   if (authLoading || nameLoading) {
     return (
@@ -93,7 +91,7 @@ export default function BienvenidaPage() {
         )}
 
         <button
-          onClick={() => router.replace(destHref)}
+          onClick={() => destHref && router.replace(destHref)}
           className="inline-flex items-center gap-2 bg-texo-amarillo text-texo-azul font-bold px-8 py-3 rounded-xl text-base hover:bg-texo-amarillo/90 transition-colors shadow-lg"
         >
           Ingresar →
