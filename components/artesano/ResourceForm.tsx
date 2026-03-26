@@ -156,13 +156,7 @@ export default function ResourceForm({
     return "";
   });
 
-  const [totalSlides, setTotalSlides] = useState<string>(
-    initialResource?.type === "presentation"
-      ? String((initialResource.content as PresentationContent).totalSlides ?? "")
-      : ""
-  );
-
-  const [totalPages, setTotalPages] = useState<string>(() => {
+const [totalPages, setTotalPages] = useState<string>(() => {
     if (!initialResource) return "";
     if (initialResource.type === "pdf")
       return String((initialResource.content as PdfContent).totalPages ?? "");
@@ -298,10 +292,8 @@ export default function ResourceForm({
             presPdfFileId = res.pdfFileId;
           }
           if (!url) { setError("Seleccioná un archivo de presentación."); setLoading(false); return; }
-          const parsed = parseInt(totalSlides);
           content = {
             driveUrl: url,
-            ...(parsed > 0 ? { totalSlides: parsed } : {}),
             ...(presPdfFileId ? { pdfFileId: presPdfFileId } : {}),
           };
           break;
@@ -499,20 +491,6 @@ const isLegacyType = type === "text" || type === "file";
           {type === "presentation" && (
             <div className="flex flex-col gap-3">
               {renderFileUpload(".ppt,.pptx")}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Número de diapositivas <span className="text-gray-400 font-normal">(opcional)</span>
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="Ej: 24"
-                  value={totalSlides}
-                  onChange={(e) => setTotalSlides(e.target.value)}
-                  className={`${inputClass} w-32`}
-                />
-                <p className="text-xs text-gray-400 mt-1">Permite mostrar "Diapositiva X de Y" en el visor.</p>
-              </div>
             </div>
           )}
 
