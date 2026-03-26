@@ -694,7 +694,7 @@ function TrackedPageViewer({
 
 // ── PdfResource ───────────────────────────────────────────────────────────────
 
-const MIN_PDF_TIME = 60; // segundos por página
+const MIN_PDF_TIME = 20; // segundos por página
 
 function PdfResource({
   content,
@@ -952,7 +952,7 @@ function TrackedSlidePlayer({
 
 // ── PresentationResource ──────────────────────────────────────────────────────
 
-const MIN_SLIDE_TIME = 60; // segundos por diapositiva
+const MIN_SLIDE_TIME = 20; // segundos por diapositiva
 
 function PresentationResource({
   content,
@@ -1060,7 +1060,7 @@ function splitIntoSections(text: string, wordsPerSection: number): string[] {
 
 // ── TrackedTextPager — documento de texto paginado con timer ─────────────────
 
-const MIN_TEXT_SECTION_TIME = 60; // segundos por sección
+const MIN_TEXT_SECTION_TIME = 20; // segundos por sección
 
 interface TrackedTextPagerProps {
   sections: string[];
@@ -1196,7 +1196,7 @@ function TrackedTextPager({
 
 // ── DocumentResource ──────────────────────────────────────────────────────────
 
-const MIN_IFRAME_DOC_TIME = 60; // segundos para documentos en iframe
+const MIN_IFRAME_DOC_TIME = 20; // segundos para documentos en iframe
 
 function DocumentResource({
   content,
@@ -1253,8 +1253,8 @@ function DocumentResource({
 
 // ── IframeDocViewer — iframe con timer o navegación manual ───────────────────
 
-const MIN_IFRAME_DOC_TIMER = 60;   // segundos sin totalPages
-const MIN_IFRAME_DOC_PAGE  = 60;   // segundos por página con totalPages
+const MIN_IFRAME_DOC_TIMER = 20;   // segundos sin totalPages
+const MIN_IFRAME_DOC_PAGE  = 20;   // segundos por página con totalPages
 
 function IframeDocViewer({
   driveUrl,
