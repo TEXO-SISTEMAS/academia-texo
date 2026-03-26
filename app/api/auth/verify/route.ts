@@ -82,7 +82,20 @@ export async function POST(req: NextRequest) {
 
     console.log("[verify] token generado para:", normalizedEmail, "| role:", role);
 
-    return NextResponse.json({ token, role, name });
+    const response = NextResponse.json({ token, role, name });
+
+    // Cookie legible por el cliente (httpOnly: false) para que /bienvenida pueda leer el role
+    response.cookies.set("user-role", role, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 días
+    });
+
+    console.log("[verify] cookie response headers:", response.headers.get("set-cookie"));
+
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";
     console.error("[verify] ERROR:", message);
