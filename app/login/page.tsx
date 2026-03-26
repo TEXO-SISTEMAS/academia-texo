@@ -30,11 +30,13 @@ export default function LoginPage() {
       }
 
       const role = (result as { role: string }).role;
-      const dest = role === "artesano" ? "/artesano/dashboard" : "/bienvenida";
-      console.log("[LOGIN] URL actual antes del redirect:", window.location.href);
-      console.log("[LOGIN] haciendo window.location.replace a:", dest);
-      setTimeout(() => console.log("[LOGIN] URL después del replace:", window.location.href), 1000);
-      window.location.replace(dest);
+      const destination = role === "admin"
+        ? "/admin"
+        : role === "artesano"
+        ? "/artesano/dashboard"
+        : "/participante/dashboard";
+      console.log("[LOGIN] redirecting directo a:", destination);
+      window.location.href = destination;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);
