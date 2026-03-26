@@ -302,11 +302,11 @@ export default function CourseViewPage() {
           </Link>
           {course.courseNumber !== undefined && (
             <p className="text-sm font-semibold text-texo-amarillo mt-0.5">
-              Propedéutico TEXO N° {/* {course.courseNumber} */}
+              Propedéutico TEXO  {/* {course.courseNumber} */}
             </p>
           )}
           <h1 className="text-base font-bold text-gray-900 dark:text-white">
-            {course.title.replace(/^Propedéutico TEXO N°\s*\d+\s*[—–-]\s*/i, "")}
+            {course.title.replace(/^Propedéutico TEXO \s*\d+\s*[—–-]\s*/i, "")}
           </h1>
 
           {/* Barra de progreso general del curso */}

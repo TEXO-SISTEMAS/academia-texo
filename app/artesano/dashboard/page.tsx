@@ -84,7 +84,7 @@ export default function ArtesanoDashboard() {
                 <div className="min-w-0">
                   {course.courseNumber !== undefined && (
                     <p className="text-[13px] text-texo-amarillo font-semibold mb-0.5">
-                      Propedéutico TEXO N° {/* {course.courseNumber} */}
+                      Propedéutico TEXO {/* {course.courseNumber} */}
                     </p>
                   )}
                   <p className="font-medium text-gray-900 dark:text-white truncate">

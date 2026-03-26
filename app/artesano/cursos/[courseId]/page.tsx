@@ -171,7 +171,7 @@ export default function CourseDetailPage() {
           <div className="min-w-0">
             {course.courseNumber !== undefined && (
               <p className="text-sm font-semibold text-texo-amarillo mb-1">
-                PROPEDÉUTICO TEXO N° {/* {course.courseNumber} */}
+                PROPEDÉUTICO TEXO  {/* {course.courseNumber} */}
               </p>
             )}
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">

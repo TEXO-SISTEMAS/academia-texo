@@ -174,7 +174,7 @@ function ProgressTab({ adminEmail }: { adminEmail: string }) {
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-900 dark:text-white text-xs">{course.title}</p>
                   {course.courseNumber && (
-                    <p className="text-xs text-texo-amarillo">N° {course.courseNumber}</p>
+                    <p className="text-xs text-texo-amarillo"> {course.courseNumber}</p>
                   )}
                 </td>
                 <td className="px-4 py-3 text-gray-700 dark:text-gray-300 text-xs">

@@ -72,7 +72,7 @@ export default function CourseCard({
       <div className="p-4 flex flex-col gap-2 flex-1">
         {courseNumber !== undefined && (
           <p className="text-[13px] font-semibold text-texo-amarillo">
-            Propedéutico TEXO N° {/* {courseNumber} */}
+            Propedéutico TEXO {/* {courseNumber} */}
           </p>
         )}
         <div className="flex items-start justify-between gap-2">
