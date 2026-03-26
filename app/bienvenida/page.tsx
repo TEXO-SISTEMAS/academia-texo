@@ -24,21 +24,31 @@ export default function BienvenidaPage() {
 
     async function fetchName() {
       const uid = firebaseUser!.uid;
+      console.log("[BIENVENIDA DEBUG] firebaseUser completo:", JSON.stringify({ uid: firebaseUser!.uid, email: firebaseUser!.email }));
+
       // uid es el email cuando se usa custom token (ej. "danilo.sosa@texo.com.py")
       const emailFallback = uid.includes("@") ? uid.split("@")[0] : uid;
 
       // Leer rol y nombre desde allowedUsers
       const allowedSnap = await getDoc(doc(db, "allowedUsers", uid));
+      console.log("[BIENVENIDA DEBUG] allowedUsers snap exists:", allowedSnap.exists(), "data:", JSON.stringify(allowedSnap.exists() ? allowedSnap.data() : null));
+
       if (allowedSnap.exists()) {
         const data = allowedSnap.data();
         if (data.name) setDisplayName(data.name as string);
         else setDisplayName(emailFallback);
 
         const role = data.role as string | undefined;
-        if (role === "admin") setDestHref("/admin");
-        else if (role === "artesano") setDestHref("/artesano/dashboard");
-        else setDestHref("/participante/dashboard");
+        console.log("[BIENVENIDA DEBUG] role:", role);
+
+        let ruta = "/participante/dashboard";
+        if (role === "admin") ruta = "/admin";
+        else if (role === "artesano") ruta = "/artesano/dashboard";
+
+        console.log("[BIENVENIDA DEBUG] redirecting to:", ruta);
+        setDestHref(ruta);
       } else {
+        console.log("[BIENVENIDA DEBUG] no allowedUsers doc found for uid:", uid);
         setDisplayName(emailFallback);
         setDestHref("/participante/dashboard");
       }
