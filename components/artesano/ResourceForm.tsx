@@ -156,15 +156,6 @@ export default function ResourceForm({
     return "";
   });
 
-const [totalPages, setTotalPages] = useState<string>(() => {
-    if (!initialResource) return "";
-    if (initialResource.type === "pdf")
-      return String((initialResource.content as PdfContent).totalPages ?? "");
-    if (initialResource.type === "document")
-      return String((initialResource.content as DocumentContent).totalPages ?? "");
-    return "";
-  });
-
   const [questions, setQuestions] = useState<QuizQuestion[]>(() =>
     initQuestions(initialResource)
   );
@@ -303,18 +294,16 @@ const [totalPages, setTotalPages] = useState<string>(() => {
             if (!textBody.trim()) { setError("Ingresá el contenido del documento."); setLoading(false); return; }
             content = { body: textBody };
           } else {
-            const docPages = parseInt(totalPages);
             if (driveFile) {
               const { directLink: url, pdfFileId: docPdfFileId } = await uploadToDrive(driveFile);
               content = {
                 driveUrl: url,
                 fileName: driveFile.name,
-                ...(docPages > 0 ? { totalPages: docPages } : {}),
                 ...(docPdfFileId ? { pdfFileId: docPdfFileId } : {}),
               };
             } else if (isEditing && (initialResource.type === "document" || initialResource.type === "text")) {
               const existing = initialResource.content as DocumentContent;
-              content = { ...existing, ...(docPages > 0 ? { totalPages: docPages } : {}) };
+              content = { ...existing };
             } else {
               setError("Seleccioná un archivo.");
               setLoading(false);
@@ -336,11 +325,9 @@ const [totalPages, setTotalPages] = useState<string>(() => {
             setLoading(false);
             return;
           }
-          const pages = parseInt(totalPages);
           content = {
             driveUrl: pdfUrl,
             ...(pdfFileName ? { fileName: pdfFileName } : {}),
-            ...(pages > 0 ? { totalPages: pages } : {}),
           };
           break;
         }
@@ -514,46 +501,14 @@ const isLegacyType = type === "text" || type === "file";
                   className={`${inputClass} resize-none`}
                 />
               )}
-              {sourceMode === "upload" && (
-                <div className="flex flex-col gap-3">
-                  {renderFileUpload(".doc,.docx,.txt")}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Número de páginas <span className="text-gray-400 font-normal">(opcional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="Ej: 5"
-                      value={totalPages}
-                      onChange={(e) => setTotalPages(e.target.value)}
-                      className={`${inputClass} w-32`}
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Permite navegación página por página con timer de 20s cada una.</p>
-                  </div>
-                </div>
-              )}
+              {sourceMode === "upload" && renderFileUpload(".doc,.docx,.txt")}
             </div>
           )}
 
           {/* ── PDF ────────────────────────────────────────────────────────── */}
           {type === "pdf" && (
             <div className="flex flex-col gap-3">
-              {renderFileUpload(".pdf", "El PDF se convertirá a imágenes navegables. Si la conversión falla, se usará el visor nativo con navegación manual.")}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Número de páginas <span className="text-gray-400 font-normal">(opcional — para navegación manual)</span>
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  placeholder="Ej: 8"
-                  value={totalPages}
-                  onChange={(e) => setTotalPages(e.target.value)}
-                  className={`${inputClass} w-32`}
-                />
-                <p className="text-xs text-gray-400 mt-1">Solo se usa si la conversión automática falla.</p>
-              </div>
+              {renderFileUpload(".pdf", "El PDF se convertirá a imágenes navegables automáticamente.")}
             </div>
           )}
 
