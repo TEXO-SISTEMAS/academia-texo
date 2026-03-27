@@ -29,6 +29,13 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
       const enrolledQuery = query(progressRef, where('courseId', '==', courseId))
       const enrolledSnap = await getDocs(enrolledQuery)
 
+      console.log('[Stats] courseId:', courseId)
+      console.log('[Stats] enrolledSnap.size:', enrolledSnap.size)
+
+      const allProgressRef = collectionGroup(db, 'courses')
+      const allProgressSnap = await getDocs(allProgressRef)
+      console.log('[Stats] Total documentos en progress/*/courses:', allProgressSnap.size)
+
       return {
         id: courseId,
         title: courseData.title as string,
