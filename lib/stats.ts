@@ -21,7 +21,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
   return coursesSnap.docs.map(doc => ({
     id: doc.id,
     title: doc.data().title as string,
-    enrolledCount: 0,
+    enrolledCount: (doc.data().enrolledCount as number) || 0,
     completedCount: 0,
     completionRate: 0,
   }))

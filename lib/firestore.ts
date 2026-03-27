@@ -497,6 +497,10 @@ export async function enrollParticipant(
     userId,
   });
 
+  await updateDoc(doc(db, "courses", courseId), {
+    enrolledCount: increment(1),
+  });
+
   const courseSnap = await getDoc(doc(db, "courses", courseId));
   const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
   silentAudit({
