@@ -31,7 +31,7 @@ export default function ArtesanoCursos() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
-            Propedéuticos publicados
+            Materiales
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Todos los propedéuticos disponibles
@@ -78,7 +78,7 @@ export default function ArtesanoCursos() {
                 <div className="min-w-0">
                   {course.courseNumber !== undefined && (
                     <p className="text-[13px] text-texo-amarillo font-semibold mb-0.5">
-                      Propedéutico TEXO N° {course.courseNumber}
+                      PROPEDÉUTICO TEXO
                     </p>
                   )}
                   <p className="font-medium text-gray-900 dark:text-white truncate">
