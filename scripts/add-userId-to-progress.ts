@@ -1,5 +1,7 @@
 /**
- * Script de migración: agrega el campo userId a docs existentes en progress/{userId}/courses/{courseId}.
+ * Script de migración: agrega userId y courseId a docs existentes en progress/{email}/courses/{courseId}.
+ *
+ * Usa listDocuments() para detectar documentos virtuales (sin campos propios).
  *
  * Ejecutar UNA SOLA VEZ con:
  *   npx tsx scripts/add-userId-to-progress.ts
@@ -16,26 +18,30 @@ if (!getApps().length) {
 const db = getFirestore()
 
 async function main() {
-  const progressSnap = await db.collection('progress').get()
-  console.log(`Usuarios en /progress: ${progressSnap.size}`)
+  // listDocuments() incluye documentos virtuales (solo padres de subcolecciones)
+  const userRefs = await db.collection('progress').listDocuments()
+  console.log(`Usuarios en /progress: ${userRefs.length}`)
 
   let updated = 0
 
-  for (const userDoc of progressSnap.docs) {
-    const userId = userDoc.id
+  for (const userRef of userRefs) {
+    const userId = userRef.id // puede ser email o uid
     const coursesSnap = await db.collection(`progress/${userId}/courses`).get()
+    console.log(`  ${userId}: ${coursesSnap.size} cursos`)
 
     for (const courseDoc of coursesSnap.docs) {
       const data = courseDoc.data()
-      const needsUpdate = !data.userId || !data.courseId
+      const updates: Record<string, string> = {}
 
-      if (needsUpdate) {
-        await courseDoc.ref.update({
-          userId: data.userId ?? userId,
-          courseId: data.courseId ?? courseDoc.id,
-        })
+      if (!data.userId) updates.userId = userId
+      if (!data.courseId) updates.courseId = courseDoc.id
+
+      if (Object.keys(updates).length > 0) {
+        await courseDoc.ref.update(updates)
         updated++
-        console.log(`  Actualizado: progress/${userId}/courses/${courseDoc.id}`)
+        console.log(`    ✓ Actualizado: ${courseDoc.id} →`, updates)
+      } else {
+        console.log(`    - Ya tiene userId/courseId: ${courseDoc.id}`)
       }
     }
   }
