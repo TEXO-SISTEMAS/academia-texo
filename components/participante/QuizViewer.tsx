@@ -135,7 +135,7 @@ export default function QuizViewer({ content, onComplete }: Props) {
       {content.allowObservations && (
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Observaciones <span className="text-gray-400 font-normal">(opcional)</span>
+            {content.observationsLabel || "Observaciones"} <span className="text-gray-400 font-normal">(opcional)</span>
           </label>
           <textarea
             value={observations}

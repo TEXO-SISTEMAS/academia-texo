@@ -182,6 +182,13 @@ export default function ResourceForm({
     return false;
   });
 
+  const [observationsLabel, setObservationsLabel] = useState<string>(() => {
+    if (initialResource?.type === "quiz") {
+      return (initialResource.content as QuizContent).observationsLabel ?? "";
+    }
+    return "";
+  });
+
   // Upload
   const [driveFile, setDriveFile] = useState<File | null>(null);
   const [driveUploadPct, setDriveUploadPct] = useState<number | null>(null);
@@ -400,7 +407,11 @@ export default function ResourceForm({
             setLoading(false);
             return;
           }
-          content = { questions: cleanQuestions, allowObservations };
+          content = {
+            questions: cleanQuestions,
+            allowObservations,
+            ...(allowObservations && observationsLabel.trim() ? { observationsLabel: observationsLabel.trim() } : {}),
+          };
           break;
         }
         // legacy — no debería llegar acá desde el form, pero por si acaso
@@ -673,6 +684,15 @@ const isLegacyType = type === "text" || type === "file";
                   Incluir campo de observaciones para el participante
                 </span>
               </label>
+              {allowObservations && (
+                <input
+                  type="text"
+                  value={observationsLabel}
+                  onChange={(e) => setObservationsLabel(e.target.value)}
+                  placeholder='Ej: Comentarios adicionales, Observaciones, Sugerencias...'
+                  className={inputClass}
+                />
+              )}
             </div>
           )}
 

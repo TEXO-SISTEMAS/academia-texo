@@ -91,6 +91,7 @@ export interface QuizQuestion {
 export interface QuizContent {
   questions: QuizQuestion[];
   allowObservations?: boolean;
+  observationsLabel?: string;
 }
 
 // ─── Resource ─────────────────────────────────────────────────────────────────
