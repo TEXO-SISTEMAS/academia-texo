@@ -10,8 +10,9 @@ export interface CourseStats {
 }
 
 export async function getArtesanoCourses(): Promise<CourseStats[]> {
+  const coursesRef = collection(db, 'courses')
   const q = query(
-    collection(db, 'courses'),
+    coursesRef,
     where('published', '==', true),
     orderBy('createdAt', 'desc')
   )
@@ -21,46 +22,19 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
   const coursesWithStats = await Promise.all(
     coursesSnap.docs.map(async (courseDoc) => {
       const courseId = courseDoc.id
+      const courseData = courseDoc.data()
 
-      // Inscriptos: docs en /progress/*/courses donde courseId coincide
-      const enrolledSnap = await getDocs(
-        query(collectionGroup(db, 'courses'), where('courseId', '==', courseId))
-      )
-
-      // Total de recursos del curso
-      const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
-      let totalResources = 0
-      for (const chapterDoc of chaptersSnap.docs) {
-        const resSnap = await getDocs(
-          collection(db, `courses/${courseId}/chapters/${chapterDoc.id}/resources`)
-        )
-        totalResources += resSnap.size
-      }
-
-      // Completados: usuarios que tienen todos los recursos completados
-      let completedCount = 0
-      for (const enrolledDoc of enrolledSnap.docs) {
-        const userId = enrolledDoc.ref.parent.parent?.id
-        if (!userId) continue
-
-        const resourcesSnap = await getDocs(
-          collection(db, `progress/${userId}/courses/${courseId}/resources`)
-        )
-        const completedResources = resourcesSnap.docs.filter(d => d.data().completed === true).length
-
-        if (totalResources > 0 && completedResources === totalResources) {
-          completedCount++
-        }
-      }
+      // Contar inscriptos usando collectionGroup
+      const progressRef = collectionGroup(db, 'courses')
+      const enrolledQuery = query(progressRef, where('courseId', '==', courseId))
+      const enrolledSnap = await getDocs(enrolledQuery)
 
       return {
         id: courseId,
-        title: courseDoc.data().title as string,
+        title: courseData.title as string,
         enrolledCount: enrolledSnap.size,
-        completedCount,
-        completionRate: enrolledSnap.size > 0
-          ? Math.round((completedCount / enrolledSnap.size) * 100)
-          : 0,
+        completedCount: 0,
+        completionRate: 0,
       }
     })
   )
