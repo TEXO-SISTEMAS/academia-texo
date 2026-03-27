@@ -258,14 +258,27 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
         {/* PieChart — distribución de actividad */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
           <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4">Distribución de actividad</h3>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={activityData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
+              <Pie data={activityData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={80}>
                 {activityData.map((entry, i) => (
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip />
+              <Legend
+                verticalAlign="bottom"
+                height={36}
+                formatter={(value: string) => {
+                  const labels: Record<string, string> = {
+                    'Muy activos': 'Muy activos (>80%)',
+                    'Activos': 'Activos (50-80%)',
+                    'Poco activos': 'Poco activos (20-50%)',
+                    'Inactivos': 'Inactivos (<20%)',
+                  }
+                  return labels[value] ?? value
+                }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
