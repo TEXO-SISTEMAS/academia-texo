@@ -17,7 +17,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
   )
   const coursesSnap = await getDocs(q)
 
-  return coursesSnap.docs.map(doc => {
+  return coursesSnap.docs.filter(doc => !doc.data().deleted).map(doc => {
     const data = doc.data()
     const enrolledCount = (data.enrolledCount as number) || 0
     const completedCount = (data.completedCount as number) || 0
