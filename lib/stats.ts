@@ -17,9 +17,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
     orderBy('createdAt', 'desc')
   )
 
-  console.log('[Stats] Query ejecutándose...')
   const coursesSnap = await getDocs(q)
-  console.log('[Stats] Documentos encontrados:', coursesSnap.size)
 
   return coursesSnap.docs.map(doc => ({
     id: doc.id,
