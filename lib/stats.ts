@@ -1,4 +1,12 @@
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  getDoc,
+  doc,
+  orderBy,
+} from 'firebase/firestore'
 import { db } from './firebase'
 
 export interface CourseStats {
@@ -15,14 +23,56 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
     where('published', '==', true),
     orderBy('createdAt', 'desc')
   )
-
   const coursesSnap = await getDocs(q)
 
-  return coursesSnap.docs.map(doc => ({
-    id: doc.id,
-    title: doc.data().title as string,
-    enrolledCount: (doc.data().enrolledCount as number) || 0,
-    completedCount: 0,
-    completionRate: 0,
-  }))
+  // Lista de userIds que tienen algún progreso
+  const progressUsersSnap = await getDocs(collection(db, 'progress'))
+  const userIds = progressUsersSnap.docs.map(d => d.id)
+
+  const coursesWithStats = await Promise.all(
+    coursesSnap.docs.map(async (courseDoc) => {
+      const courseId = courseDoc.id
+
+      // Total de recursos del curso
+      const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
+      let totalResources = 0
+      for (const chapterDoc of chaptersSnap.docs) {
+        const resSnap = await getDocs(
+          collection(db, `courses/${courseId}/chapters/${chapterDoc.id}/resources`)
+        )
+        totalResources += resSnap.size
+      }
+
+      let enrolledCount = 0
+      let completedCount = 0
+
+      for (const userId of userIds) {
+        const enrollDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
+        if (!enrollDoc.exists()) continue
+        enrolledCount++
+
+        if (totalResources > 0) {
+          const resourcesSnap = await getDocs(
+            collection(db, `progress/${userId}/courses/${courseId}/resources`)
+          )
+          const completedResources = resourcesSnap.docs.filter(
+            d => d.data().completed === true
+          ).length
+          if (completedResources >= totalResources) completedCount++
+        }
+      }
+
+      return {
+        id: courseId,
+        title: courseDoc.data().title as string,
+        enrolledCount,
+        completedCount,
+        completionRate: enrolledCount > 0
+          ? Math.round((completedCount / enrolledCount) * 100)
+          : 0,
+      }
+    })
+  )
+
+  return coursesWithStats
 }

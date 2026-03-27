@@ -101,6 +101,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
     name: c.title.length > 20 ? c.title.slice(0, 20) + '…' : c.title,
     Inscriptos: c.enrolledCount,
     Completaron: c.completedCount,
+    'En progreso': Math.max(0, c.enrolledCount - c.completedCount),
   }))
 
   if (loading) {
@@ -126,7 +127,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
       {filtered.length > 0 ? (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-            Inscriptos vs Completaron
+            Inscriptos · En progreso · Completaron
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -136,7 +137,8 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
               <Tooltip />
               <Legend />
               <Bar dataKey="Inscriptos" fill="#31484E" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Completaron" fill="#E8B84B" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="En progreso" fill="#E8B84B" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Completaron" fill="#3A9688" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
