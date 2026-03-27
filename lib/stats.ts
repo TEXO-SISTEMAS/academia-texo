@@ -9,11 +9,10 @@ export interface CourseStats {
   completionRate: number
 }
 
-export async function getArtesanoCourses(artesanoId: string): Promise<CourseStats[]> {
+export async function getArtesanoCourses(): Promise<CourseStats[]> {
   const coursesRef = collection(db, 'courses')
   const q = query(
     coursesRef,
-    where('createdBy', '==', artesanoId),
     where('published', '==', true),
     orderBy('createdAt', 'desc')
   )

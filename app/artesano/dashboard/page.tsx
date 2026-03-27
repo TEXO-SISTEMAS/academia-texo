@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/lib/auth-context'
 import { getArtesanoCourses, type CourseStats } from '@/lib/stats'
 import {
   BarChart,
@@ -73,20 +72,18 @@ export default function ArtesanoDashboard() {
 }
 
 function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
-  const { firebaseUser } = useAuth()
   const [courses, setCourses] = useState<CourseStats[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    if (!firebaseUser) return
     setLoading(true)
     try {
-      const data = await getArtesanoCourses(firebaseUser.uid)
+      const data = await getArtesanoCourses()
       setCourses(data)
     } finally {
       setLoading(false)
     }
-  }, [firebaseUser])
+  }, [])
 
   useEffect(() => { load() }, [load])
 
