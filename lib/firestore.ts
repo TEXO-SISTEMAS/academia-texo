@@ -6,7 +6,6 @@ import {
   updateDoc,
   getDocs,
   collection,
-  collectionGroup,
   query,
   where,
   orderBy,
@@ -92,13 +91,6 @@ export function recordLoginBackground(userId: string, userAgent: string): void {
 
 // ─── Tipos de retorno auxiliares ──────────────────────────────────────────────
 
-export interface ParticipantProgressSummary {
-  userId: string;
-  displayName: string;
-  email: string;
-  enrolledAt: CourseEnrollment["enrolledAt"];
-  completedResourceCount: number;
-}
 
 // ─── Usuarios ─────────────────────────────────────────────────────────────────
 
@@ -596,51 +588,6 @@ export async function getCourseProgressStats(
   return { completed, total, enrolled: true };
 }
 
-export async function getCourseProgressSummary(
-  courseId: string
-): Promise<ParticipantProgressSummary[]> {
-  // Obtener todas las inscripciones al curso usando collectionGroup
-  const enrollmentsQuery = query(
-    collectionGroup(db, "courses"),
-    where("courseId", "==", courseId)
-  );
-  const enrollSnap = await getDocs(enrollmentsQuery);
-
-  const summaries: ParticipantProgressSummary[] = await Promise.all(
-    enrollSnap.docs.map(async (enrollDoc) => {
-      const { userId, enrolledAt } = enrollDoc.data() as {
-        userId: string;
-        enrolledAt: CourseEnrollment["enrolledAt"];
-        courseId: string;
-      };
-
-      // Obtener datos del usuario
-      const userSnap = await getDoc(doc(db, "users", userId));
-      const userData = userSnap.exists()
-        ? (userSnap.data() as Pick<User, "displayName" | "email">)
-        : { displayName: userId, email: "" };
-
-      // Contar recursos completados (Set para deduplicar)
-      const resourcesSnap = await getDocs(
-        collection(db, "progress", userId, "courses", courseId, "resources")
-      );
-      const completedIds = new Set(
-        resourcesSnap.docs.filter((d) => d.data().completed === true).map((d) => d.id)
-      );
-      const completedResourceCount = completedIds.size;
-
-      return {
-        userId,
-        displayName: userData.displayName,
-        email: userData.email,
-        enrolledAt,
-        completedResourceCount,
-      };
-    })
-  );
-
-  return summaries;
-}
 
 // ─── Dashboard global de Participantes ──────────────────────────────────────────────
 
@@ -718,88 +665,6 @@ export async function getParticipantProgress(
   );
 }
 
-export interface CourseProgressSummaryItem {
-  courseId: string;
-  title: string;
-  courseNumber?: number;
-  published: boolean;
-  totalEnrolled: number;
-  avgProgress: number;
-  enrollments: { userId: string; enrolledAt: CourseEnrollment["enrolledAt"] }[];
-}
-
-export async function getCoursesProgressSummary(
-  artesanoId: string
-): Promise<CourseProgressSummaryItem[]> {
-  const courses = await getCoursesByArtesano(artesanoId);
-
-  return Promise.all(
-    courses.map(async (course) => {
-      const chaptersSnap = await getDocs(collection(db, "courses", course.id, "chapters"));
-      const resourceCounts = await Promise.all(
-        chaptersSnap.docs.map((ch) =>
-          getDocs(collection(db, "courses", course.id, "chapters", ch.id, "resources")).then(
-            (s) => s.size
-          )
-        )
-      );
-      const totalResources = resourceCounts.reduce((acc, n) => acc + n, 0);
-
-      const enrollQuery = query(
-        collectionGroup(db, "courses"),
-        where("courseId", "==", course.id)
-      );
-      const enrollSnap = await getDocs(enrollQuery);
-      const totalEnrolled = enrollSnap.size;
-
-      if (totalEnrolled === 0 || totalResources === 0) {
-        return {
-          courseId: course.id,
-          title: course.title,
-          courseNumber: course.courseNumber,
-          published: course.published,
-          totalEnrolled,
-          avgProgress: 0,
-          enrollments: [],
-        };
-      }
-
-      const progressData = await Promise.all(
-        enrollSnap.docs.map(async (enrollDoc) => {
-          const { userId, enrolledAt } = enrollDoc.data() as {
-            userId: string;
-            enrolledAt: CourseEnrollment["enrolledAt"];
-          };
-          const progressSnap = await getDocs(
-            collection(db, "progress", userId, "courses", course.id, "resources")
-          );
-          const completedSet = new Set(
-            progressSnap.docs.filter((d) => d.data().completed === true).map((d) => d.id)
-          );
-          return { userId, enrolledAt, completed: completedSet.size };
-        })
-      );
-
-      const avgProgress =
-        totalResources > 0
-          ? Math.round(
-              (progressData.reduce((acc, p) => acc + (p.completed / totalResources) * 100, 0) /
-                totalEnrolled)
-            )
-          : 0;
-
-      return {
-        courseId: course.id,
-        title: course.title,
-        courseNumber: course.courseNumber,
-        published: course.published,
-        totalEnrolled,
-        avgProgress,
-        enrollments: progressData.map(({ userId, enrolledAt }) => ({ userId, enrolledAt })),
-      };
-    })
-  );
-}
 
 // ─── Engagement tracking ───────────────────────────────────────────────────────
 
