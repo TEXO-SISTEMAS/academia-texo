@@ -78,7 +78,10 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
+      console.log('[Dashboard] Cargando cursos...')
       const data = await getArtesanoCourses()
+      console.log('[Dashboard] Cursos cargados:', data)
+      console.log('[Dashboard] Cantidad:', data.length)
       setCourses(data)
     } finally {
       setLoading(false)
