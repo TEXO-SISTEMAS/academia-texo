@@ -2,7 +2,8 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 
 const ADMIN_LINKS = [
-  { label: "Dashboard", href: "/admin" },
+  { label: "Dashboard", href: "/artesano/dashboard" },
+  { label: "Mis Propedéuticos", href: "/artesano/cursos" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
