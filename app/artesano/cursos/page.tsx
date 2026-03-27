@@ -2,28 +2,25 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { getCoursesByArtesano } from "@/lib/firestore";
-import { useAuth } from "@/lib/auth-context";
+import { getAllPublishedCourses } from "@/lib/firestore";
 import type { Course } from "@/types";
 import CourseFormModal from "@/components/artesano/CourseFormModal";
 import Button from "@/components/shared/Button";
 
 export default function ArtesanoCursos() {
-  const { firebaseUser } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
   const loadCourses = useCallback(async () => {
-    if (!firebaseUser) return;
     setLoading(true);
     try {
-      const data = await getCoursesByArtesano(firebaseUser.uid);
+      const data = await getAllPublishedCourses();
       setCourses(data);
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser]);
+  }, []);
 
   useEffect(() => {
     loadCourses();
@@ -34,10 +31,10 @@ export default function ArtesanoCursos() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
-            Mis propedéuticos
+            Propedéuticos publicados
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Gestioná y publicá tus propedéuticos
+            Todos los propedéuticos disponibles
           </p>
         </div>
         <Button onClick={() => setShowModal(true)} variant="primary">
@@ -60,10 +57,10 @@ export default function ArtesanoCursos() {
             style={{ height: 120, width: "auto", opacity: 0.3, marginBottom: "1.5rem", borderRadius: 8 }}
           />
           <p className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">
-            Todavía no tenés propedéuticos
+            No hay propedéuticos publicados
           </p>
           <p className="text-sm text-gray-400 mb-6 max-w-xs">
-            Creá tu primer propedéutico y comenzá a formar a tu equipo.
+            Creá y publicá el primer propedéutico para que aparezca aquí.
           </p>
           <Button onClick={() => setShowModal(true)} variant="primary">
             + Crear primer propedéutico
