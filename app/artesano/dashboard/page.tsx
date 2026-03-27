@@ -11,6 +11,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts'
 
 export default function ArtesanoDashboard() {
@@ -231,8 +234,59 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
     )
   }
 
+  // Datos para gráfico circular — distribución de actividad
+  const activityData = [
+    { name: 'Muy activos', value: participants.filter(p => p.progresoPromedio >= 80).length, color: '#3A9688' },
+    { name: 'Activos', value: participants.filter(p => p.progresoPromedio >= 50 && p.progresoPromedio < 80).length, color: '#31484E' },
+    { name: 'Poco activos', value: participants.filter(p => p.progresoPromedio >= 20 && p.progresoPromedio < 50).length, color: '#E8B84B' },
+    { name: 'Inactivos', value: participants.filter(p => p.progresoPromedio < 20).length, color: '#C0544A' },
+  ].filter(d => d.value > 0)
+
+  // Datos para gráfico de barras — participantes por empresa (dominio del email)
+  const companyMap: Record<string, number> = {}
+  for (const p of participants) {
+    const domain = p.email.includes('@') ? p.email.split('@')[1] : 'otro'
+    const company = domain.split('.')[0].toUpperCase()
+    companyMap[company] = (companyMap[company] || 0) + 1
+  }
+  const companyData = Object.entries(companyMap).map(([name, value]) => ({ name, value }))
+
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="flex flex-col gap-6">
+      {/* Gráficos */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* PieChart — distribución de actividad */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4">Distribución de actividad</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <PieChart>
+              <Pie data={activityData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, value }) => `${name}: ${value}`}>
+                {activityData.map((entry, i) => (
+                  <Cell key={i} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* BarChart — participantes por empresa */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+          <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4">Participantes por empresa</h3>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={companyData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="value" name="Participantes" fill="#31484E" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Tabla */}
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
           <tr>
@@ -268,6 +322,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
