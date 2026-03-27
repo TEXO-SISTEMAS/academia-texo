@@ -21,7 +21,7 @@ export default function ArtesanoDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-texo-dark p-8">
       <h1 className="text-3xl font-bold text-texo-azul dark:text-white mb-6">
-        Dashboard de Estadísticas
+        Estadísticas de progreso
       </h1>
 
       {/* Tabs */}
