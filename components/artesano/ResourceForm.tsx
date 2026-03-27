@@ -28,10 +28,10 @@ type SourceMode = "upload" | "text";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function makeEmptyQuestion(): QuizQuestion {
+function makeEmptyQuestion(optCount = 4): QuizQuestion {
   return {
     questionText: "",
-    options: ["", "", "", ""],
+    options: Array.from({ length: optCount }, () => ""),
     correctIndex: 0,
     multipleChoice: false,
     correctIndexes: [],
@@ -160,6 +160,28 @@ export default function ResourceForm({
     initQuestions(initialResource)
   );
 
+  const [questionCount, setQuestionCount] = useState<number>(() => {
+    if (initialResource?.type === "quiz") {
+      return Math.min(5, Math.max(1, (initialResource.content as QuizContent).questions.length));
+    }
+    return 3;
+  });
+
+  const [optionsPerQuestion, setOptionsPerQuestion] = useState<number>(() => {
+    if (initialResource?.type === "quiz") {
+      const first = (initialResource.content as QuizContent).questions[0];
+      if (first) return Math.min(5, Math.max(3, first.options.length));
+    }
+    return 4;
+  });
+
+  const [allowObservations, setAllowObservations] = useState<boolean>(() => {
+    if (initialResource?.type === "quiz") {
+      return (initialResource.content as QuizContent).allowObservations ?? false;
+    }
+    return false;
+  });
+
   // Upload
   const [driveFile, setDriveFile] = useState<File | null>(null);
   const [driveUploadPct, setDriveUploadPct] = useState<number | null>(null);
@@ -231,6 +253,33 @@ export default function ResourceForm({
           ? current.filter((x) => x !== oIndex)
           : [...current, oIndex];
         return { ...q, correctIndexes: next };
+      })
+    );
+  }
+
+  function handleQuestionCountChange(newCount: number) {
+    setQuestionCount(newCount);
+    setQuestions((prev) => {
+      if (newCount > prev.length) {
+        return [...prev, ...Array.from({ length: newCount - prev.length }, () => makeEmptyQuestion(optionsPerQuestion))];
+      }
+      return prev.slice(0, newCount);
+    });
+  }
+
+  function handleOptionsPerQuestionChange(newOptCount: number) {
+    setOptionsPerQuestion(newOptCount);
+    setQuestions((prev) =>
+      prev.map((q) => {
+        const opts = q.options.length < newOptCount
+          ? [...q.options, ...Array.from({ length: newOptCount - q.options.length }, () => "")]
+          : q.options.slice(0, newOptCount);
+        return {
+          ...q,
+          options: opts,
+          correctIndex: Math.min(q.correctIndex ?? 0, newOptCount - 1),
+          correctIndexes: (q.correctIndexes ?? []).filter((i) => i < newOptCount),
+        };
       })
     );
   }
@@ -351,7 +400,7 @@ export default function ResourceForm({
             setLoading(false);
             return;
           }
-          content = { questions: cleanQuestions };
+          content = { questions: cleanQuestions, allowObservations };
           break;
         }
         // legacy — no debería llegar acá desde el form, pero por si acaso
@@ -515,22 +564,41 @@ const isLegacyType = type === "text" || type === "file";
           {/* ── Cuestionario ───────────────────────────────────────────────── */}
           {type === "quiz" && (
             <div className="flex flex-col gap-4">
+
+              {/* Configuración del cuestionario */}
+              <div className="flex gap-4 flex-wrap">
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cantidad de preguntas</label>
+                  <select
+                    value={questionCount}
+                    onChange={(e) => handleQuestionCountChange(Number(e.target.value))}
+                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>{n} {n === 1 ? "pregunta" : "preguntas"}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Opciones por pregunta</label>
+                  <select
+                    value={optionsPerQuestion}
+                    onChange={(e) => handleOptionsPerQuestionChange(Number(e.target.value))}
+                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
+                  >
+                    <option value={3}>3 opciones</option>
+                    <option value={4}>4 opciones</option>
+                    <option value={5}>5 opciones</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Preguntas */}
               {questions.map((q, qi) => (
                 <div key={qi} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Pregunta {qi + 1}
-                    </span>
-                    {questions.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeQuestion(qi)}
-                        className="text-xs text-texo-rojo hover:underline"
-                      >
-                        Eliminar
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-3">
+                    Pregunta {qi + 1}
+                  </span>
 
                   <input
                     type="text"
@@ -593,15 +661,18 @@ const isLegacyType = type === "text" || type === "file";
                 </div>
               ))}
 
-              {questions.length < 10 && (
-                <button
-                  type="button"
-                  onClick={addQuestion}
-                  className="text-sm border border-texo-amarillo text-texo-amarillo rounded-lg px-3 py-1.5 self-start hover:bg-texo-amarillo/10 transition-colors"
-                >
-                  + Agregar pregunta
-                </button>
-              )}
+              {/* Observaciones */}
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allowObservations}
+                  onChange={(e) => setAllowObservations(e.target.checked)}
+                  className="accent-texo-amarillo w-4 h-4"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  Incluir campo de observaciones para el participante
+                </span>
+              </label>
             </div>
           )}
 

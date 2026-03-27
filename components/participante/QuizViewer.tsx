@@ -16,6 +16,7 @@ export default function QuizViewer({ content, onComplete }: Props) {
   const [answers, setAnswers] = useState<AnswerValue[]>(
     content.questions.map((q) => (q.multipleChoice ? [] : null))
   );
+  const [observations, setObservations] = useState("");
   const [loading, setLoading] = useState(false);
 
   const allAnswered = answers.every((a, i) => {
@@ -130,6 +131,21 @@ export default function QuizViewer({ content, onComplete }: Props) {
           </div>
         );
       })}
+
+      {content.allowObservations && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Observaciones <span className="text-gray-400 font-normal">(opcional)</span>
+          </label>
+          <textarea
+            value={observations}
+            onChange={(e) => setObservations(e.target.value)}
+            placeholder="Escribí tus comentarios o dudas sobre este cuestionario..."
+            rows={3}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo resize-none"
+          />
+        </div>
+      )}
 
       <button
         onClick={handleSubmit}
