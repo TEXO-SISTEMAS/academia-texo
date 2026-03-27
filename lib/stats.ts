@@ -33,7 +33,12 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
   const coursesWithStats = await Promise.all(
     coursesSnap.docs.map(async (courseDoc) => {
       const courseId = courseDoc.id
-      const courseTitle = courseDoc.data().title as string
+      const courseData = courseDoc.data()
+      const courseTitle = courseData.title as string
+
+      // enrolledCount viene del campo guardado en el doc del curso
+      const enrolledCount = (courseData.enrolledCount as number) || 0
+      console.log(`[Stats] ${courseTitle}: enrolledCount=${courseData.enrolledCount}`)
 
       // 1. Total de recursos del curso
       const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
@@ -45,14 +50,12 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
         totalResources += resSnap.size
       }
 
-      let enrolledCount = 0
       let completedCount = 0
 
-      // 2. Para cada usuario, verificar inscripción y progreso
+      // 2. Para cada usuario, verificar progreso
       for (const userId of userIds) {
         const enrollDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
         if (!enrollDoc.exists()) continue
-        enrolledCount++
 
         // 3. Contar recursos completados
         if (totalResources > 0) {
