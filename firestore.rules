@@ -73,14 +73,16 @@ service cloud.firestore {
     // ── Progress ──────────────────────────────────────────────────────────────
 
     match /progress/{userId} {
-      // Cada usuario solo accede a su propio progreso
-      allow read, write: if isAuthenticated() && isOwner(userId);
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId);
 
       match /courses/{courseId} {
-        allow read, write: if isAuthenticated() && isOwner(userId);
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isOwner(userId);
 
         match /resources/{resourceId} {
-          allow read, write: if isAuthenticated() && isOwner(userId);
+          allow read: if isAuthenticated();
+          allow write: if isAuthenticated() && isOwner(userId);
         }
       }
     }
