@@ -65,6 +65,10 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
           const completedResources = resourcesSnap.docs.filter(
             d => d.data().completed === true
           ).length
+          console.log(`[Stats] Usuario ${userId}:`)
+          console.log(`  - Total recursos del curso: ${totalResources}`)
+          console.log(`  - Recursos completados: ${completedResources}`)
+          console.log(`  - ¿Completó?: ${completedResources === totalResources}`)
           if (completedResources >= totalResources) completedCount++
         }
       }
