@@ -3,7 +3,6 @@ import Footer from "@/components/shared/Footer";
 
 const ARTESANO_LINKS = [
   { label: "Materiales", href: "/artesano/dashboard" },
-  { label: "Progreso", href: "/artesano/alumnos" },
 ];
 
 export default function ArtesanoLayout({
