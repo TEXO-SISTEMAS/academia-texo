@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getArtesanoCourses, type CourseStats } from '@/lib/stats'
+import { getArtesanoCourses, getAllParticipants, type CourseStats, type ParticipantStats } from '@/lib/stats'
 import {
   BarChart,
   Bar,
@@ -200,11 +200,74 @@ function SummaryCard({ label, value, color }: { label: string; value: string | n
 }
 
 function ParticipantesView({ searchQuery }: { searchQuery: string }) {
+  const [participants, setParticipants] = useState<ParticipantStats[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getAllParticipants()
+      .then(setParticipants)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = participants.filter(p =>
+    p.email.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-12 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
+  if (filtered.length === 0) {
+    return (
+      <p className="text-center py-20 text-gray-500 dark:text-gray-400">
+        {searchQuery ? `Sin resultados para "${searchQuery}"` : 'No hay participantes todavía.'}
+      </p>
+    )
+  }
+
   return (
-    <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-      <p className="text-lg font-semibold mb-2">Vista por Participante</p>
-      <p className="text-sm">En construcción...</p>
-      {searchQuery && <p className="text-xs mt-2 opacity-60">Búsqueda: &quot;{searchQuery}&quot;</p>}
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
+          <tr>
+            <th className="px-4 py-3 text-left">Participante</th>
+            <th className="px-4 py-3 text-center">Cursos inscritos</th>
+            <th className="px-4 py-3 text-center">Progreso %</th>
+            <th className="px-4 py-3 text-center">Última actividad</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+          {filtered.map(p => (
+            <tr key={p.email} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                {p.email.includes('@') ? p.email.split('@')[0] : p.email}
+                <span className="block text-xs text-gray-400 font-normal">{p.email}</span>
+              </td>
+              <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{p.cursosInscritos}</td>
+              <td className="px-4 py-3 text-center">
+                <span className={`font-semibold ${
+                  p.progresoPromedio >= 70 ? 'text-texo-verde'
+                  : p.progresoPromedio >= 40 ? 'text-texo-amarillo'
+                  : 'text-texo-rojo'
+                }`}>
+                  {p.progresoPromedio}%
+                </span>
+              </td>
+              <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-xs">
+                {p.ultimaActividad
+                  ? p.ultimaActividad.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                  : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
