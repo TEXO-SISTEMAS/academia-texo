@@ -493,7 +493,7 @@ const isLegacyType = type === "text" || type === "file";
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título</label>
             <input
               type="text"
-              placeholder="Ej: Introducción al color"
+              placeholder="Ej: Introducción a los Materiales"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required

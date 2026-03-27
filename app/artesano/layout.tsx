@@ -2,7 +2,7 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 
 const ARTESANO_LINKS = [
-  { label: "Mis propedéuticos", href: "/artesano/dashboard" },
+  { label: "Materiales", href: "/artesano/dashboard" },
   { label: "Progreso", href: "/artesano/alumnos" },
 ];
 
