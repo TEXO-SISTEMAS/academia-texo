@@ -9,7 +9,7 @@
 
 import { initializeApp, cert, getApps } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
-import * as serviceAccount from '../service-account.json'
+import * as serviceAccount from '../service-account-firebase.json'
 
 if (!getApps().length) {
   initializeApp({
