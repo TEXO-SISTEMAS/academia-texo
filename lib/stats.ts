@@ -17,7 +17,12 @@ export interface ParticipantStats {
 }
 
 export async function getAllParticipants(): Promise<ParticipantStats[]> {
+  console.log('[Stats] Buscando participantes...')
   const progressSnap = await getDocs(collection(db, 'progress'))
+  console.log('[Stats] Documentos en /progress:', progressSnap.size)
+  for (const userDoc of progressSnap.docs) {
+    console.log('[Stats] Usuario encontrado:', userDoc.id)
+  }
 
   const participants = await Promise.all(
     progressSnap.docs.map(async (userDoc) => {
