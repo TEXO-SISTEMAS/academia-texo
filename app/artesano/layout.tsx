@@ -2,7 +2,8 @@ import Navbar from "@/components/shared/Navbar";
 import Footer from "@/components/shared/Footer";
 
 const ARTESANO_LINKS = [
-  { label: "Materiales", href: "/artesano/dashboard" },
+  { label: "Dashboard", href: "/artesano/dashboard" },
+  { label: "Mis Propedéuticos", href: "/artesano/cursos" },
 ];
 
 export default function ArtesanoLayout({
