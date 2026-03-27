@@ -20,8 +20,6 @@ export default function LoginPage() {
 
     try {
       const result = await login(email.trim().toLowerCase());
-      console.log("[login] result:", result);
-
       if ("requiresPassword" in result && result.requiresPassword) {
         // Artesano — mostrar campo de contraseña
         setRequiresPassword(true);
@@ -35,7 +33,6 @@ export default function LoginPage() {
         : role === "artesano"
         ? "/artesano/dashboard"
         : "/participante/dashboard";
-      console.log("[LOGIN] redirecting directo a:", destination);
       window.location.href = destination;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");

@@ -22,7 +22,6 @@ function getServiceAccount() {
 function getAdminApp(): admin.app.App {
   if (admin.apps.length > 0) return admin.apps[0]!;
   const serviceAccount = getServiceAccount();
-  console.log("[admin] project_id del service account:", serviceAccount.project_id);
   return admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
   });

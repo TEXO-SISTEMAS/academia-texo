@@ -8,11 +8,6 @@ import { useAuth } from "@/lib/auth-context";
 import { getAllPublishedCourses } from "@/lib/firestore";
 
 export default function BienvenidaPage() {
-  console.log("[BIENVENIDA] COMPONENTE MONTADO");
-  if (typeof document !== "undefined") {
-    console.log("[BIENVENIDA] cookies:", document.cookie);
-  }
-
   const { firebaseUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const [displayName, setDisplayName] = useState<string>("");
@@ -26,19 +21,13 @@ export default function BienvenidaPage() {
     const roleCookie = cookies.find((c) => c.trim().startsWith("user-role="));
     const role = roleCookie ? decodeURIComponent(roleCookie.split("=")[1].trim()) : null;
 
-    console.log("[BIENVENIDA] cookies:", document.cookie);
-    console.log("[BIENVENIDA] role desde cookie:", role);
-
     let ruta = "/participante/dashboard";
     if (role === "admin") ruta = "/admin";
     else if (role === "artesano") ruta = "/artesano/dashboard";
     else if (!role) {
-      console.log("[BIENVENIDA] no hay cookie user-role, redirigiendo a /login");
       router.replace("/login");
       return;
     }
-
-    console.log("[BIENVENIDA] redirecting to:", ruta);
     setDestHref(ruta);
   }, [router]);
 
