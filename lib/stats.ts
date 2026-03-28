@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore'
+import { collection, query, where, getDocs, getDoc, doc, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from './firebase'
 
 export interface CourseStats {
@@ -7,6 +7,7 @@ export interface CourseStats {
   enrolledCount: number
   completedCount: number
   completionRate: number
+  avgCompletionDays: number
 }
 
 export interface ParticipantStats {
@@ -66,18 +67,70 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
   )
   const coursesSnap = await getDocs(q)
 
-  return coursesSnap.docs.filter(doc => !doc.data().deleted).map(doc => {
-    const data = doc.data()
-    const enrolledCount = (data.enrolledCount as number) || 0
-    const completedCount = (data.completedCount as number) || 0
-    return {
-      id: doc.id,
-      title: data.title as string,
-      enrolledCount,
-      completedCount,
-      completionRate: enrolledCount > 0
-        ? Math.round((completedCount / enrolledCount) * 100)
-        : 0,
-    }
-  })
+  // Usuarios con progreso (para calcular avgCompletionDays)
+  let userIds: string[] = []
+  try {
+    const progressSnap = await getDocs(collection(db, 'progress'))
+    userIds = progressSnap.docs.map(d => d.id)
+  } catch {
+    // Si falla, avgCompletionDays quedará en 0
+  }
+
+  return Promise.all(
+    coursesSnap.docs
+      .filter(courseDoc => !courseDoc.data().deleted)
+      .map(async (courseDoc) => {
+        const data = courseDoc.data()
+        const courseId = courseDoc.id
+        const enrolledCount = (data.enrolledCount as number) || 0
+        const completedCount = (data.completedCount as number) || 0
+
+        // Calcular tiempo promedio de finalización solo si hay completados
+        let avgCompletionDays = 0
+        if (completedCount > 0 && userIds.length > 0) {
+          const days: number[] = []
+          for (const userId of userIds) {
+            try {
+              const enrollDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
+              if (!enrollDoc.exists()) continue
+              const enrolledAt = enrollDoc.data().enrolledAt as Timestamp | undefined
+              if (!enrolledAt) continue
+
+              const resourcesSnap = await getDocs(
+                collection(db, `progress/${userId}/courses/${courseId}/resources`)
+              )
+              const completedDocs = resourcesSnap.docs.filter(d => d.data().completed === true)
+              if (completedDocs.length === 0) continue
+
+              const latestCompletedAt = completedDocs
+                .map(d => (d.data().completedAt as Timestamp | undefined)?.toDate()?.getTime() ?? 0)
+                .reduce((max, t) => Math.max(max, t), 0)
+
+              if (latestCompletedAt > 0) {
+                const diffDays = Math.round(
+                  (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60 * 60 * 24)
+                )
+                if (diffDays >= 0) days.push(diffDays)
+              }
+            } catch {
+              // ignorar errores por usuario
+            }
+          }
+          if (days.length > 0) {
+            avgCompletionDays = Math.round(days.reduce((s, d) => s + d, 0) / days.length)
+          }
+        }
+
+        return {
+          id: courseId,
+          title: data.title as string,
+          enrolledCount,
+          completedCount,
+          completionRate: enrolledCount > 0
+            ? Math.round((completedCount / enrolledCount) * 100)
+            : 0,
+          avgCompletionDays,
+        }
+      })
+  )
 }
