@@ -7,7 +7,7 @@ export interface CourseStats {
   enrolledCount: number
   completedCount: number
   completionRate: number
-  avgCompletionDays: number
+  avgCompletionHours: number
 }
 
 export interface ParticipantStats {
@@ -85,11 +85,10 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
         const enrolledCount = (data.enrolledCount as number) || 0
         const completedCount = (data.completedCount as number) || 0
 
-        // Calcular tiempo promedio de finalización solo si hay completados
-        let avgCompletionDays = 0
-        console.log(`[Stats] ${data.title}: completedCount=${completedCount}, userIds=${userIds.length}`)
+        // Calcular tiempo promedio de finalización en horas
+        let avgCompletionHours = 0
         if (completedCount > 0 && userIds.length > 0) {
-          const days: number[] = []
+          const hours: number[] = []
           for (const userId of userIds) {
             try {
               const enrollDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
@@ -107,23 +106,19 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
                 .map(d => (d.data().completedAt as Timestamp | undefined)?.toDate()?.getTime() ?? 0)
                 .reduce((max, t) => Math.max(max, t), 0)
 
-              console.log(`  - Usuario ${userId}: enrolledAt=${enrolledAt.toDate().toISOString()}, latestCompletedAt=${latestCompletedAt > 0 ? new Date(latestCompletedAt).toISOString() : 'null'}`)
-
               if (latestCompletedAt > 0) {
-                const diffDays = Math.round(
-                  (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60 * 60 * 24)
+                const diffHours = Math.round(
+                  (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60 * 60)
                 )
-                console.log(`  - Días: ${diffDays}`)
-                if (diffDays >= 0) days.push(diffDays)
+                if (diffHours >= 0) hours.push(diffHours)
               }
             } catch {
               // ignorar errores por usuario
             }
           }
-          if (days.length > 0) {
-            avgCompletionDays = Math.round(days.reduce((s, d) => s + d, 0) / days.length)
+          if (hours.length > 0) {
+            avgCompletionHours = Math.round(hours.reduce((s, h) => s + h, 0) / hours.length)
           }
-          console.log(`  - Promedio días: ${avgCompletionDays}`)
         }
 
         return {
@@ -134,7 +129,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
           completionRate: enrolledCount > 0
             ? Math.round((completedCount / enrolledCount) * 100)
             : 0,
-          avgCompletionDays,
+          avgCompletionHours,
         }
       })
   )
