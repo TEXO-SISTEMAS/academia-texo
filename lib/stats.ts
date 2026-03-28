@@ -7,7 +7,7 @@ export interface CourseStats {
   enrolledCount: number
   completedCount: number
   completionRate: number
-  avgCompletionHours: number
+  avgCompletionMinutes: number
 }
 
 export interface ParticipantStats {
@@ -85,10 +85,10 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
         const enrolledCount = (data.enrolledCount as number) || 0
         const completedCount = (data.completedCount as number) || 0
 
-        // Calcular tiempo promedio de finalización en horas
-        let avgCompletionHours = 0
+        // Calcular tiempo promedio de finalización en minutos
+        let avgCompletionMinutes = 0
         if (completedCount > 0 && userIds.length > 0) {
-          const hours: number[] = []
+          const minutes: number[] = []
           for (const userId of userIds) {
             try {
               const enrollDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
@@ -107,17 +107,17 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
                 .reduce((max, t) => Math.max(max, t), 0)
 
               if (latestCompletedAt > 0) {
-                const diffHours = Math.round(
-                  (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60 * 60)
+                const diffMinutes = Math.round(
+                  (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60)
                 )
-                if (diffHours >= 0) hours.push(diffHours)
+                if (diffMinutes >= 0) minutes.push(diffMinutes)
               }
             } catch {
               // ignorar errores por usuario
             }
           }
-          if (hours.length > 0) {
-            avgCompletionHours = Math.round(hours.reduce((s, h) => s + h, 0) / hours.length)
+          if (minutes.length > 0) {
+            avgCompletionMinutes = Math.round(minutes.reduce((s, m) => s + m, 0) / minutes.length)
           }
         }
 
@@ -129,7 +129,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
           completionRate: enrolledCount > 0
             ? Math.round((completedCount / enrolledCount) * 100)
             : 0,
-          avgCompletionHours,
+          avgCompletionMinutes,
         }
       })
   )

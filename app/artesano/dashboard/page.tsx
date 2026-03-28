@@ -152,32 +152,38 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
       )}
 
       {/* Gráfico horizontal — tiempo promedio de finalización */}
-      {filtered.some(c => c.avgCompletionHours > 0) && (
+      {filtered.some(c => c.avgCompletionMinutes > 0) && (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
           <h2 className="text-lg font-bold text-gray-800 dark:text-white">
             Tiempo promedio de finalización
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-            Horas que tarda un participante en completar cada curso
+            Tiempo que tarda un participante en completar cada curso
           </p>
-          <ResponsiveContainer width="100%" height={Math.max(120, filtered.length * 48)}>
+          <ResponsiveContainer width="100%" height={Math.max(120, filtered.filter(c => c.avgCompletionMinutes > 0).length * 52)}>
             <BarChart
               layout="vertical"
-              data={filtered.filter(c => c.avgCompletionHours > 0).map(c => ({
+              data={filtered.filter(c => c.avgCompletionMinutes > 0).map(c => ({
                 name: c.title.length > 24 ? c.title.slice(0, 24) + '…' : c.title,
-                horas: c.avgCompletionHours,
+                minutos: c.avgCompletionMinutes,
+                _orig: c,
               }))}
-              margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+              margin={{ top: 5, right: 60, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} unit=" h" />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={130} />
-              <Tooltip formatter={(v: number) => [`${v} h`, 'Promedio']} />
-              <Bar dataKey="horas" radius={[0, 4, 4, 0]}>
-                {filtered.filter(c => c.avgCompletionHours > 0).map((c, i) => (
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} unit=" min" />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={140} />
+              <Tooltip
+                formatter={(v: number) => {
+                  if (v < 60) return [`${v} min`, 'Promedio']
+                  return [`${Math.floor(v / 60)}h ${v % 60}min`, 'Promedio']
+                }}
+              />
+              <Bar dataKey="minutos" radius={[0, 4, 4, 0]}>
+                {filtered.filter(c => c.avgCompletionMinutes > 0).map((c, i) => (
                   <Cell
                     key={i}
-                    fill={c.avgCompletionHours < 24 ? '#3A9688' : c.avgCompletionHours <= 72 ? '#E8B84B' : '#C0544A'}
+                    fill={c.avgCompletionMinutes < 60 ? '#3A9688' : c.avgCompletionMinutes <= 240 ? '#E8B84B' : '#C0544A'}
                   />
                 ))}
               </Bar>
