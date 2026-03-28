@@ -87,6 +87,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
 
         // Calcular tiempo promedio de finalización solo si hay completados
         let avgCompletionDays = 0
+        console.log(`[Stats] ${data.title}: completedCount=${completedCount}, userIds=${userIds.length}`)
         if (completedCount > 0 && userIds.length > 0) {
           const days: number[] = []
           for (const userId of userIds) {
@@ -106,10 +107,13 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
                 .map(d => (d.data().completedAt as Timestamp | undefined)?.toDate()?.getTime() ?? 0)
                 .reduce((max, t) => Math.max(max, t), 0)
 
+              console.log(`  - Usuario ${userId}: enrolledAt=${enrolledAt.toDate().toISOString()}, latestCompletedAt=${latestCompletedAt > 0 ? new Date(latestCompletedAt).toISOString() : 'null'}`)
+
               if (latestCompletedAt > 0) {
                 const diffDays = Math.round(
                   (latestCompletedAt - enrolledAt.toDate().getTime()) / (1000 * 60 * 60 * 24)
                 )
+                console.log(`  - Días: ${diffDays}`)
                 if (diffDays >= 0) days.push(diffDays)
               }
             } catch {
@@ -119,6 +123,7 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
           if (days.length > 0) {
             avgCompletionDays = Math.round(days.reduce((s, d) => s + d, 0) / days.length)
           }
+          console.log(`  - Promedio días: ${avgCompletionDays}`)
         }
 
         return {
