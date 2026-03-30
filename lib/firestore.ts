@@ -208,16 +208,17 @@ export async function getAllPublishedCourses(): Promise<Course[]> {
 }
 
 export async function getAllCourses(): Promise<Course[]> {
-  const q = query(
-    collection(db, "courses"),
-    where("deleted", "!=", true),
-    orderBy("deleted"),
-    orderBy("createdAt", "desc")
-  );
   console.log("[getAllCourses] Ejecutando query...");
-  const snap = await getDocs(q);
+  const snap = await getDocs(collection(db, "courses"));
   console.log("[getAllCourses] Documentos:", snap.size);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course));
+  return snap.docs
+    .filter((d) => d.data().deleted !== true)
+    .map((d) => ({ id: d.id, ...d.data() } as Course))
+    .sort((a, b) => {
+      const dateA = (a.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ?? new Date(0);
+      const dateB = (b.createdAt as { toDate?: () => Date } | undefined)?.toDate?.() ?? new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
 }
 
 export async function updateCourse(
