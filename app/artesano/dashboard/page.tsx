@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getArtesanoCourses, getAllParticipants, getQuizResponses, type CourseStats, type ParticipantStats, type QuizResponse } from '@/lib/stats'
+import { getArtesanoCourses, getAllParticipants, getQuizResponses, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer } from '@/lib/stats'
 import {
   BarChart,
   Bar,
@@ -251,6 +251,41 @@ function SummaryCard({ label, value, color }: { label: string; value: string | n
   )
 }
 
+function QuizAnswerDetail({ index, data }: { index: number; data: QuizDetailedAnswer }) {
+  return (
+    <div className="text-sm">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className={`text-base ${data.esCorrecta ? 'text-texo-verde' : 'text-texo-rojo'}`}>
+          {data.esCorrecta ? '✅' : '❌'}
+        </span>
+        <p className="font-medium text-gray-800 dark:text-gray-200">
+          {index + 1}. {data.pregunta}
+        </p>
+      </div>
+      <div className="flex flex-col gap-1 pl-6">
+        {data.opciones.map((opt, oi) => {
+          const selected = data.opcionesSeleccionadas.includes(oi)
+          const correct = data.opcionesCorrectas.includes(oi)
+          let icon = '⭕'
+          let cls = 'text-gray-400 dark:text-gray-500'
+          if (selected && correct) { icon = '✅'; cls = 'text-texo-verde font-semibold' }
+          else if (selected && !correct) { icon = '❌'; cls = 'text-texo-rojo font-semibold' }
+          else if (!selected && correct) { icon = '⭕'; cls = 'text-gray-400 dark:text-gray-500 italic' }
+          return (
+            <span key={oi} className={`text-xs flex items-center gap-1.5 ${cls}`}>
+              <span>{icon}</span>
+              {opt}
+              {!selected && correct && (
+                <span className="text-texo-verde text-xs not-italic">(correcta)</span>
+              )}
+            </span>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function CuestionariosView() {
   const [responses, setResponses] = useState<QuizResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -340,7 +375,7 @@ function CuestionariosView() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
-                        {r.respuestas.length}
+                        {r.respuestasDetalladas.length}
                       </td>
                       <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-xs">
                         {r.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
@@ -349,39 +384,13 @@ function CuestionariosView() {
                     {isExpanded && (
                       <tr key={`${rowKey}-detail`} className="bg-gray-50 dark:bg-gray-800/40">
                         <td colSpan={6} className="px-6 py-4">
-                          <div className="flex flex-col gap-3">
-                            {r.questions.length > 0 ? (
-                              r.questions.map((q, qi) => {
-                                const answer = r.respuestas.find(a => a.questionIndex === qi)
-                                const selectedIndexes = answer?.selectedOptions ?? []
-                                return (
-                                  <div key={qi} className="text-sm">
-                                    <p className="font-medium text-gray-800 dark:text-gray-200 mb-1">
-                                      {qi + 1}. {q.questionText}
-                                    </p>
-                                    <div className="flex flex-col gap-1 pl-4">
-                                      {q.options.map((opt, oi) => (
-                                        <span
-                                          key={oi}
-                                          className={`text-xs px-2 py-0.5 rounded w-fit ${
-                                            selectedIndexes.includes(oi)
-                                              ? 'bg-texo-amarillo/20 text-texo-azul dark:text-white font-semibold'
-                                              : 'text-gray-400 dark:text-gray-500'
-                                          }`}
-                                        >
-                                          {selectedIndexes.includes(oi) ? '▶ ' : '○ '}{opt}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              })
-                            ) : (
-                              r.respuestas.map((ans, qi) => (
-                                <p key={qi} className="text-xs text-gray-600 dark:text-gray-400">
-                                  Pregunta {ans.questionIndex + 1}: opción {ans.selectedOptions.join(', ')}
-                                </p>
+                          <div className="flex flex-col gap-4">
+                            {r.respuestasDetalladas.length > 0 ? (
+                              r.respuestasDetalladas.map((d, qi) => (
+                                <QuizAnswerDetail key={qi} index={qi} data={d} />
                               ))
+                            ) : (
+                              <p className="text-xs text-gray-400">Sin detalle disponible.</p>
                             )}
                           </div>
                         </td>

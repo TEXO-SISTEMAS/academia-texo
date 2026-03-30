@@ -11,14 +11,21 @@ export interface CourseStats {
   avgCompletionMinutes: number
 }
 
+export interface QuizDetailedAnswer {
+  pregunta: string
+  opciones: string[]
+  opcionesSeleccionadas: number[]
+  opcionesCorrectas: number[]
+  esCorrecta: boolean
+}
+
 export interface QuizResponse {
   participante: string
   curso: string
   cursoId: string
   recursoId: string
   recursoTitulo: string
-  questions: { questionText: string; options: string[] }[]
-  respuestas: QuizAnswer[]
+  respuestasDetalladas: QuizDetailedAnswer[]
   score: number
   totalPreguntas: number
   completado: boolean
@@ -175,9 +182,9 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
         const resourceData = resourceDoc.data()
         if (!resourceData.answers || !Array.isArray(resourceData.answers)) continue
 
-        // Buscar el recurso en los capítulos del curso para obtener título y preguntas
+        // Buscar el recurso en los capítulos del curso para obtener título, preguntas y respuestas correctas
         let recursoTitulo = resourceDoc.id
-        let questions: { questionText: string; options: string[] }[] = []
+        let originalQuestions: QuizContent['questions'] = []
 
         try {
           const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
@@ -187,12 +194,7 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
             if (rSnap.exists()) {
               recursoTitulo = (rSnap.data().title as string | undefined) ?? resourceDoc.id
               const content = rSnap.data().content as QuizContent | undefined
-              if (content?.questions) {
-                questions = content.questions.map(q => ({
-                  questionText: q.questionText,
-                  options: q.options,
-                }))
-              }
+              if (content?.questions) originalQuestions = content.questions
               break
             }
           }
@@ -200,16 +202,35 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
           // ignorar — recursoTitulo quedará como ID
         }
 
+        const savedAnswers = resourceData.answers as QuizAnswer[]
+
+        const respuestasDetalladas: QuizDetailedAnswer[] = originalQuestions.map((q, qi) => {
+          const saved = savedAnswers.find(a => a.questionIndex === qi)
+          const selected = saved?.selectedOptions ?? []
+          const correctIndexes = q.multipleChoice
+            ? (q.correctIndexes ?? [])
+            : [q.correctIndex ?? 0]
+          const esCorrecta = q.multipleChoice
+            ? selected.length === correctIndexes.length && selected.every(i => correctIndexes.includes(i))
+            : selected[0] === correctIndexes[0]
+          return {
+            pregunta: q.questionText,
+            opciones: q.options,
+            opcionesSeleccionadas: selected,
+            opcionesCorrectas: correctIndexes,
+            esCorrecta,
+          }
+        })
+
         responses.push({
           participante: userId,
           curso: courseName,
           cursoId: courseId,
           recursoId: resourceDoc.id,
           recursoTitulo,
-          questions,
-          respuestas: resourceData.answers as QuizAnswer[],
+          respuestasDetalladas,
           score: (resourceData.score as number | undefined) ?? 0,
-          totalPreguntas: questions.length || (resourceData.answers as unknown[]).length,
+          totalPreguntas: originalQuestions.length || savedAnswers.length,
           completado: (resourceData.completed as boolean | undefined) ?? false,
           fecha: (resourceData.completedAt as Timestamp | undefined)?.toDate() ?? new Date(),
         })
