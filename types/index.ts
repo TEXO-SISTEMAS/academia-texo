@@ -24,6 +24,8 @@ export interface Course {
   published: boolean;
   courseNumber?: number; // asignado automáticamente al crear — undefined en cursos previos
   deleted?: boolean;
+  deletedAt?: Timestamp;
+  deletedBy?: string;
 }
 
 // ─── Chapter ──────────────────────────────────────────────────────────────────

@@ -6,14 +6,14 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/lib/auth-context";
 import {
   getAuditLogs,
-  getArchivedCourses,
-  restoreCourse,
+  getDeletedContent,
+  restoreContent,
   getAllowedUsers,
   addAllowedUser,
   removeAllowedUser,
 } from "@/lib/firestore";
-import type { AuditCursor } from "@/lib/firestore";
-import type { AuditLogEntry, AllowedUser, Course, UserRole } from "@/types";
+import type { AuditCursor, DeletedItem } from "@/lib/firestore";
+import type { AuditLogEntry, AllowedUser, UserRole } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
 const ADMIN_EMAIL = "danilo.sosa@texo.com.py";
@@ -155,23 +155,27 @@ function AuditTab() {
 
 // ── Tab 2: Contenido archivado ────────────────────────────────────────────────
 
+const TYPE_LABEL: Record<DeletedItem["type"], string> = {
+  course: "Propedéutico",
+};
+
 function ArchivedTab() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [items, setItems] = useState<DeletedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   useEffect(() => {
-    getArchivedCourses()
-      .then(setCourses)
+    getDeletedContent()
+      .then(setItems)
       .finally(() => setLoading(false));
   }, []);
 
-  async function handleRestore(courseId: string, title: string) {
-    setRestoringId(courseId);
+  async function handleRestore(item: DeletedItem) {
+    setRestoringId(item.id);
     try {
-      await restoreCourse(courseId);
-      setCourses((prev) => prev.filter((c) => c.id !== courseId));
-      toast.success(`"${title}" restaurado`);
+      await restoreContent(item.type, item.id);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      toast.success(`"${item.title}" restaurado`);
     } catch {
       toast.error("Error al restaurar. Intentá de nuevo.");
     } finally {
@@ -182,36 +186,58 @@ function ArchivedTab() {
   if (loading) return (
     <div className="space-y-2">
       {[...Array(3)].map((_, i) => (
-        <div key={i} className="h-14 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        <div key={i} className="h-12 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
       ))}
     </div>
   );
 
-  if (courses.length === 0) return (
+  if (items.length === 0) return (
     <p className="text-gray-400 text-sm py-8 text-center">No hay contenido archivado.</p>
   );
 
   return (
-    <ul className="flex flex-col gap-3">
-      {courses.map((course) => (
-        <li
-          key={course.id}
-          className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex items-center justify-between gap-4"
-        >
-          <div className="min-w-0">
-            <p className="font-medium text-gray-900 dark:text-white truncate">{course.title}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Artesano: {course.createdBy}</p>
-          </div>
-          <button
-            onClick={() => handleRestore(course.id, course.title)}
-            disabled={restoringId === course.id}
-            className="shrink-0 text-sm px-3 py-1.5 bg-texo-verde/10 text-texo-verde rounded-lg hover:bg-texo-verde/20 transition-colors disabled:opacity-50 font-medium"
-          >
-            {restoringId === course.id ? "Restaurando..." : "Restaurar"}
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+          <tr>
+            <th className="px-4 py-2.5 text-left font-medium whitespace-nowrap">Tipo</th>
+            <th className="px-4 py-2.5 text-left font-medium">Nombre</th>
+            <th className="px-4 py-2.5 text-left font-medium whitespace-nowrap">Eliminado por</th>
+            <th className="px-4 py-2.5 text-left font-medium whitespace-nowrap">Fecha</th>
+            <th className="px-4 py-2.5" />
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+          {items.map((item) => (
+            <tr key={item.id} className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+              <td className="px-4 py-2.5">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                  {TYPE_LABEL[item.type]}
+                </span>
+              </td>
+              <td className="px-4 py-2.5 text-gray-900 dark:text-white font-medium max-w-[220px] truncate text-xs">
+                {item.title}
+              </td>
+              <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs max-w-[160px] truncate">
+                {item.deletedBy ?? "—"}
+              </td>
+              <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-xs whitespace-nowrap">
+                {item.deletedAt ? formatDate(item.deletedAt) : "—"}
+              </td>
+              <td className="px-4 py-2.5 text-right">
+                <button
+                  onClick={() => handleRestore(item)}
+                  disabled={restoringId === item.id}
+                  className="text-xs px-3 py-1.5 bg-texo-verde/10 text-texo-verde rounded-lg hover:bg-texo-verde/20 transition-colors disabled:opacity-50 font-medium whitespace-nowrap"
+                >
+                  {restoringId === item.id ? "Restaurando..." : "Restaurar"}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

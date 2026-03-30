@@ -733,6 +733,42 @@ export async function restoreCourse(courseId: string): Promise<void> {
   });
 }
 
+export type DeletedItem = {
+  id: string;
+  type: "course";
+  title: string;
+  deletedAt?: import("firebase/firestore").Timestamp;
+  deletedBy?: string;
+  courseId?: never;
+};
+
+export async function getDeletedContent(): Promise<DeletedItem[]> {
+  const snap = await getDocs(collection(db, "courses"));
+  const deletedCourses: DeletedItem[] = snap.docs
+    .filter((d) => d.data().deleted === true)
+    .map((d) => ({
+      id: d.id,
+      type: "course" as const,
+      title: d.data().title as string,
+      deletedAt: d.data().deletedAt,
+      deletedBy: d.data().deletedBy,
+    }));
+  // TODO: También buscar capítulos y recursos eliminados
+  return deletedCourses;
+}
+
+export async function restoreContent(
+  type: "course",
+  id: string
+): Promise<void> {
+  if (type === "course") {
+    await updateDoc(doc(db, "courses", id), {
+      deleted: false,
+      deletedAt: deleteField(),
+    });
+  }
+}
+
 export async function getAllowedUsers(): Promise<AllowedUser[]> {
   const snap = await getDocs(collection(db, "allowedUsers"));
   return snap.docs.map((d) => ({
