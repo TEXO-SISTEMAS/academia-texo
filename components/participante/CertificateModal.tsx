@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Certificate from "./Certificate";
+import { generateCertificatePDF } from "@/lib/certificate";
 
 interface Props {
   participantName: string;
@@ -11,20 +12,12 @@ interface Props {
 }
 
 export default function CertificateModal({ participantName, courseTitle, completedAt, onClose }: Props) {
-  const certRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const el = document.getElementById("certificate");
-      if (!el) return;
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: null });
-      const link = document.createElement("a");
-      link.download = `certificado-${courseTitle.replace(/\s+/g, "-").toLowerCase()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
+      await generateCertificatePDF(participantName, courseTitle, completedAt);
     } finally {
       setDownloading(false);
     }
@@ -32,7 +25,7 @@ export default function CertificateModal({ participantName, courseTitle, complet
 
   function handleLinkedIn() {
     const text = encodeURIComponent(
-      `¡Completé el propedéutico "${courseTitle}" en Academia TEXO! #Capacitación #DesarrolloProfesional #GrupoTEXO`
+      `¡Completé exitosamente el propedéutico "${courseTitle}" en Academia TEXO! #Capacitación #DesarrolloProfesional #GrupoTEXO`
     );
     window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://www.linkedin.com&summary=${text}`, "_blank");
   }
@@ -59,9 +52,9 @@ export default function CertificateModal({ participantName, courseTitle, complet
           </button>
         </div>
 
-        {/* Certificado */}
+        {/* Certificado — preview escalado */}
         <div className="p-6 overflow-x-auto">
-          <div ref={certRef} className="flex justify-center">
+          <div className="flex justify-center">
             <div style={{ transform: "scale(0.72)", transformOrigin: "top center", marginBottom: "-100px" }}>
               <Certificate
                 participantName={participantName}
@@ -74,6 +67,12 @@ export default function CertificateModal({ participantName, courseTitle, complet
 
         {/* Acciones */}
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 text-sm font-semibold transition-colors"
+          >
+            Cerrar
+          </button>
           <button
             onClick={handleLinkedIn}
             className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#0077B5] text-[#0077B5] hover:bg-[#0077B5]/10 text-sm font-semibold transition-colors"
@@ -91,7 +90,7 @@ export default function CertificateModal({ participantName, courseTitle, complet
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
             </svg>
-            {downloading ? "Generando..." : "Descargar certificado"}
+            {downloading ? "Generando PDF..." : "Descargar PDF"}
           </button>
         </div>
       </div>
