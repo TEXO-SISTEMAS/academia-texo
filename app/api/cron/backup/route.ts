@@ -66,9 +66,13 @@ async function exportCollection(
 export async function GET(request: NextRequest) {
   // Verificar que venga de Vercel Cron
   const authHeader = request.headers.get("authorization");
+  console.log("[Backup] Authorization header:", authHeader);
+  console.log("[Backup] Expected:", `Bearer ${process.env.CRON_SECRET}`);
+  console.log("[Backup] Match:", authHeader === `Bearer ${process.env.CRON_SECRET}`);
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  console.log("[Backup] Auth passed, starting backup...");
 
   const backupFolderId = process.env.BACKUP_DRIVE_FOLDER_ID;
   if (!backupFolderId) {
