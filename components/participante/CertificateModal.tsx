@@ -2,17 +2,26 @@
 
 import { useState } from "react";
 import Certificate from "./Certificate";
-import { generateCertificatePDF } from "@/lib/certificate";
+import { generateCertificatePDF, generateCertificatePNGBlob } from "@/lib/certificate";
 
 interface Props {
   participantName: string;
   courseTitle: string;
   completedAt: Date;
   onClose: () => void;
+  /** Si es true, el header muestra "Felicitaciones" en vez de "Tu certificado" */
+  isCelebration?: boolean;
 }
 
-export default function CertificateModal({ participantName, courseTitle, completedAt, onClose }: Props) {
+export default function CertificateModal({
+  participantName,
+  courseTitle,
+  completedAt,
+  onClose,
+  isCelebration = false,
+}: Props) {
   const [downloading, setDownloading] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   async function handleDownload() {
     setDownloading(true);
@@ -23,11 +32,30 @@ export default function CertificateModal({ participantName, courseTitle, complet
     }
   }
 
-  function handleLinkedIn() {
-    const text = encodeURIComponent(
-      `¡Completé exitosamente el propedéutico "${courseTitle}" en Academia TEXO! #Capacitación #DesarrolloProfesional #GrupoTEXO`
-    );
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=https://www.linkedin.com&summary=${text}`, "_blank");
+  async function handleLinkedIn() {
+    setSharing(true);
+    try {
+      const blob = await generateCertificatePNGBlob();
+      const text = `¡Completé exitosamente el propedéutico "${courseTitle}" en Academia TEXO! 🎓 #Capacitación #DesarrolloProfesional #GrupoTEXO`;
+
+      if (blob) {
+        const file = new File([blob], "certificado-academia-texo.png", { type: "image/png" });
+        const shareData = { title: "Certificado Academia TEXO", text, files: [file] };
+
+        if (navigator.share && navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+
+      // Fallback: abrir URL de LinkedIn
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=https://www.linkedin.com&summary=${encodeURIComponent(text)}`,
+        "_blank"
+      );
+    } finally {
+      setSharing(false);
+    }
   }
 
   return (
@@ -39,8 +67,12 @@ export default function CertificateModal({ participantName, courseTitle, complet
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-texo-azul dark:text-white">¡Felicitaciones! 🎓</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Completaste el propedéutico</p>
+            <h2 className="text-lg font-bold text-texo-azul dark:text-white">
+              {isCelebration ? "¡Felicitaciones! 🎓" : "Tu certificado"}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {isCelebration ? "Completaste el propedéutico" : courseTitle}
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -75,12 +107,13 @@ export default function CertificateModal({ participantName, courseTitle, complet
           </button>
           <button
             onClick={handleLinkedIn}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#0077B5] text-[#0077B5] hover:bg-[#0077B5]/10 text-sm font-semibold transition-colors"
+            disabled={sharing}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg border border-[#0077B5] text-[#0077B5] hover:bg-[#0077B5]/10 disabled:opacity-50 text-sm font-semibold transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
             </svg>
-            Compartir en LinkedIn
+            {sharing ? "Preparando..." : "Compartir en LinkedIn"}
           </button>
           <button
             onClick={handleDownload}

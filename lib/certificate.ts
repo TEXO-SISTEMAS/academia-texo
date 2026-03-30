@@ -1,3 +1,11 @@
+export async function generateCertificatePNGBlob(): Promise<Blob | null> {
+  const html2canvas = (await import("html2canvas")).default;
+  const el = document.getElementById("certificate");
+  if (!el) return null;
+  const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: "#1a2a2e" });
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob), "image/png"));
+}
+
 export async function generateCertificatePDF(
   participantName: string,
   courseTitle: string,

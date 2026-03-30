@@ -301,6 +301,7 @@ export default function CourseViewPage() {
           courseTitle={course.title}
           completedAt={completedAt}
           onClose={() => setShowCertificate(false)}
+          isCelebration
         />
       )}
 
