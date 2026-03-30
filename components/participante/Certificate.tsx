@@ -21,142 +21,91 @@ export default function Certificate({ participantName, courseTitle, completedAt 
         height: "850px",
         backgroundColor: "#1a2a2e",
         position: "relative",
+        boxSizing: "border-box",
+        overflow: "hidden",
+        fontFamily: "Georgia, serif",
+      }}
+    >
+      {/* Bordes decorativos */}
+      <div style={{ position: "absolute", top: 16, left: 16, right: 16, bottom: 16, border: "3px solid #E8B84B", pointerEvents: "none" }} />
+      <div style={{ position: "absolute", top: 26, left: 26, right: 26, bottom: 26, border: "1px solid #7a5f25", pointerEvents: "none" }} />
+
+      {/* Contenido centrado — columna sin position absolute */}
+      <div style={{
+        position: "absolute",
+        top: 0, left: 0, right: 0, bottom: 0,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "60px 80px",
-        fontFamily: "Georgia, serif",
+        padding: "60px 120px",
         boxSizing: "border-box",
-        overflow: "hidden",
-      }}
-    >
-      {/* Borde exterior dorado */}
-      <div style={{
-        position: "absolute",
-        top: "16px", left: "16px", right: "16px", bottom: "16px",
-        border: "3px solid #E8B84B",
-        pointerEvents: "none",
-      }} />
-      {/* Borde interior fino */}
-      <div style={{
-        position: "absolute",
-        top: "24px", left: "24px", right: "24px", bottom: "24px",
-        border: "1px solid #8b6e2a",
-        pointerEvents: "none",
-      }} />
+        gap: 0,
+      }}>
 
-      {/* Logo texto — reemplaza imagen para compatibilidad html2canvas */}
-      <div style={{ marginBottom: "28px", textAlign: "center" }}>
-        <p style={{
-          color: "#E8B84B",
-          fontSize: "22px",
-          letterSpacing: "6px",
-          textTransform: "uppercase",
-          fontFamily: "Arial, sans-serif",
-          fontWeight: "bold",
-          margin: 0,
-        }}>
-          ACADEMIA
-        </p>
-        <p style={{
-          color: "#3A9688",
-          fontSize: "14px",
-          letterSpacing: "8px",
-          textTransform: "uppercase",
-          fontFamily: "Arial, sans-serif",
-          margin: "2px 0 0",
-        }}>
-          GRUPO TEXO
-        </p>
+        {/* Logo texto */}
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <div style={{ color: "#E8B84B", fontSize: "20px", letterSpacing: "7px", textTransform: "uppercase", fontFamily: "Arial, sans-serif", fontWeight: "bold" }}>
+            ACADEMIA
+          </div>
+          <div style={{ color: "#3A9688", fontSize: "12px", letterSpacing: "8px", textTransform: "uppercase", fontFamily: "Arial, sans-serif", marginTop: "4px" }}>
+            GRUPO TEXO
+          </div>
+        </div>
+
+        {/* Etiqueta */}
+        <div style={{ color: "#E8B84B", fontSize: "12px", letterSpacing: "5px", textTransform: "uppercase", fontFamily: "Arial, sans-serif", marginBottom: "20px" }}>
+          Certificado de Finalización
+        </div>
+
+        {/* Separador */}
+        <div style={{ width: "80px", height: "2px", backgroundColor: "#E8B84B", marginBottom: "28px" }} />
+
+        {/* "Se certifica que" */}
+        <div style={{ color: "#98adb1", fontSize: "16px", fontFamily: "Arial, sans-serif", marginBottom: "18px" }}>
+          Se certifica que
+        </div>
+
+        {/* Nombre del participante */}
+        <div style={{ color: "#ffffff", fontSize: "48px", fontWeight: "normal", textAlign: "center", letterSpacing: "1px", lineHeight: "1.1", marginBottom: "20px" }}>
+          {participantName}
+        </div>
+
+        {/* Línea */}
+        <div style={{ width: "200px", height: "1px", backgroundColor: "#7a5f25", marginBottom: "20px" }} />
+
+        {/* "ha completado..." */}
+        <div style={{ color: "#98adb1", fontSize: "16px", fontFamily: "Arial, sans-serif", textAlign: "center", marginBottom: "18px" }}>
+          ha completado exitosamente el propedéutico
+        </div>
+
+        {/* Nombre del curso */}
+        <div style={{ color: "#3A9688", fontSize: "30px", fontWeight: "normal", textAlign: "center", lineHeight: "1.3", marginBottom: "36px", maxWidth: "800px" }}>
+          {courseTitle}
+        </div>
+
+        {/* Fecha */}
+        <div style={{ color: "#527178", fontSize: "14px", fontFamily: "Arial, sans-serif" }}>
+          {dateStr}
+        </div>
+
       </div>
 
-      {/* Título */}
-      <p style={{
-        color: "#E8B84B",
-        fontSize: "13px",
-        letterSpacing: "5px",
-        textTransform: "uppercase",
-        margin: "0 0 20px",
-        fontFamily: "Arial, sans-serif",
-      }}>
-        Certificado de Finalización
-      </p>
-
-      {/* Separador sólido */}
-      <div style={{ width: "80px", height: "2px", backgroundColor: "#E8B84B", margin: "0 0 28px" }} />
-
-      {/* Texto */}
-      <p style={{
-        color: "#aab8bb",
-        fontSize: "16px",
-        margin: "0 0 16px",
-        fontFamily: "Arial, sans-serif",
-      }}>
-        Se certifica que
-      </p>
-
-      {/* Nombre participante */}
-      <p style={{
-        color: "#ffffff",
-        fontSize: "44px",
-        fontWeight: "normal",
-        margin: "0 0 20px",
-        textAlign: "center",
-        letterSpacing: "1px",
-      }}>
-        {participantName}
-      </p>
-
-      {/* Línea bajo el nombre */}
-      <div style={{ width: "160px", height: "1px", backgroundColor: "#8b6e2a", margin: "0 0 20px" }} />
-
-      <p style={{
-        color: "#aab8bb",
-        fontSize: "16px",
-        margin: "0 0 16px",
-        fontFamily: "Arial, sans-serif",
-        textAlign: "center",
-      }}>
-        ha completado exitosamente el propedéutico
-      </p>
-
-      {/* Nombre del curso */}
-      <p style={{
-        color: "#3A9688",
-        fontSize: "28px",
-        fontWeight: "normal",
-        textAlign: "center",
-        margin: "0 0 36px",
-        padding: "0 20px",
-        fontFamily: "Georgia, serif",
-      }}>
-        {courseTitle}
-      </p>
-
-      {/* Fecha */}
-      <p style={{
-        color: "#6b7e82",
-        fontSize: "14px",
-        fontFamily: "Arial, sans-serif",
-        margin: 0,
-      }}>
-        {dateStr}
-      </p>
-
-      {/* Footer */}
-      <p style={{
+      {/* Footer absoluto */}
+      <div style={{
         position: "absolute",
-        bottom: "40px",
-        color: "#334a50",
+        bottom: "36px",
+        left: 0,
+        right: 0,
+        textAlign: "center",
+        color: "#2e4449",
         fontSize: "11px",
         fontFamily: "Arial, sans-serif",
         letterSpacing: "3px",
         textTransform: "uppercase",
-        margin: 0,
       }}>
         Grupo TEXO · Academia de Formación Interna
-      </p>
+      </div>
     </div>
   );
 }

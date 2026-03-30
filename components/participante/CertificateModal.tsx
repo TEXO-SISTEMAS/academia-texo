@@ -63,7 +63,7 @@ export default function CertificateModal({
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
           <div>
@@ -84,10 +84,10 @@ export default function CertificateModal({
           </button>
         </div>
 
-        {/* Certificado — preview escalado */}
-        <div className="p-6 overflow-x-auto">
-          <div className="flex justify-center">
-            <div style={{ transform: "scale(0.48)", transformOrigin: "top center", marginBottom: "-250px" }}>
+        {/* Certificado — preview escalado a ~800px de ancho */}
+        <div className="px-6 pt-6 pb-2 overflow-hidden">
+          <div style={{ width: "800px", margin: "0 auto", height: `${Math.round(850 * 800 / 1200)}px`, overflow: "hidden" }}>
+            <div style={{ transform: "scale(0.667)", transformOrigin: "top left" }}>
               <Certificate
                 participantName={participantName}
                 courseTitle={courseTitle}
