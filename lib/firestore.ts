@@ -508,7 +508,8 @@ export async function markResourceCompleted(
   userId: string,
   courseId: string,
   resourceId: string,
-  score?: number
+  score?: number,
+  answers?: (number | number[])[]
 ): Promise<void> {
   const progressRef = doc(
     db,
@@ -526,6 +527,7 @@ export async function markResourceCompleted(
     completed: true,
     completedAt: serverTimestamp(),
     ...(score !== undefined && { score }),
+    ...(answers !== undefined && { answers }),
   };
 
   await setDoc(progressRef, payload);

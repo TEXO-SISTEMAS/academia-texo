@@ -204,4 +204,5 @@ export interface ResourceProgress {
   completed: boolean;
   completedAt: Timestamp;
   score?: number;
+  answers?: (number | number[])[];
 }

@@ -6,7 +6,7 @@ import type { QuizContent } from "@/types";
 
 interface Props {
   content: QuizContent;
-  onComplete: (score: number) => Promise<void>;
+  onComplete: (score: number, answers: (number | number[])[]) => Promise<void>;
 }
 
 // Por pregunta: null = sin responder (single) | number = respuesta single | number[] = respuestas múltiples
@@ -61,7 +61,7 @@ export default function QuizViewer({ content, onComplete }: Props) {
     const total = content.questions.length;
     toast.success(`Cuestionario completado — ${score}/${total} respuestas correctas`);
     setLoading(true);
-    await onComplete(score);
+    await onComplete(score, answers as (number | number[])[]);
   }
 
   return (

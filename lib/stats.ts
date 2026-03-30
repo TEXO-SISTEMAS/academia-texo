@@ -1,5 +1,6 @@
 import { collection, query, where, getDocs, getDoc, doc, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from './firebase'
+import type { QuizContent } from '@/types'
 
 export interface CourseStats {
   id: string
@@ -8,6 +9,20 @@ export interface CourseStats {
   completedCount: number
   completionRate: number
   avgCompletionMinutes: number
+}
+
+export interface QuizResponse {
+  participante: string
+  curso: string
+  cursoId: string
+  recursoId: string
+  recursoTitulo: string
+  questions: { questionText: string; options: string[] }[]
+  respuestas: (number | number[])[]
+  score: number
+  totalPreguntas: number
+  completado: boolean
+  fecha: Date
 }
 
 export interface ParticipantStats {
@@ -133,4 +148,72 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
         }
       })
   )
+}
+
+export async function getQuizResponses(): Promise<QuizResponse[]> {
+  const progressSnap = await getDocs(collection(db, 'progress'))
+  const responses: QuizResponse[] = []
+
+  for (const userDoc of progressSnap.docs) {
+    const userId = userDoc.id
+    const coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+
+    for (const courseDoc of coursesSnap.docs) {
+      const courseId = courseDoc.id
+
+      const courseRef = doc(db, `courses/${courseId}`)
+      const courseSnap = await getDoc(courseRef)
+      const courseName = (courseSnap.data()?.title as string | undefined) ?? 'Sin nombre'
+
+      const resourcesSnap = await getDocs(
+        collection(db, `progress/${userId}/courses/${courseId}/resources`)
+      )
+
+      for (const resourceDoc of resourcesSnap.docs) {
+        const resourceData = resourceDoc.data()
+        if (!resourceData.answers || !Array.isArray(resourceData.answers)) continue
+
+        // Buscar el recurso en los capítulos del curso para obtener título y preguntas
+        let recursoTitulo = resourceDoc.id
+        let questions: { questionText: string; options: string[] }[] = []
+
+        try {
+          const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
+          for (const chapterDoc of chaptersSnap.docs) {
+            const rRef = doc(db, `courses/${courseId}/chapters/${chapterDoc.id}/resources/${resourceDoc.id}`)
+            const rSnap = await getDoc(rRef)
+            if (rSnap.exists()) {
+              recursoTitulo = (rSnap.data().title as string | undefined) ?? resourceDoc.id
+              const content = rSnap.data().content as QuizContent | undefined
+              if (content?.questions) {
+                questions = content.questions.map(q => ({
+                  questionText: q.questionText,
+                  options: q.options,
+                }))
+              }
+              break
+            }
+          }
+        } catch {
+          // ignorar — recursoTitulo quedará como ID
+        }
+
+        responses.push({
+          participante: userId,
+          curso: courseName,
+          cursoId: courseId,
+          recursoId: resourceDoc.id,
+          recursoTitulo,
+          questions,
+          respuestas: resourceData.answers as (number | number[])[],
+          score: (resourceData.score as number | undefined) ?? 0,
+          totalPreguntas: questions.length || (resourceData.answers as unknown[]).length,
+          completado: (resourceData.completed as boolean | undefined) ?? false,
+          fecha: (resourceData.completedAt as Timestamp | undefined)?.toDate() ?? new Date(),
+        })
+      }
+    }
+  }
+
+  return responses.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
 }

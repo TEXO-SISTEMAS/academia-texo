@@ -173,9 +173,9 @@ export default function CourseViewPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleCompleteResource(resourceId: string, score?: number) {
+  async function handleCompleteResource(resourceId: string, score?: number, answers?: (number | number[])[]) {
     if (!firebaseUser) return;
-    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score);
+    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers);
     const newProgress = { ...progress, [resourceId]: true };
     setProgress(newProgress);
 
@@ -445,7 +445,7 @@ export default function CourseViewPage() {
               <ResourceViewer
                 resource={activeResource}
                 isCompleted={progress[activeResource.id] === true}
-                onComplete={(score) => handleCompleteResource(activeResource.id, score)}
+                onComplete={(score, answers) => handleCompleteResource(activeResource.id, score, answers)}
                 nextAction={getNextAction()}
                 userId={firebaseUser?.uid}
                 courseId={courseId}

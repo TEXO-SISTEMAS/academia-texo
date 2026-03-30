@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { getArtesanoCourses, getAllParticipants, type CourseStats, type ParticipantStats } from '@/lib/stats'
+import { getArtesanoCourses, getAllParticipants, getQuizResponses, type CourseStats, type ParticipantStats, type QuizResponse } from '@/lib/stats'
 import {
   BarChart,
   Bar,
@@ -252,11 +252,148 @@ function SummaryCard({ label, value, color }: { label: string; value: string | n
 }
 
 function CuestionariosView() {
+  const [responses, setResponses] = useState<QuizResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [expandedRow, setExpandedRow] = useState<string | null>(null)
+
+  useEffect(() => {
+    getQuizResponses()
+      .then(setResponses)
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = responses.filter(r =>
+    r.participante.toLowerCase().includes(search.toLowerCase()) ||
+    r.curso.toLowerCase().includes(search.toLowerCase()) ||
+    r.recursoTitulo.toLowerCase().includes(search.toLowerCase())
+  )
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4">
+        {[1, 2, 3].map(i => (
+          <div key={i} className="h-12 rounded-xl bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        ))}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col gap-2">
-      <h2 className="text-xl font-bold text-texo-azul dark:text-white">Respuestas de cuestionarios</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">Respuestas y calificaciones de los participantes</p>
-      <p className="mt-8 text-center text-gray-400 dark:text-gray-600 text-sm">Vista en construcción...</p>
+    <div className="flex flex-col gap-6">
+      <div>
+        <h2 className="text-xl font-bold text-texo-azul dark:text-white">Respuestas de cuestionarios</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Respuestas y calificaciones de los participantes</p>
+      </div>
+
+      <input
+        type="text"
+        placeholder="Buscar por participante, curso o cuestionario..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-full max-w-md px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-verde"
+      />
+
+      {filtered.length === 0 ? (
+        <p className="text-center py-20 text-gray-500 dark:text-gray-400">
+          {search ? `Sin resultados para "${search}"` : 'No hay respuestas de cuestionarios todavía.'}
+        </p>
+      ) : (
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
+              <tr>
+                <th className="px-4 py-3 text-left">Participante</th>
+                <th className="px-4 py-3 text-left">Curso</th>
+                <th className="px-4 py-3 text-left">Cuestionario</th>
+                <th className="px-4 py-3 text-center">Puntaje</th>
+                <th className="px-4 py-3 text-center">Preguntas</th>
+                <th className="px-4 py-3 text-center">Fecha</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+              {filtered.map((r, idx) => {
+                const rowKey = `${r.participante}-${r.recursoId}-${idx}`
+                const isExpanded = expandedRow === rowKey
+                const scoreColor = r.totalPreguntas > 0
+                  ? r.score / r.totalPreguntas >= 0.7 ? 'text-texo-verde'
+                  : r.score / r.totalPreguntas >= 0.4 ? 'text-texo-amarillo'
+                  : 'text-texo-rojo'
+                  : 'text-gray-500'
+
+                return (
+                  <>
+                    <tr
+                      key={rowKey}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                      onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                        {r.participante.includes('@') ? r.participante.split('@')[0] : r.participante}
+                        <span className="block text-xs text-gray-400 font-normal">{r.participante}</span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.curso}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.recursoTitulo}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`font-semibold ${scoreColor}`}>
+                          {r.score}/{r.totalPreguntas}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                        {r.respuestas.length}
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-xs">
+                        {r.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${rowKey}-detail`} className="bg-gray-50 dark:bg-gray-800/40">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="flex flex-col gap-3">
+                            {r.questions.length > 0 ? (
+                              r.questions.map((q, qi) => {
+                                const answer = r.respuestas[qi]
+                                const selectedIndexes = Array.isArray(answer) ? answer : answer !== null && answer !== undefined ? [answer] : []
+                                return (
+                                  <div key={qi} className="text-sm">
+                                    <p className="font-medium text-gray-800 dark:text-gray-200 mb-1">
+                                      {qi + 1}. {q.questionText}
+                                    </p>
+                                    <div className="flex flex-col gap-1 pl-4">
+                                      {q.options.map((opt, oi) => (
+                                        <span
+                                          key={oi}
+                                          className={`text-xs px-2 py-0.5 rounded w-fit ${
+                                            selectedIndexes.includes(oi)
+                                              ? 'bg-texo-amarillo/20 text-texo-azul dark:text-white font-semibold'
+                                              : 'text-gray-400 dark:text-gray-500'
+                                          }`}
+                                        >
+                                          {selectedIndexes.includes(oi) ? '▶ ' : '○ '}{opt}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              })
+                            ) : (
+                              r.respuestas.map((ans, qi) => (
+                                <p key={qi} className="text-xs text-gray-600 dark:text-gray-400">
+                                  Pregunta {qi + 1}: opción {Array.isArray(ans) ? ans.join(', ') : ans}
+                                </p>
+                              ))
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }
