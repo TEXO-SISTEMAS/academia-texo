@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { getAllPublishedCourses } from "@/lib/firestore";
+import { getAllCourses } from "@/lib/firestore";
 import type { Course } from "@/types";
 import CourseFormModal from "@/components/artesano/CourseFormModal";
 import Button from "@/components/shared/Button";
@@ -15,7 +15,7 @@ export default function ArtesanoCursos() {
   const loadCourses = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAllPublishedCourses();
+      const data = await getAllCourses();
       setCourses(data);
     } finally {
       setLoading(false);
@@ -57,10 +57,10 @@ export default function ArtesanoCursos() {
             style={{ height: 120, width: "auto", opacity: 0.3, marginBottom: "1.5rem", borderRadius: 8 }}
           />
           <p className="text-xl font-bold text-gray-700 dark:text-gray-200 mb-2">
-            No hay propedéuticos publicados
+            No hay propedéuticos
           </p>
           <p className="text-sm text-gray-400 mb-6 max-w-xs">
-            Creá y publicá el primer propedéutico para que aparezca aquí.
+            Creá el primer propedéutico para que aparezca aquí.
           </p>
           <Button onClick={() => setShowModal(true)} variant="primary">
             + Crear primer propedéutico

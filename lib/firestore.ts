@@ -207,6 +207,17 @@ export async function getAllPublishedCourses(): Promise<Course[]> {
     .map((d) => ({ id: d.id, ...d.data() } as Course));
 }
 
+export async function getAllCourses(): Promise<Course[]> {
+  const q = query(
+    collection(db, "courses"),
+    where("deleted", "!=", true),
+    orderBy("deleted"),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Course));
+}
+
 export async function updateCourse(
   courseId: string,
   data: Partial<Pick<Course, "title" | "description" | "coverImageUrl">>
