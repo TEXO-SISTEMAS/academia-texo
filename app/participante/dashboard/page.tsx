@@ -60,7 +60,7 @@ export default function ParticipanteDashboard() {
     <div className="p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
-          Propedéuticos disponibles
+          Recursos
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
           Aprendé a tu ritmo
