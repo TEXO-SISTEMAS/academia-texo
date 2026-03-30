@@ -34,7 +34,7 @@ export default function ArtesanoCursos() {
             Materiales
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            Todos los propedéuticos disponibles
+            Materiales
           </p>
         </div>
         <Button onClick={() => setShowModal(true)} variant="primary">
