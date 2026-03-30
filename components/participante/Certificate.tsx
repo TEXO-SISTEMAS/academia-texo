@@ -19,8 +19,8 @@ export default function Certificate({ participantName, courseTitle, completedAt 
     <div
       id="certificate"
       style={{
-        width: "800px",
-        minHeight: "560px",
+        width: "1200px",
+        height: "850px",
         background: "linear-gradient(135deg, #1a2a2e 0%, #0f1e22 100%)",
         position: "relative",
         display: "flex",

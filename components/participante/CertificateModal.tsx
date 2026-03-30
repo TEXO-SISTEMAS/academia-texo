@@ -26,7 +26,7 @@ export default function CertificateModal({
   async function handleDownload() {
     setDownloading(true);
     try {
-      await generateCertificatePDF(participantName, courseTitle, completedAt);
+      await generateCertificatePDF(courseTitle);
     } finally {
       setDownloading(false);
     }
@@ -87,7 +87,7 @@ export default function CertificateModal({
         {/* Certificado — preview escalado */}
         <div className="p-6 overflow-x-auto">
           <div className="flex justify-center">
-            <div style={{ transform: "scale(0.72)", transformOrigin: "top center", marginBottom: "-100px" }}>
+            <div style={{ transform: "scale(0.48)", transformOrigin: "top center", marginBottom: "-250px" }}>
               <Certificate
                 participantName={participantName}
                 courseTitle={courseTitle}
