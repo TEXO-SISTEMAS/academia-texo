@@ -41,6 +41,18 @@ function formatDate(ts: Timestamp | null | undefined): string {
 
 // ── Tab 1: Auditoría ──────────────────────────────────────────────────────────
 
+const RESOURCE_TYPE_OPTIONS = [
+  { value: "", label: "Todos los tipos" },
+  { value: "course", label: "Propedéutico" },
+  { value: "chapter", label: "Capítulo" },
+  { value: "resource", label: "Recurso" },
+  { value: "video", label: "Video" },
+  { value: "presentation", label: "Presentación" },
+  { value: "document", label: "Documento" },
+  { value: "pdf", label: "PDF" },
+  { value: "quiz", label: "Cuestionario" },
+];
+
 function AuditTab() {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +60,9 @@ function AuditTab() {
   const [cursor, setCursor] = useState<AuditCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -76,23 +91,70 @@ function AuditTab() {
     }
   }
 
-  const filtered = search.trim()
-    ? logs.filter((l) =>
-        (l.userEmail || l.userId).toLowerCase().includes(search.toLowerCase()) ||
-        l.action.toLowerCase().includes(search.toLowerCase())
-      )
-    : logs;
+  const filtered = logs.filter((l) => {
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const matchesUser = (l.userEmail || l.userId).toLowerCase().includes(q);
+      const matchesAction = l.action.toLowerCase().includes(q);
+      if (!matchesUser && !matchesAction) return false;
+    }
+    if (typeFilter && l.resourceType !== typeFilter) return false;
+    if (dateFrom) {
+      const from = new Date(dateFrom);
+      if (l.timestamp.toDate() < from) return false;
+    }
+    if (dateTo) {
+      const to = new Date(dateTo);
+      to.setHours(23, 59, 59, 999);
+      if (l.timestamp.toDate() > to) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = search.trim() || typeFilter || dateFrom || dateTo;
 
   return (
     <div>
-      <div className="mb-4">
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 mb-4">
         <input
           type="text"
           placeholder="Buscar por usuario o acción..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-sm px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+          className="flex-1 min-w-[180px] max-w-xs px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
         />
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+        >
+          {RESOURCE_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(e) => setDateFrom(e.target.value)}
+          title="Desde"
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(e) => setDateTo(e.target.value)}
+          title="Hasta"
+          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white"
+        />
+        {hasFilters && (
+          <button
+            onClick={() => { setSearch(""); setTypeFilter(""); setDateFrom(""); setDateTo(""); }}
+            className="px-3 py-2 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -112,6 +174,7 @@ function AuditTab() {
                   <th className="px-4 py-2.5 text-left font-medium whitespace-nowrap">Fecha</th>
                   <th className="px-4 py-2.5 text-left font-medium">Usuario</th>
                   <th className="px-4 py-2.5 text-left font-medium">Acción</th>
+                  <th className="px-4 py-2.5 text-left font-medium">Detalles</th>
                   <th className="px-4 py-2.5 text-left font-medium whitespace-nowrap">Tipo</th>
                 </tr>
               </thead>
@@ -124,12 +187,18 @@ function AuditTab() {
                     </td>
                     <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 max-w-[160px] truncate text-xs">
                       {log.userEmail || log.userId}
+                      {log.role && (
+                        <span className="block text-[11px] text-gray-400 capitalize">{log.role}</span>
+                      )}
                     </td>
-                    <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 max-w-[280px] text-xs">
+                    <td className="px-4 py-2.5 text-gray-700 dark:text-gray-300 max-w-[240px] text-xs">
                       {log.action}
                     </td>
+                    <td className="px-4 py-2.5 text-gray-500 dark:text-gray-400 max-w-[180px] truncate text-xs">
+                      {log.resourceTitle || "—"}
+                    </td>
                     <td className="px-4 py-2.5">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                         {log.resourceType}
                       </span>
                     </td>
@@ -138,7 +207,7 @@ function AuditTab() {
               </tbody>
             </table>
           </div>
-          {hasMore && !search.trim() && (
+          {hasMore && !hasFilters && (
             <button
               onClick={loadMore}
               disabled={loadingMore}

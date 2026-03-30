@@ -183,10 +183,12 @@ export interface AuditLogEntry {
   type: string;
   userId: string;
   userEmail: string;
+  role?: string;
   action: string;
   resourceType: string;
   resourceTitle: string;
   timestamp: Timestamp;
+  ip?: string;
 }
 
 export interface AllowedUser {
