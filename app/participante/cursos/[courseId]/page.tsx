@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import type { Course, Chapter, Resource, ResourceType, QuizAnswer } from "@/types";
 import ResourceViewer from "@/components/participante/ResourceViewer";
+import CertificateModal from "@/components/participante/CertificateModal";
 
 interface ChapterData {
   chapter: Chapter;
@@ -51,6 +52,8 @@ export default function CourseViewPage() {
   const [progress, setProgress] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [showIntro, setShowIntro] = useState(false);
+  const [showCertificate, setShowCertificate] = useState(false);
+  const [completedAt, setCompletedAt] = useState<Date>(new Date());
   const [activeChapterIdx, setActiveChapterIdx] = useState(0);
   const [activeResourceId, setActiveResourceId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -184,7 +187,8 @@ export default function CourseViewPage() {
     const allDone = allResources.length > 0 && allResources.every((r) => newProgress[r.id] === true);
 
     if (allDone) {
-      toast.success("¡Felicitaciones! Completaste el propedéutico 🎓", { duration: 5000 });
+      setCompletedAt(new Date());
+      setShowCertificate(true);
     } else if (score === undefined) {
       // Solo para recursos que no son quiz (quiz tiene su propio toast en QuizViewer)
       toast.success("¡Recurso completado! Siguiente desbloqueado 🎉");
@@ -290,6 +294,15 @@ export default function CourseViewPage() {
 
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 56px)" }}>
+
+      {showCertificate && course && firebaseUser && (
+        <CertificateModal
+          participantName={firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Participante"}
+          courseTitle={course.title}
+          completedAt={completedAt}
+          onClose={() => setShowCertificate(false)}
+        />
+      )}
 
       {/* ── Header con doble barra de progreso ─────────────────────────── */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-3 shrink-0">
