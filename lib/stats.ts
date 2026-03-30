@@ -151,7 +151,9 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
 }
 
 export async function getQuizResponses(): Promise<QuizResponse[]> {
+  console.log('[Quiz] Buscando respuestas...')
   const progressSnap = await getDocs(collection(db, 'progress'))
+  console.log('[Quiz] Usuarios encontrados:', progressSnap.size)
   const responses: QuizResponse[] = []
 
   for (const userDoc of progressSnap.docs) {
@@ -215,5 +217,6 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
     }
   }
 
+  console.log('[Quiz] Total respuestas:', responses.length)
   return responses.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
 }
