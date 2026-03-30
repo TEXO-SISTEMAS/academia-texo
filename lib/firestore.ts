@@ -208,9 +208,7 @@ export async function getAllPublishedCourses(): Promise<Course[]> {
 }
 
 export async function getAllCourses(): Promise<Course[]> {
-  console.log("[getAllCourses] Ejecutando query...");
   const snap = await getDocs(collection(db, "courses"));
-  console.log("[getAllCourses] Documentos:", snap.size);
   return snap.docs
     .filter((d) => d.data().deleted !== true)
     .map((d) => ({ id: d.id, ...d.data() } as Course))

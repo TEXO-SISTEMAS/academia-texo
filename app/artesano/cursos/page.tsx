@@ -15,10 +15,7 @@ export default function ArtesanoCursos() {
   const loadCourses = useCallback(async () => {
     setLoading(true);
     try {
-      console.log("[Cursos] Cargando...");
       const data = await getAllCourses();
-      console.log("[Cursos] Cantidad:", data.length);
-      console.log("[Cursos] Data:", data);
       setCourses(data);
     } finally {
       setLoading(false);
