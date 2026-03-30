@@ -17,7 +17,7 @@ import {
 } from 'recharts'
 
 export default function ArtesanoDashboard() {
-  const [activeTab, setActiveTab] = useState<'propedeuticos' | 'participantes'>('propedeuticos')
+  const [activeTab, setActiveTab] = useState<'propedeuticos' | 'participantes' | 'cuestionarios'>('propedeuticos')
   const [searchQuery, setSearchQuery] = useState('')
 
   return (
@@ -48,10 +48,20 @@ export default function ArtesanoDashboard() {
         >
           Por Participante
         </button>
+        <button
+          onClick={() => setActiveTab('cuestionarios')}
+          className={`px-6 py-3 font-semibold transition-colors ${
+            activeTab === 'cuestionarios'
+              ? 'border-b-4 border-texo-amarillo text-texo-amarillo'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          Por Cuestionarios
+        </button>
       </div>
 
       {/* Buscador */}
-      <div className="mb-6">
+      {activeTab !== 'cuestionarios' && <div className="mb-6">
         <input
           type="text"
           placeholder={
@@ -63,13 +73,11 @@ export default function ArtesanoDashboard() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full max-w-md px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-verde"
         />
-      </div>
+      </div>}
 
-      {activeTab === 'propedeuticos' ? (
-        <PropedeuticosView searchQuery={searchQuery} />
-      ) : (
-        <ParticipantesView searchQuery={searchQuery} />
-      )}
+      {activeTab === 'propedeuticos' && <PropedeuticosView searchQuery={searchQuery} />}
+      {activeTab === 'participantes' && <ParticipantesView searchQuery={searchQuery} />}
+      {activeTab === 'cuestionarios' && <CuestionariosView />}
     </div>
   )
 }
@@ -239,6 +247,16 @@ function SummaryCard({ label, value, color }: { label: string; value: string | n
     <div className={`bg-white dark:bg-gray-900 rounded-xl border-l-4 border border-gray-200 dark:border-gray-700 p-5 ${colorMap[color] ?? ''}`}>
       <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{label}</p>
       <p className={`text-3xl font-bold ${colorMap[color]?.split(' ')[0] ?? ''}`}>{value}</p>
+    </div>
+  )
+}
+
+function CuestionariosView() {
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-xl font-bold text-texo-azul dark:text-white">Respuestas de cuestionarios</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400">Respuestas y calificaciones de los participantes</p>
+      <p className="mt-8 text-center text-gray-400 dark:text-gray-600 text-sm">Vista en construcción...</p>
     </div>
   )
 }
