@@ -1,0 +1,19 @@
+Verificar si las respuestas de cuestionarios se están guardando en Firestore.
+
+1. Buscar en el código dónde se guarda la respuesta del cuestionario:
+   - Buscar en /components/participante/QuizViewer.tsx
+   - O donde sea que se maneje el submit del quiz
+   
+2. Verificar que al completar un quiz se guarde:
+   await updateDoc(resourceRef, {
+     answers: [...respuestas del usuario],
+     completed: true,
+     completedAt: serverTimestamp()
+   })
+
+3. Mostrame el código actual que maneja el guardado de respuestas.
+
+También agregar log en getQuizResponses:
+console.log('[Quiz] Buscando respuestas...')
+console.log('[Quiz] Usuarios encontrados:', progressSnap.size)
+console.log('[Quiz] Total respuestas:', responses.length)

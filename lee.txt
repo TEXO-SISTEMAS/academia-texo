@@ -1,0 +1,35 @@
+El problema es que los documentos de progress NO tienen el campo userId.
+
+SOLUCIÓN:
+
+1. En /lib/firestore.ts, función enrollParticipant:
+   Verificar que al crear el progreso se guarde:
+   
+   await setDoc(doc(db, `progress/${userId}/courses/${courseId}`), {
+     courseId: courseId,
+     userId: userId,  // ← DEBE estar aquí
+     enrolledAt: serverTimestamp(),
+   })
+
+2. Crear script de migración para agregar userId a documentos existentes:
+   /scripts/add-userId-to-progress.ts
+   
+   Que lea todos los docs en progress/{userId}/courses/{courseId}
+   y agregue el campo userId con el valor del ID del documento padre.
+
+3. Por ahora, simplificar getArtesanoCourses para que NO calcule completados:
+   
+   return coursesSnap.docs.map(doc => ({
+     id: doc.id,
+     title: doc.data().title,
+     enrolledCount: doc.data().enrolledCount || 0,
+     completedCount: 0,  // Temporalmente en 0
+     completionRate: 0
+   }))
+
+Implementá el punto 3 primero para que vuelva a funcionar.
+Después creamos el script de migración.
+
+git add .
+git commit -m "temp: disable completion calc until userId migration"
+git push origin main

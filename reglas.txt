@@ -1,0 +1,40 @@
+Las reglas de Firestore tienen error de sintaxis en la línea 8.
+
+El error es en la función helper isAdmin() - las funciones helper 
+NO pueden usar get() para leer otros documentos.
+
+Por favor en firestore.rules:
+
+1. ELIMINAR completamente la función isAdmin()
+
+2. En cada lugar donde dice:
+   allow read: if request.auth != null && isAdmin();
+   
+   REEMPLAZAR por:
+   allow read: if request.auth != null && 
+                  get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+3. Verificar que todas las llaves {} estén bien balanceadas
+
+4. El archivo debe quedar con la estructura:
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       
+       match /users/{userId} { ... }
+       match /allowedUsers/{email} { ... }
+       match /courses/{courseId} { ... }
+       match /progress/{userId} { ... }
+       match /loginHistory/{userId}/{document=**} { ... }
+       match /auditLog/{logId} { ... }
+     }
+   }
+
+5. Mostrarme el archivo completo actualizado antes de commitear
+
+NO hagas git add todavía, primero mostrame el contenido.
+
+
+forcePasswordChange
+false	
+Academia2026

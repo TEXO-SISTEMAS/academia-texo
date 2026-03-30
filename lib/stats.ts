@@ -1,6 +1,6 @@
 import { collection, query, where, getDocs, getDoc, doc, orderBy, Timestamp } from 'firebase/firestore'
 import { db } from './firebase'
-import type { QuizContent } from '@/types'
+import type { QuizContent, QuizAnswer } from '@/types'
 
 export interface CourseStats {
   id: string
@@ -18,7 +18,7 @@ export interface QuizResponse {
   recursoId: string
   recursoTitulo: string
   questions: { questionText: string; options: string[] }[]
-  respuestas: (number | number[])[]
+  respuestas: QuizAnswer[]
   score: number
   totalPreguntas: number
   completado: boolean
@@ -207,7 +207,7 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
           recursoId: resourceDoc.id,
           recursoTitulo,
           questions,
-          respuestas: resourceData.answers as (number | number[])[],
+          respuestas: resourceData.answers as QuizAnswer[],
           score: (resourceData.score as number | undefined) ?? 0,
           totalPreguntas: questions.length || (resourceData.answers as unknown[]).length,
           completado: (resourceData.completed as boolean | undefined) ?? false,

@@ -4,9 +4,11 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import type { QuizContent } from "@/types";
 
+import type { QuizAnswer } from "@/types";
+
 interface Props {
   content: QuizContent;
-  onComplete: (score: number, answers: (number | number[])[]) => Promise<void>;
+  onComplete: (score: number, answers: QuizAnswer[]) => Promise<void>;
 }
 
 // Por pregunta: null = sin responder (single) | number = respuesta single | number[] = respuestas múltiples
@@ -61,7 +63,11 @@ export default function QuizViewer({ content, onComplete }: Props) {
     const total = content.questions.length;
     toast.success(`Cuestionario completado — ${score}/${total} respuestas correctas`);
     setLoading(true);
-    await onComplete(score, answers as (number | number[])[]);
+    const serialized: QuizAnswer[] = answers.map((a, i) => ({
+      questionIndex: i,
+      selectedOptions: Array.isArray(a) ? a : a !== null ? [a as number] : [],
+    }));
+    await onComplete(score, serialized);
   }
 
   return (

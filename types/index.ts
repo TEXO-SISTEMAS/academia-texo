@@ -200,9 +200,14 @@ export interface CourseEnrollment {
   enrolledAt: Timestamp;
 }
 
+export interface QuizAnswer {
+  questionIndex: number;
+  selectedOptions: number[];
+}
+
 export interface ResourceProgress {
   completed: boolean;
   completedAt: Timestamp;
   score?: number;
-  answers?: (number | number[])[];
+  answers?: QuizAnswer[];
 }

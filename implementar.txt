@@ -1,0 +1,56 @@
+El script necesita credenciales de Firebase Admin pero no las tenemos en el repo.
+
+SOLUCIÓN ALTERNATIVA - Ejecutar desde Firebase Console:
+
+En lugar del script, actualizar manualmente los contadores desde Firestore Console.
+
+O MEJOR: cambiar el script para que use las credenciales de la web app:
+
+Crear /scripts/init-enrolled-count-web.ts que use Firebase client SDK:
+
+import { initializeApp } from 'firebase/app'
+import { getFirestore, collection, getDocs, collectionGroup, query, where, doc, updateDoc } from 'firebase/firestore'
+
+// Importar la config de Firebase
+import { db } from '../lib/firebase'
+
+async function initEnrolledCounts() {
+  console.log('Inicializando contadores de inscriptos...')
+  
+  const coursesRef = collection(db, 'courses')
+  const coursesSnap = await getDocs(coursesRef)
+  
+  for (const courseDoc of coursesSnap.docs) {
+    const courseId = courseDoc.id
+    
+    // Contar manualmente sin collectionGroup
+    const usersRef = collection(db, 'progress')
+    const usersSnap = await getDocs(usersRef)
+    
+    let enrolledCount = 0
+    
+    for (const userDoc of usersSnap.docs) {
+      const userId = userDoc.id
+      const courseProgressDoc = await getDoc(doc(db, `progress/${userId}/courses/${courseId}`))
+      if (courseProgressDoc.exists()) {
+        enrolledCount++
+      }
+    }
+    
+    await updateDoc(doc(db, `courses/${courseId}`), {
+      enrolledCount
+    })
+    
+    console.log(`${courseDoc.data().title}: ${enrolledCount} inscriptos`)
+  }
+  
+  console.log('Migración completada')
+}
+
+initEnrolledCounts()
+
+Este script usa client SDK y NO necesita service-account.json
+
+git add .
+git commit -m "fix: use client SDK for migration script"
+git push origin main

@@ -13,7 +13,7 @@ import {
   enrollParticipant,
 } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
-import type { Course, Chapter, Resource, ResourceType } from "@/types";
+import type { Course, Chapter, Resource, ResourceType, QuizAnswer } from "@/types";
 import ResourceViewer from "@/components/participante/ResourceViewer";
 
 interface ChapterData {
@@ -173,7 +173,7 @@ export default function CourseViewPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleCompleteResource(resourceId: string, score?: number, answers?: (number | number[])[]) {
+  async function handleCompleteResource(resourceId: string, score?: number, answers?: QuizAnswer[]) {
     if (!firebaseUser) return;
     await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers);
     const newProgress = { ...progress, [resourceId]: true };

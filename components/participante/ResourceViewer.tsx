@@ -10,6 +10,7 @@ import type {
   TextContent,
   QuizContent,
   FileContent,
+  QuizAnswer,
 } from "@/types";
 import { toDriveEmbedUrl, extractDriveFileId } from "@/lib/drive";
 import QuizViewer from "./QuizViewer";
@@ -25,7 +26,7 @@ interface NextAction {
 interface Props {
   resource: Resource;
   isCompleted: boolean;
-  onComplete: (score?: number, answers?: (number | number[])[]) => Promise<void>;
+  onComplete: (score?: number, answers?: QuizAnswer[]) => Promise<void>;
   nextAction?: NextAction | null;
   userId?: string;
   courseId?: string;
@@ -35,7 +36,7 @@ interface EngagementProps {
   userId?: string;
   courseId?: string;
   resourceId: string;
-  onComplete: (score?: number, answers?: (number | number[])[]) => Promise<void>;
+  onComplete: (score?: number, answers?: QuizAnswer[]) => Promise<void>;
   nextAction?: NextAction | null;
 }
 

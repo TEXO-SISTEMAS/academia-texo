@@ -46,6 +46,7 @@ import type {
   ResourceContent,
   ResourceType,
   ResourceProgress,
+  QuizAnswer,
   CourseEnrollment,
   AuditLogEntry,
   AllowedUser,
@@ -509,7 +510,7 @@ export async function markResourceCompleted(
   courseId: string,
   resourceId: string,
   score?: number,
-  answers?: (number | number[])[]
+  answers?: QuizAnswer[]
 ): Promise<void> {
   const progressRef = doc(
     db,

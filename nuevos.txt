@@ -1,0 +1,30 @@
+Agregar mapa de calor de tiempo promedio de finalización en "Por Propedéutico".
+
+1. En /lib/stats.ts, actualizar getArtesanoCourses para calcular:
+   - Tiempo promedio de finalización (días entre enrolledAt y última completedAt)
+   - Solo contar usuarios que completaron al 100%
+
+   Para cada curso completado:
+   - Leer enrolledAt del documento progress/{userId}/courses/{courseId}
+   - Encontrar el completedAt más reciente en resources
+   - Calcular diferencia en días
+   - Promediar todos los tiempos
+
+   Agregar al return:
+   avgCompletionDays: number (promedio de días para completar)
+
+2. En /app/artesano/dashboard/page.tsx, PropedeuticosView:
+   
+   Agregar un gráfico de barras horizontales (BarChart) que muestre:
+   - Eje Y: Nombre del propedéutico
+   - Eje X: Días promedio para completar
+   - Color: gradiente verde (rápido <7 días) → amarillo (7-14) → rojo (>14 días)
+
+   Título: "Tiempo promedio de finalización"
+   Subtítulo: "Días que tarda un participante en completar cada curso"
+
+   Ubicar debajo del gráfico de Inscriptos vs Completaron.
+
+git add .
+git commit -m "feat: add average completion time heatmap"
+git push origin main

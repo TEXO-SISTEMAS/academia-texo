@@ -352,8 +352,8 @@ function CuestionariosView() {
                           <div className="flex flex-col gap-3">
                             {r.questions.length > 0 ? (
                               r.questions.map((q, qi) => {
-                                const answer = r.respuestas[qi]
-                                const selectedIndexes = Array.isArray(answer) ? answer : answer !== null && answer !== undefined ? [answer] : []
+                                const answer = r.respuestas.find(a => a.questionIndex === qi)
+                                const selectedIndexes = answer?.selectedOptions ?? []
                                 return (
                                   <div key={qi} className="text-sm">
                                     <p className="font-medium text-gray-800 dark:text-gray-200 mb-1">
@@ -379,7 +379,7 @@ function CuestionariosView() {
                             ) : (
                               r.respuestas.map((ans, qi) => (
                                 <p key={qi} className="text-xs text-gray-600 dark:text-gray-400">
-                                  Pregunta {qi + 1}: opción {Array.isArray(ans) ? ans.join(', ') : ans}
+                                  Pregunta {ans.questionIndex + 1}: opción {ans.selectedOptions.join(', ')}
                                 </p>
                               ))
                             )}
