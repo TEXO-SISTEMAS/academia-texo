@@ -30,23 +30,25 @@ export async function generateCertificatePNGBlob(): Promise<Blob | null> {
 }
 
 export async function generateCertificatePDF(
-  courseTitle: string
+  participantName: string,
+  courseTitle: string,
+  completedAt: Date
 ): Promise<void> {
-  const canvas = await captureCanvas();
-  if (!canvas) return;
+  const { pdf } = await import("@react-pdf/renderer");
+  const { default: CertificatePDF } = await import(
+    "@/components/participante/CertificatePDF"
+  );
+  const React = (await import("react")).default;
 
-  const { jsPDF } = await import("jspdf");
-  const imgData = canvas.toDataURL("image/png");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const blob = await pdf(
+    React.createElement(CertificatePDF, { participantName, courseTitle, completedAt }) as any
+  ).toBlob();
 
-  // Usar las dimensiones exactas del canvas para que no haya distorsión
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "px",
-    format: [canvas.width, canvas.height],
-  });
-
-  pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
-
-  const fileName = `certificado-${courseTitle.replace(/\s+/g, "-").toLowerCase()}.pdf`;
-  pdf.save(fileName);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `certificado-${courseTitle.replace(/\s+/g, "-").toLowerCase()}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
 }

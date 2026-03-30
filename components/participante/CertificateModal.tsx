@@ -26,7 +26,7 @@ export default function CertificateModal({
   async function handleDownload() {
     setDownloading(true);
     try {
-      await generateCertificatePDF(courseTitle);
+      await generateCertificatePDF(participantName, courseTitle, completedAt);
     } finally {
       setDownloading(false);
     }
