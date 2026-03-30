@@ -38,12 +38,14 @@ export async function generateCertificatePDF(
   const { jsPDF } = await import("jspdf");
   const imgData = canvas.toDataURL("image/png");
 
-  // Tamaño carta landscape en mm
-  const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
-  const pageW = pdf.internal.pageSize.getWidth();
-  const pageH = pdf.internal.pageSize.getHeight();
+  // Usar las dimensiones exactas del canvas para que no haya distorsión
+  const pdf = new jsPDF({
+    orientation: "landscape",
+    unit: "px",
+    format: [canvas.width, canvas.height],
+  });
 
-  pdf.addImage(imgData, "PNG", 0, 0, pageW, pageH);
+  pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
 
   const fileName = `certificado-${courseTitle.replace(/\s+/g, "-").toLowerCase()}.pdf`;
   pdf.save(fileName);
