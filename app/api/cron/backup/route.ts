@@ -145,10 +145,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-export async function POST() {
-  return NextResponse.json({
-    cronSecret: process.env.CRON_SECRET ? "SET" : "NOT SET",
-    length: process.env.CRON_SECRET?.length ?? 0,
-  });
-}
