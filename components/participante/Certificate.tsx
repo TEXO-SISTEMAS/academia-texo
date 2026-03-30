@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface Props {
   participantName: string;
   courseTitle: string;
@@ -21,127 +19,104 @@ export default function Certificate({ participantName, courseTitle, completedAt 
       style={{
         width: "1200px",
         height: "850px",
-        background: "linear-gradient(135deg, #1a2a2e 0%, #0f1e22 100%)",
+        backgroundColor: "#1a2a2e",
         position: "relative",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "48px 64px",
+        padding: "60px 80px",
         fontFamily: "Georgia, serif",
         boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       {/* Borde exterior dorado */}
       <div style={{
         position: "absolute",
-        inset: "12px",
-        border: "2px solid #E8B84B",
-        borderRadius: "4px",
+        top: "16px", left: "16px", right: "16px", bottom: "16px",
+        border: "3px solid #E8B84B",
         pointerEvents: "none",
       }} />
       {/* Borde interior fino */}
       <div style={{
         position: "absolute",
-        inset: "18px",
-        border: "1px solid rgba(232,184,75,0.35)",
-        borderRadius: "2px",
+        top: "24px", left: "24px", right: "24px", bottom: "24px",
+        border: "1px solid #8b6e2a",
         pointerEvents: "none",
       }} />
 
-      {/* Esquinas decorativas */}
-      {[
-        { top: 24, left: 24 },
-        { top: 24, right: 24 },
-        { bottom: 24, left: 24 },
-        { bottom: 24, right: 24 },
-      ].map((pos, i) => (
-        <div key={i} style={{
-          position: "absolute",
-          width: "24px",
-          height: "24px",
-          borderColor: "#E8B84B",
-          borderStyle: "solid",
-          borderWidth: 0,
-          borderTopWidth: pos.top !== undefined ? "2px" : 0,
-          borderBottomWidth: pos.bottom !== undefined ? "2px" : 0,
-          borderLeftWidth: pos.left !== undefined ? "2px" : 0,
-          borderRightWidth: pos.right !== undefined ? "2px" : 0,
-          ...pos,
-        }} />
-      ))}
-
-      {/* Logo */}
-      <div style={{ marginBottom: "24px" }}>
-        <Image
-          src="/LA_ACADEMIA_NEWSLETTER.png"
-          alt="Academia TEXO"
-          width={120}
-          height={48}
-          style={{ objectFit: "contain" }}
-        />
+      {/* Logo texto — reemplaza imagen para compatibilidad html2canvas */}
+      <div style={{ marginBottom: "28px", textAlign: "center" }}>
+        <p style={{
+          color: "#E8B84B",
+          fontSize: "22px",
+          letterSpacing: "6px",
+          textTransform: "uppercase",
+          fontFamily: "Arial, sans-serif",
+          fontWeight: "bold",
+          margin: 0,
+        }}>
+          ACADEMIA
+        </p>
+        <p style={{
+          color: "#3A9688",
+          fontSize: "14px",
+          letterSpacing: "8px",
+          textTransform: "uppercase",
+          fontFamily: "Arial, sans-serif",
+          margin: "2px 0 0",
+        }}>
+          GRUPO TEXO
+        </p>
       </div>
 
       {/* Título */}
       <p style={{
         color: "#E8B84B",
-        fontSize: "11px",
-        letterSpacing: "4px",
+        fontSize: "13px",
+        letterSpacing: "5px",
         textTransform: "uppercase",
-        marginBottom: "16px",
-        margin: "0 0 16px",
+        margin: "0 0 20px",
         fontFamily: "Arial, sans-serif",
       }}>
-        Certificado de finalización
+        Certificado de Finalización
       </p>
 
-      {/* Separador */}
-      <div style={{
-        width: "60px",
-        height: "1px",
-        background: "linear-gradient(90deg, transparent, #E8B84B, transparent)",
-        margin: "0 0 24px",
-      }} />
+      {/* Separador sólido */}
+      <div style={{ width: "80px", height: "2px", backgroundColor: "#E8B84B", margin: "0 0 28px" }} />
 
-      {/* Texto principal */}
+      {/* Texto */}
       <p style={{
-        color: "rgba(255,255,255,0.65)",
-        fontSize: "13px",
-        marginBottom: "12px",
+        color: "#aab8bb",
+        fontSize: "16px",
+        margin: "0 0 16px",
         fontFamily: "Arial, sans-serif",
-        margin: "0 0 12px",
       }}>
         Se certifica que
       </p>
 
-      {/* Nombre del participante */}
+      {/* Nombre participante */}
       <p style={{
         color: "#ffffff",
-        fontSize: "32px",
+        fontSize: "44px",
         fontWeight: "normal",
-        marginBottom: "16px",
+        margin: "0 0 20px",
         textAlign: "center",
-        margin: "0 0 16px",
         letterSpacing: "1px",
       }}>
         {participantName}
       </p>
 
-      {/* Separador */}
-      <div style={{
-        width: "120px",
-        height: "1px",
-        background: "linear-gradient(90deg, transparent, rgba(232,184,75,0.5), transparent)",
-        margin: "0 0 16px",
-      }} />
+      {/* Línea bajo el nombre */}
+      <div style={{ width: "160px", height: "1px", backgroundColor: "#8b6e2a", margin: "0 0 20px" }} />
 
       <p style={{
-        color: "rgba(255,255,255,0.65)",
-        fontSize: "13px",
-        marginBottom: "12px",
+        color: "#aab8bb",
+        fontSize: "16px",
+        margin: "0 0 16px",
         fontFamily: "Arial, sans-serif",
         textAlign: "center",
-        margin: "0 0 12px",
       }}>
         ha completado exitosamente el propedéutico
       </p>
@@ -149,20 +124,20 @@ export default function Certificate({ participantName, courseTitle, completedAt 
       {/* Nombre del curso */}
       <p style={{
         color: "#3A9688",
-        fontSize: "22px",
+        fontSize: "28px",
         fontWeight: "normal",
         textAlign: "center",
-        marginBottom: "28px",
-        margin: "0 0 28px",
-        padding: "0 16px",
+        margin: "0 0 36px",
+        padding: "0 20px",
+        fontFamily: "Georgia, serif",
       }}>
         {courseTitle}
       </p>
 
       {/* Fecha */}
       <p style={{
-        color: "rgba(255,255,255,0.4)",
-        fontSize: "12px",
+        color: "#6b7e82",
+        fontSize: "14px",
         fontFamily: "Arial, sans-serif",
         margin: 0,
       }}>
@@ -170,25 +145,18 @@ export default function Certificate({ participantName, courseTitle, completedAt 
       </p>
 
       {/* Footer */}
-      <div style={{
+      <p style={{
         position: "absolute",
-        bottom: "32px",
-        left: 0,
-        right: 0,
-        display: "flex",
-        justifyContent: "center",
+        bottom: "40px",
+        color: "#334a50",
+        fontSize: "11px",
+        fontFamily: "Arial, sans-serif",
+        letterSpacing: "3px",
+        textTransform: "uppercase",
+        margin: 0,
       }}>
-        <p style={{
-          color: "rgba(255,255,255,0.2)",
-          fontSize: "10px",
-          fontFamily: "Arial, sans-serif",
-          letterSpacing: "2px",
-          textTransform: "uppercase",
-          margin: 0,
-        }}>
-          Grupo TEXO · Academia de Formación Interna
-        </p>
-      </div>
+        Grupo TEXO · Academia de Formación Interna
+      </p>
     </div>
   );
 }
