@@ -73,8 +73,8 @@ service cloud.firestore {
     // ── AuditLog ──────────────────────────────────────────────────────────────
 
     match /auditLog/{logId} {
-      // TEMP DEBUG: permitir a todos los autenticados para verificar si el problema es la regla de email
-      allow read: if isAuthenticated();
+      // Solo el admin puede leer (verificación por UID)
+      allow read: if isAuthenticated() && request.auth.uid == 'danilo.sosa@texo.com.py';
       // Cualquier usuario autenticado puede escribir (silentAudit desde cliente)
       allow write: if isAuthenticated();
     }
@@ -82,11 +82,11 @@ service cloud.firestore {
     // ── LoginHistory ──────────────────────────────────────────────────────────
 
     match /loginHistory/{userId} {
-      allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+      allow read: if isAuthenticated() && request.auth.uid == 'danilo.sosa@texo.com.py';
       allow write: if isAuthenticated() && isOwner(userId);
 
       match /sessions/{sessionId} {
-        allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+        allow read: if isAuthenticated() && request.auth.uid == 'danilo.sosa@texo.com.py';
         allow write: if isAuthenticated() && isOwner(userId);
       }
     }
