@@ -178,12 +178,13 @@ export default function CourseViewPage() {
 
   async function handleCompleteResource(resourceId: string, score?: number, answers?: QuizAnswer[]) {
     if (!firebaseUser) return;
-    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers);
+    const allResources = chaptersData.flatMap((cd) => cd.resources);
+    const resourceTitle = allResources.find((r) => r.id === resourceId)?.title;
+    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers, resourceTitle);
     const newProgress = { ...progress, [resourceId]: true };
     setProgress(newProgress);
 
     // Verificar si el curso quedó 100% completado
-    const allResources = chaptersData.flatMap((cd) => cd.resources);
     const allDone = allResources.length > 0 && allResources.every((r) => newProgress[r.id] === true);
 
     if (allDone) {

@@ -522,7 +522,8 @@ export async function markResourceCompleted(
   courseId: string,
   resourceId: string,
   score?: number,
-  answers?: QuizAnswer[]
+  answers?: QuizAnswer[],
+  resourceTitle?: string
 ): Promise<void> {
   const progressRef = doc(
     db,
@@ -548,9 +549,9 @@ export async function markResourceCompleted(
   silentAudit({
     userId,
     userEmail: auth.currentUser?.email ?? "",
-    action: `Completó recurso: ${resourceId}`,
+    action: `Completó recurso: ${resourceTitle ?? resourceId}`,
     resourceType: "resource",
-    resourceTitle: resourceId,
+    resourceTitle: resourceTitle ?? resourceId,
   });
 }
 
