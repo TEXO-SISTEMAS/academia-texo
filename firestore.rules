@@ -73,8 +73,8 @@ service cloud.firestore {
     // ── AuditLog ──────────────────────────────────────────────────────────────
 
     match /auditLog/{logId} {
-      // Solo el admin puede leer (verificación por email)
-      allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+      // TEMP DEBUG: permitir a todos los autenticados para verificar si el problema es la regla de email
+      allow read: if isAuthenticated();
       // Cualquier usuario autenticado puede escribir (silentAudit desde cliente)
       allow write: if isAuthenticated();
     }

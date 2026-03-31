@@ -15,6 +15,7 @@ import {
 import type { AuditCursor, DeletedItem } from "@/lib/firestore";
 import type { AuditLogEntry, AllowedUser, UserRole } from "@/types";
 import { Timestamp } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 
 const ADMIN_EMAIL = "danilo.sosa@texo.com.py";
 const PAGE_SIZE = 20;
@@ -67,6 +68,13 @@ function AuditTab() {
   const loadLogs = useCallback(async () => {
     setLoading(true);
     try {
+      const user = auth.currentUser;
+      if (user) {
+        const token = await user.getIdTokenResult();
+        console.log("[Admin] User email:", user.email);
+        console.log("[Admin] Token email:", token.claims.email);
+        console.log("[Admin] Token claims:", token.claims);
+      }
       const { logs: newLogs, nextCursor } = await getAuditLogs(PAGE_SIZE);
       setLogs(newLogs);
       setCursor(nextCursor);
