@@ -68,8 +68,13 @@ export default function CertificadosPage() {
           const allDone = allResources.every((r) => progressMap[r.id] === true);
           if (!allDone) return;
 
-          const courseData = await getCourse(courseId);
-          if (!courseData || courseData.deleted) return;
+          let courseData;
+          try {
+            courseData = await getCourse(courseId);
+          } catch {
+            return;
+          }
+          if (!courseData || courseData.deleted === true) return;
 
           results.push({
             courseId,
