@@ -70,6 +70,27 @@ service cloud.firestore {
       }
     }
 
+    // ── AuditLog ──────────────────────────────────────────────────────────────
+
+    match /auditLog/{logId} {
+      // Solo el admin puede leer (verificación por email)
+      allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+      // Cualquier usuario autenticado puede escribir (silentAudit desde cliente)
+      allow write: if isAuthenticated();
+    }
+
+    // ── LoginHistory ──────────────────────────────────────────────────────────
+
+    match /loginHistory/{userId} {
+      allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+      allow write: if isAuthenticated() && isOwner(userId);
+
+      match /sessions/{sessionId} {
+        allow read: if isAuthenticated() && request.auth.token.email == 'danilo.sosa@texo.com.py';
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+
     // ── Progress ──────────────────────────────────────────────────────────────
 
     match /progress/{userId} {
