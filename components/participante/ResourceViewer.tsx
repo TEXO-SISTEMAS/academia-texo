@@ -1039,6 +1039,7 @@ function PresentationResource({
   return (
     <TrackedPageViewer
       driveUrl={driveUrl}
+      totalPages={totalSlides}
       loadingLabel="Convirtiendo presentación..."
       minTimePerPage={MIN_SLIDE_TIME}
       onReadyChange={setReady}
