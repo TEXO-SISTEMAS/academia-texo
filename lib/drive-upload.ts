@@ -82,7 +82,35 @@ export async function uploadFileResumable(
     throw new Error(data.error ?? "Error al publicar el archivo.");
   }
 
-  return pubRes.json() as Promise<DriveUploadResult>;
+  const result = await pubRes.json() as DriveUploadResult;
+
+  // 4. Convertir a PDF si es PPT/PPTX o DOC/DOCX (best-effort)
+  const PPT_MIMES = [
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-powerpoint",
+  ];
+  const DOCX_MIMES = [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/msword",
+  ];
+  const fileMime = file.type || "";
+  if (PPT_MIMES.includes(fileMime) || DOCX_MIMES.includes(fileMime)) {
+    try {
+      const convRes = await fetch("/api/drive/convert-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, mimeType: fileMime, fileName: file.name }),
+      });
+      if (convRes.ok) {
+        const { pdfFileId } = await convRes.json() as { pdfFileId?: string };
+        if (pdfFileId) result.pdfFileId = pdfFileId;
+      }
+    } catch {
+      // Conversión es best-effort — no bloquear el upload
+    }
+  }
+
+  return result;
 }
 
 export async function uploadFileToDrive(
