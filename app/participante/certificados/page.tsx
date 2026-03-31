@@ -37,6 +37,9 @@ export default function CertificadosPage() {
       );
 
       const results: CompletedCourse[] = [];
+      let deletedCount = 0;
+
+      console.log("[Certificados] Total inscritos:", coursesSnap.docs.length);
 
       await Promise.all(
         coursesSnap.docs.map(async (courseDoc) => {
@@ -71,10 +74,17 @@ export default function CertificadosPage() {
           let courseData;
           try {
             courseData = await getCourse(courseId);
-          } catch {
+          } catch (err) {
+            console.warn("[Certificados] getCourse lanzó excepción para:", courseId, err);
             return;
           }
-          if (!courseData || courseData.deleted === true) return;
+
+          console.log(`[Certificados] courseId: ${courseId} | exists: ${!!courseData} | deleted: ${courseData?.deleted} | typeof deleted: ${typeof courseData?.deleted}`);
+
+          if (!courseData || courseData.deleted === true) {
+            deletedCount++;
+            return;
+          }
 
           results.push({
             courseId,
@@ -84,6 +94,10 @@ export default function CertificadosPage() {
           });
         })
       );
+
+      console.log("[Certificados] Total completados:", results.length + deletedCount);
+      console.log("[Certificados] Certificados válidos:", results.length);
+      console.log("[Certificados] Certificados de cursos eliminados:", deletedCount);
 
       setCompletedCourses(results.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()));
     } finally {
