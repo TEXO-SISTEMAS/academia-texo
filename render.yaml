@@ -4,7 +4,7 @@ services:
     env: node
     region: oregon
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: ls lib/ && ls components/ && npm ci && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
