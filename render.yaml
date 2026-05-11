@@ -1,0 +1,54 @@
+services:
+  - type: web
+    name: academia-texo
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_APP_ID
+        sync: false
+      - key: NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+        value: dijx5djun
+      - key: NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+        value: academia-texo
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: DRIVE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: GOOGLE_DRIVE_FOLDER_ID
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: BACKUP_DRIVE_FOLDER_ID
+        sync: false
+
+  - type: cron
+    name: academia-texo-backup
+    env: node
+    region: oregon
+    plan: starter
+    schedule: "0 3 * * *"
+    buildCommand: echo "no build"
+    startCommand: >-
+      curl -s -f
+      -H "Authorization: Bearer $CRON_SECRET"
+      "$APP_URL/api/cron/backup"
+    envVars:
+      - key: CRON_SECRET
+        sync: false
+      - key: APP_URL
+        sync: false
