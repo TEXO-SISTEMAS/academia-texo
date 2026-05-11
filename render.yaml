@@ -3,7 +3,7 @@ services:
     name: academia-texo
     env: node
     region: oregon
-    plan: starter
+    plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
     envVars:
@@ -40,7 +40,7 @@ services:
     name: academia-texo-backup
     env: node
     region: oregon
-    plan: starter
+    plan: free
     schedule: "0 3 * * *"
     buildCommand: echo "no build"
     startCommand: >-
