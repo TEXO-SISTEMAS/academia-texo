@@ -40,7 +40,6 @@ services:
     name: academia-texo-backup
     env: node
     region: oregon
-    plan: free
     schedule: "0 3 * * *"
     buildCommand: echo "no build"
     startCommand: >-
