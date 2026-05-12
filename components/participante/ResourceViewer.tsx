@@ -277,11 +277,11 @@ function VideoResource({
   const { driveUrl } = content;
   const fileId = extractDriveFileId(driveUrl);
 
-  const videoRef        = useRef<HTMLVideoElement>(null);
-  const watchedSetRef   = useRef(new Set<number>());
-  const lastSavedRef    = useRef(0);
-  const seekingRef      = useRef(false);
-  const lastTimeRef     = useRef(0);
+  const videoRef           = useRef<HTMLVideoElement>(null);
+  const watchedSetRef      = useRef(new Set<number>());
+  const lastSavedRef       = useRef(0);
+  const lastTimeRef        = useRef(0);
+  const isForcingSeekRef   = useRef(false);
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
@@ -289,15 +289,17 @@ function VideoResource({
   const [useFallback,   setUseFallback]   = useState(!streamSrc);
   const [buffering,     setBuffering]     = useState(false);
   const [completing,    setCompleting]    = useState(false);
-  const [fallbackTime,  setFallbackTime]  = useState(0);
-  const [fallbackReady, setFallbackReady] = useState(false);
+  const [fallbackTime,    setFallbackTime]    = useState(0);
+  const [fallbackReady,   setFallbackReady]   = useState(false);
+  const [fallbackStarted, setFallbackStarted] = useState(false);
 
   const REQUIRED          = 100;
   const MIN_FALLBACK_TIME = 120;
   const ready = !useFallback ? watchedPct >= REQUIRED : fallbackReady;
 
+  // Timer del fallback: solo corre cuando el usuario inició el video
   useEffect(() => {
-    if (!useFallback || fallbackReady) return;
+    if (!useFallback || !fallbackStarted || fallbackReady) return;
     const interval = setInterval(() => {
       setFallbackTime((t) => {
         const next = t + 1;
@@ -306,7 +308,7 @@ function VideoResource({
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [useFallback, fallbackReady]);
+  }, [useFallback, fallbackStarted, fallbackReady]);
 
   const saveWatched = useCallback(() => {
     if (!userId || !courseId) return;
@@ -316,31 +318,31 @@ function VideoResource({
     }).catch(() => {});
   }, [userId, courseId, resourceId]);
 
-  function handleSeeking() {
+  function handleSeeked() {
+    if (isForcingSeekRef.current) {
+      isForcingSeekRef.current = false;
+      return;
+    }
     const video = videoRef.current;
     if (!video || !video.duration) return;
     const maxWatched = watchedSetRef.current.size > 0
       ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
       : 0;
     if (video.currentTime > maxWatched + 1) {
+      isForcingSeekRef.current = true;
       video.currentTime = lastTimeRef.current;
+    } else {
+      lastTimeRef.current = video.currentTime;
     }
-  }
-
-  function handleSeeked() {
-    const video = videoRef.current;
-    if (video) lastTimeRef.current = video.currentTime;
   }
 
   function handleTimeUpdate() {
     const video = videoRef.current;
-    if (!video || !video.duration) return;
+    if (!video || !video.duration || video.seeking) return;
 
     const currentSecond = Math.floor(video.currentTime);
+    lastTimeRef.current = video.currentTime;
 
-    // Solo contar segundos consecutivos al máximo ya visto.
-    // Si el usuario salta del segundo 5 al 60, currentSecond (60) > maxWatched (5) + 1
-    // y no se agrega — independientemente de seekingRef o diff.
     const maxWatched = watchedSetRef.current.size > 0
       ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
       : -1;
@@ -348,8 +350,6 @@ function VideoResource({
     if (currentSecond <= maxWatched + 1) {
       watchedSetRef.current.add(currentSecond);
     }
-
-    lastTimeRef.current = video.currentTime;
 
     const pct = Math.min(100, Math.round((watchedSetRef.current.size / Math.floor(video.duration)) * 100));
     setWatchedPct(pct);
@@ -373,20 +373,37 @@ function VideoResource({
     setCompleting(false);
   }
 
-  // Iframe fallback (Drive embed — con timer mínimo)
+  // Iframe fallback (Drive embed — con timer mínimo, requiere iniciar el video)
   if (useFallback) {
     const fallbackPct = Math.min(100, Math.round((fallbackTime / MIN_FALLBACK_TIME) * 100));
     const fallbackMsg = fallbackReady
       ? "Video completado ✓"
-      : `Visto: ${fallbackPct}% — mirá el video completo`;
+      : fallbackStarted
+      ? `Visto: ${fallbackPct}% — mirá el video completo`
+      : "Iniciá el video para habilitar el avance";
     return (
       <div>
-        <iframe
-          src={toDriveEmbedUrl(driveUrl ?? "")}
-          width="100%"
-          style={{ height: "500px", border: "none", borderRadius: "8px" }}
-          allow="autoplay"
-        />
+        {!fallbackStarted ? (
+          <div
+            className="w-full flex flex-col items-center justify-center gap-3 rounded-xl bg-gray-900 cursor-pointer select-none"
+            style={{ height: "500px" }}
+            onClick={() => setFallbackStarted(true)}
+          >
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
+              <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <span className="text-sm text-white/60">Hacé clic para ver el video</span>
+          </div>
+        ) : (
+          <iframe
+            src={toDriveEmbedUrl(driveUrl ?? "")}
+            width="100%"
+            style={{ height: "500px", border: "none", borderRadius: "8px" }}
+            allow="autoplay"
+          />
+        )}
         <EngagementBar pct={fallbackPct} message={fallbackMsg} ready={fallbackReady} />
         <ActionButton ready={fallbackReady} completing={completing} onComplete={handleComplete} />
       </div>
@@ -407,7 +424,6 @@ function VideoResource({
           preload="metadata"
           style={{ width: "100%", maxHeight: "500px", display: "block" }}
           onTimeUpdate={handleTimeUpdate}
-          onSeeking={handleSeeking}
           onSeeked={handleSeeked}
           onWaiting={() => setBuffering(true)}
           onCanPlay={() => setBuffering(false)}
