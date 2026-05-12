@@ -285,13 +285,28 @@ function VideoResource({
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
-  const [watchedPct,  setWatchedPct]  = useState(0);
-  const [useFallback, setUseFallback] = useState(!streamSrc);
-  const [buffering,   setBuffering]   = useState(false);
-  const [completing,  setCompleting]  = useState(false);
+  const [watchedPct,    setWatchedPct]    = useState(0);
+  const [useFallback,   setUseFallback]   = useState(!streamSrc);
+  const [buffering,     setBuffering]     = useState(false);
+  const [completing,    setCompleting]    = useState(false);
+  const [fallbackTime,  setFallbackTime]  = useState(0);
+  const [fallbackReady, setFallbackReady] = useState(false);
 
-  const REQUIRED = 100;
-  const ready = useFallback || watchedPct >= REQUIRED;
+  const REQUIRED          = 100;
+  const MIN_FALLBACK_TIME = 120;
+  const ready = !useFallback ? watchedPct >= REQUIRED : fallbackReady;
+
+  useEffect(() => {
+    if (!useFallback || fallbackReady) return;
+    const interval = setInterval(() => {
+      setFallbackTime((t) => {
+        const next = t + 1;
+        if (next >= MIN_FALLBACK_TIME) setFallbackReady(true);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [useFallback, fallbackReady]);
 
   const saveWatched = useCallback(() => {
     if (!userId || !courseId) return;
@@ -358,8 +373,12 @@ function VideoResource({
     setCompleting(false);
   }
 
-  // Iframe fallback (Drive embed — sin tracking)
+  // Iframe fallback (Drive embed — con timer mínimo)
   if (useFallback) {
+    const fallbackPct = Math.min(100, Math.round((fallbackTime / MIN_FALLBACK_TIME) * 100));
+    const fallbackMsg = fallbackReady
+      ? "Video completado ✓"
+      : `Visto: ${fallbackPct}% — mirá el video completo`;
     return (
       <div>
         <iframe
@@ -368,7 +387,8 @@ function VideoResource({
           style={{ height: "500px", border: "none", borderRadius: "8px" }}
           allow="autoplay"
         />
-        <ActionButton ready completing={completing} onComplete={handleComplete} />
+        <EngagementBar pct={fallbackPct} message={fallbackMsg} ready={fallbackReady} />
+        <ActionButton ready={fallbackReady} completing={completing} onComplete={handleComplete} />
       </div>
     );
   }
