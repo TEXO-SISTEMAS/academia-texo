@@ -41,8 +41,11 @@ export async function POST(req: NextRequest) {
     );
 
     if (!permRes.ok) {
+      // La política de la organización puede bloquear el permiso "anyone".
+      // No es un error fatal: el streaming usa el token de la cuenta de servicio,
+      // que siempre puede leer sus propios archivos.
       const errText = await permRes.text();
-      throw new Error(`Error aplicando permisos (${permRes.status}): ${errText}`);
+      console.warn(`[make-public] Permiso público no aplicado (${permRes.status}): ${errText}`);
     }
 
     const webViewLink = `https://drive.google.com/file/d/${fileId}/view`;

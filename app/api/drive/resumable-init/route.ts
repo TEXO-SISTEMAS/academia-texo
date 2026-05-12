@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 
-const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
-
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
   ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
@@ -19,19 +17,22 @@ async function getAccessToken(): Promise<string> {
   return tokenRes.token;
 }
 
-async function findOrCreateFolder(accessToken: string, name: string, parentId: string): Promise<string> {
+// Busca o crea una carpeta en la "My Drive" de la cuenta de servicio (no en el Shared Drive).
+// La cuenta de servicio es propietaria de estos archivos y siempre puede leerlos,
+// sin importar las políticas de la organización sobre unidades compartidas.
+async function findOrCreateFolder(accessToken: string, name: string): Promise<string> {
   const q = encodeURIComponent(
-    `mimeType='application/vnd.google-apps.folder' and name='${name.replace(/'/g, "\\'")}' and '${parentId}' in parents and trashed=false`
+    `mimeType='application/vnd.google-apps.folder' and name='${name.replace(/'/g, "\\'")}' and 'root' in parents and trashed=false`
   );
   const listRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive&corpora=drive&driveId=${SHARED_DRIVE_ID}&includeItemsFromAllDrives=true&supportsAllDrives=true`,
+    `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   const listData = await listRes.json() as { files?: { id: string }[] };
   if (listData.files?.[0]?.id) return listData.files[0].id;
 
   const createRes = await fetch(
-    "https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true",
+    "https://www.googleapis.com/drive/v3/files?fields=id",
     {
       method: "POST",
       headers: {
@@ -41,8 +42,7 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
       body: JSON.stringify({
         name,
         mimeType: "application/vnd.google-apps.folder",
-        parents: [parentId],
-        driveId: SHARED_DRIVE_ID,
+        parents: ["root"],
       }),
     }
   );
@@ -53,11 +53,6 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
 
 export async function POST(req: NextRequest) {
   try {
-    const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    if (!ROOT_FOLDER_ID) {
-      return NextResponse.json({ error: "GOOGLE_DRIVE_FOLDER_ID no configurado" }, { status: 500 });
-    }
-
     const { fileName, mimeType, fileSize, courseTitle, courseId } = await req.json() as {
       fileName: string;
       mimeType: string;
@@ -72,10 +67,10 @@ export async function POST(req: NextRequest) {
 
     const accessToken = await getAccessToken();
 
-    const folderId = await findOrCreateFolder(accessToken, folderName, ROOT_FOLDER_ID);
+    const folderId = await findOrCreateFolder(accessToken, folderName);
 
     const initRes = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true",
+      "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable",
       {
         method: "POST",
         headers: {
