@@ -280,6 +280,7 @@ function VideoResource({
   const videoRef        = useRef<HTMLVideoElement>(null);
   const watchedSetRef   = useRef(new Set<number>());
   const lastSavedRef    = useRef(0);
+  const isPlayingRef    = useRef(false);
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
@@ -320,7 +321,7 @@ function VideoResource({
 
   function handleTimeUpdate() {
     const video = videoRef.current;
-    if (!video || !video.duration) return;
+    if (!video || !video.duration || !isPlayingRef.current) return;
 
     setDisplayTime(video.currentTime);
 
@@ -430,9 +431,9 @@ function VideoResource({
           style={{ width: "100%", maxHeight: "500px", display: "block" }}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={() => setVideoDuration(videoRef.current?.duration ?? 0)}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onEnded={() => setIsPlaying(false)}
+          onPlay={() => { setIsPlaying(true); isPlayingRef.current = true; }}
+          onPause={() => { setIsPlaying(false); isPlayingRef.current = false; }}
+          onEnded={() => { setIsPlaying(false); isPlayingRef.current = false; }}
           onWaiting={() => setBuffering(true)}
           onCanPlay={() => setBuffering(false)}
           onPlaying={() => setBuffering(false)}
