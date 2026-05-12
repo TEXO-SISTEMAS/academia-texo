@@ -9,7 +9,7 @@ const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
 function getAuthClient() {
   return new google.auth.GoogleAuth({
     credentials: driveServiceAccount,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    scopes: ["https://www.googleapis.com/auth/drive"],
   });
 }
 
