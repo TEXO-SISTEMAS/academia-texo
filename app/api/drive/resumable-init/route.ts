@@ -18,9 +18,13 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
     `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive&corpora=drive&driveId=${SHARED_DRIVE_ID}&includeItemsFromAllDrives=true&supportsAllDrives=true`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
-  if (!listRes.ok) console.warn("[resumable-init] list error:", await listRes.text());
-  const listData = await listRes.json() as { files?: { id: string }[] };
-  if (listData.files?.[0]?.id) return listData.files[0].id;
+  const listText = await listRes.text();
+  if (!listRes.ok) {
+    console.warn("[resumable-init] list error:", listText);
+  } else {
+    const listData = JSON.parse(listText) as { files?: { id: string }[] };
+    if (listData.files?.[0]?.id) return listData.files[0].id;
+  }
 
   const createRes = await fetch(
     "https://www.googleapis.com/drive/v3/files?fields=id&supportsAllDrives=true",
