@@ -105,11 +105,8 @@ export async function getOrCreateUser(
 
   if (userSnap.exists()) {
     const existingUser = { id: userSnap.id, ...userSnap.data() } as User;
-    // Si el rol del token difiere del almacenado, el token es autoritativo
-    if (claimedRole && existingUser.role !== claimedRole) {
-      await updateDoc(userRef, { role: claimedRole });
-      existingUser.role = claimedRole;
-    }
+    // El JWT claim es autoritativo — auth-context usa claimedRole directamente,
+    // no hace falta sincronizarlo al doc (y la regla de Firestore lo bloquearía)
     return existingUser;
   }
 
