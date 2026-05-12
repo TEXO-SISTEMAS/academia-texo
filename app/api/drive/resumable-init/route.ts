@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
+import { getDriveAuth } from "@/lib/drive-auth";
 
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
-  ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
-  : null;
-
 async function getAccessToken(): Promise<string> {
-  const auth = new google.auth.GoogleAuth({
-    credentials: driveServiceAccount,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-  const client = await auth.getClient();
-  const tokenRes = await client.getAccessToken();
-  if (!tokenRes.token) throw new Error("No se pudo obtener access_token de la cuenta de servicio");
+  const auth = getDriveAuth();
+  const tokenRes = await auth.getAccessToken();
+  if (!tokenRes.token) throw new Error("No se pudo obtener access_token.");
   return tokenRes.token;
 }
 
@@ -27,6 +18,7 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
     `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id)&spaces=drive&corpora=drive&driveId=${SHARED_DRIVE_ID}&includeItemsFromAllDrives=true&supportsAllDrives=true`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
+  if (!listRes.ok) console.warn("[resumable-init] list error:", await listRes.text());
   const listData = await listRes.json() as { files?: { id: string }[] };
   if (listData.files?.[0]?.id) return listData.files[0].id;
 
@@ -42,12 +34,15 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
         name,
         mimeType: "application/vnd.google-apps.folder",
         parents: [parentId],
-        driveId: SHARED_DRIVE_ID,
       }),
     }
   );
+  if (!createRes.ok) {
+    const errText = await createRes.text();
+    throw new Error(`No se pudo crear carpeta (${createRes.status}): ${errText}`);
+  }
   const createData = await createRes.json() as { id?: string };
-  if (!createData.id) throw new Error("No se pudo crear la carpeta en Drive");
+  if (!createData.id) throw new Error("No se pudo crear la carpeta en Drive (sin id)");
   return createData.id;
 }
 
