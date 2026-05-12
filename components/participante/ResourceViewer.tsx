@@ -376,7 +376,7 @@ function VideoResource({
     setCompleting(false);
   }
 
-  // Iframe fallback (Drive embed — con timer mínimo, requiere iniciar el video)
+  // Iframe fallback (Drive embed — timer arranca cuando el usuario presiona reproducir)
   if (useFallback) {
     const fallbackPct = Math.min(100, Math.round((fallbackTime / MIN_FALLBACK_TIME) * 100));
     const fallbackMsg = fallbackReady
