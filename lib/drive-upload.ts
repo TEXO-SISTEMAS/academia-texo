@@ -24,12 +24,13 @@ export async function uploadFileResumable(
     }),
   });
 
+  const initData = await initRes.json() as { uploadUrl?: string; folderId?: string; error?: string };
   if (!initRes.ok) {
-    const data = await initRes.json() as { error?: string };
-    throw new Error(data.error ?? "Error al iniciar la subida.");
+    throw new Error(initData.error ?? "Error al iniciar la subida.");
   }
+  if (!initData.uploadUrl) throw new Error("Drive no retornó uploadUrl.");
 
-  const { uploadUrl } = await initRes.json() as { uploadUrl: string };
+  const { uploadUrl } = initData;
 
   // 2. Subir en chunks de 3MB via servidor (evita CORS y el límite de 4.5MB de Vercel)
   //    Google Drive requiere que los chunks intermedios sean múltiplos de 256KB.
