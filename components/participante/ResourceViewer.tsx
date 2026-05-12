@@ -277,18 +277,19 @@ function VideoResource({
   const { driveUrl } = content;
   const fileId = extractDriveFileId(driveUrl);
 
-  const videoRef           = useRef<HTMLVideoElement>(null);
-  const watchedSetRef      = useRef(new Set<number>());
-  const lastSavedRef       = useRef(0);
-  const lastTimeRef        = useRef(0);
-  const isForcingSeekRef   = useRef(false);
+  const videoRef        = useRef<HTMLVideoElement>(null);
+  const watchedSetRef   = useRef(new Set<number>());
+  const lastSavedRef    = useRef(0);
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
-  const [watchedPct,    setWatchedPct]    = useState(0);
-  const [useFallback,   setUseFallback]   = useState(!streamSrc);
-  const [buffering,     setBuffering]     = useState(false);
-  const [completing,    setCompleting]    = useState(false);
+  const [watchedPct,      setWatchedPct]      = useState(0);
+  const [useFallback,     setUseFallback]     = useState(!streamSrc);
+  const [buffering,       setBuffering]       = useState(false);
+  const [completing,      setCompleting]      = useState(false);
+  const [isPlaying,       setIsPlaying]       = useState(false);
+  const [videoDuration,   setVideoDuration]   = useState(0);
+  const [displayTime,     setDisplayTime]     = useState(0);
   const [fallbackTime,    setFallbackTime]    = useState(0);
   const [fallbackReady,   setFallbackReady]   = useState(false);
   const [fallbackStarted, setFallbackStarted] = useState(false);
@@ -297,7 +298,6 @@ function VideoResource({
   const MIN_FALLBACK_TIME = 120;
   const ready = !useFallback ? watchedPct >= REQUIRED : fallbackReady;
 
-  // Timer del fallback: solo corre cuando el usuario inició el video
   useEffect(() => {
     if (!useFallback || !fallbackStarted || fallbackReady) return;
     const interval = setInterval(() => {
@@ -318,31 +318,13 @@ function VideoResource({
     }).catch(() => {});
   }, [userId, courseId, resourceId]);
 
-  function handleSeeked() {
-    if (isForcingSeekRef.current) {
-      isForcingSeekRef.current = false;
-      return;
-    }
-    const video = videoRef.current;
-    if (!video || !video.duration) return;
-    const maxWatched = watchedSetRef.current.size > 0
-      ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
-      : 0;
-    if (video.currentTime > maxWatched + 1) {
-      isForcingSeekRef.current = true;
-      video.currentTime = lastTimeRef.current;
-    } else {
-      lastTimeRef.current = video.currentTime;
-    }
-  }
-
   function handleTimeUpdate() {
     const video = videoRef.current;
-    if (!video || !video.duration || video.seeking) return;
+    if (!video || !video.duration) return;
+
+    setDisplayTime(video.currentTime);
 
     const currentSecond = Math.floor(video.currentTime);
-    lastTimeRef.current = video.currentTime;
-
     const maxWatched = watchedSetRef.current.size > 0
       ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
       : -1;
@@ -359,6 +341,26 @@ function VideoResource({
       lastSavedRef.current = now;
       saveWatched();
     }
+  }
+
+  function togglePlay() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play().catch(() => {});
+    else video.pause();
+  }
+
+  function toggleFullscreen() {
+    const video = videoRef.current;
+    if (!video) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    else video.requestFullscreen().catch(() => {});
+  }
+
+  function formatTime(s: number) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, "0")}`;
   }
 
   async function handleComplete() {
@@ -416,25 +418,77 @@ function VideoResource({
 
   return (
     <div>
-      <div className="relative rounded-xl overflow-hidden bg-black">
+      {/* Player custom sin barra de seek — impide adelantar */}
+      <div
+        className="relative rounded-xl overflow-hidden bg-black select-none"
+        style={{ maxHeight: "500px" }}
+      >
         <video
           ref={videoRef}
           src={streamSrc!}
-          controls
           preload="metadata"
           style={{ width: "100%", maxHeight: "500px", display: "block" }}
           onTimeUpdate={handleTimeUpdate}
-          onSeeked={handleSeeked}
+          onLoadedMetadata={() => setVideoDuration(videoRef.current?.duration ?? 0)}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
           onWaiting={() => setBuffering(true)}
           onCanPlay={() => setBuffering(false)}
           onPlaying={() => setBuffering(false)}
           onError={() => setUseFallback(true)}
+          onClick={togglePlay}
         />
+
+        {/* Overlay play cuando está pausado */}
+        {!isPlaying && !buffering && (
+          <div
+            className="absolute inset-0 flex items-center justify-center bg-black/25 cursor-pointer"
+            onClick={togglePlay}
+          >
+            <div className="w-16 h-16 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
+              <svg viewBox="0 0 24 24" fill="white" width="30" height="30">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        {/* Overlay buffering */}
         {buffering && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 pointer-events-none">
             <div className="w-10 h-10 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           </div>
         )}
+
+        {/* Barra de controles inferior */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={togglePlay}
+            className="text-white hover:text-texo-amarillo transition-colors shrink-0"
+          >
+            {isPlaying ? (
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </button>
+          <span className="text-white/70 text-xs tabular-nums flex-1">
+            {formatTime(displayTime)} / {formatTime(videoDuration)}
+          </span>
+          <button
+            onClick={toggleFullscreen}
+            className="text-white hover:text-texo-amarillo transition-colors shrink-0"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
+            </svg>
+          </button>
+        </div>
       </div>
       <EngagementBar pct={watchedPct} message={progressMsg} ready={ready} />
       <ActionButton ready={ready} completing={completing} onComplete={handleComplete} />
