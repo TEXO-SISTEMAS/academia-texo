@@ -305,9 +305,11 @@ function VideoResource({
 
   function handleTimeUpdate() {
     const video = videoRef.current;
-    if (!video || !video.duration || !isPlayingRef.current) return;
+    if (!video || !video.duration) return;
 
     setDisplayTime(video.currentTime);
+
+    if (!isPlayingRef.current) return;
 
     const currentSecond = Math.floor(video.currentTime);
     const maxWatched = watchedSetRef.current.size > 0
@@ -326,6 +328,14 @@ function VideoResource({
       lastSavedRef.current = now;
       saveWatched();
     }
+  }
+
+  function handleSeek(e: React.ChangeEvent<HTMLInputElement>) {
+    const video = videoRef.current;
+    if (!video) return;
+    const t = parseFloat(e.target.value);
+    video.currentTime = t;
+    setDisplayTime(t);
   }
 
   function togglePlay() {
@@ -395,9 +405,10 @@ function VideoResource({
     ? "Video completado ✓"
     : `Visto: ${watchedPct}% — debés ver el video completo`;
 
+  const seekPct = videoDuration > 0 ? (displayTime / videoDuration) * 100 : 0;
+
   return (
     <div>
-      {/* Player custom sin barra de seek — impide adelantar */}
       <div
         className="relative rounded-xl overflow-hidden bg-black select-none"
         style={{ maxHeight: "500px" }}
@@ -441,32 +452,49 @@ function VideoResource({
         )}
 
         {/* Barra de controles inferior */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 flex items-center gap-3">
-          <button
-            onClick={togglePlay}
-            className="text-white hover:text-texo-amarillo transition-colors shrink-0"
-          >
-            {isPlaying ? (
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 pt-8 pb-3 flex flex-col gap-2">
+          {/* Seek bar */}
+          <input
+            type="range"
+            min={0}
+            max={videoDuration || 100}
+            value={displayTime}
+            step={0.5}
+            onChange={handleSeek}
+            className="w-full h-1 rounded-full cursor-pointer appearance-none"
+            style={{
+              accentColor: "#E8B84B",
+              background: `linear-gradient(to right, #E8B84B ${seekPct}%, rgba(255,255,255,0.25) ${seekPct}%)`,
+            }}
+          />
+          {/* Play / tiempo / fullscreen */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={togglePlay}
+              className="text-white hover:text-texo-amarillo transition-colors shrink-0"
+            >
+              {isPlaying ? (
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+            <span className="text-white/70 text-xs tabular-nums flex-1">
+              {formatTime(displayTime)} / {formatTime(videoDuration)}
+            </span>
+            <button
+              onClick={toggleFullscreen}
+              className="text-white hover:text-texo-amarillo transition-colors shrink-0"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
               </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
-          </button>
-          <span className="text-white/70 text-xs tabular-nums flex-1">
-            {formatTime(displayTime)} / {formatTime(videoDuration)}
-          </span>
-          <button
-            onClick={toggleFullscreen}
-            className="text-white hover:text-texo-amarillo transition-colors shrink-0"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-              <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" />
-            </svg>
-          </button>
+            </button>
+          </div>
         </div>
       </div>
       <EngagementBar pct={watchedPct} message={progressMsg} ready={ready} />

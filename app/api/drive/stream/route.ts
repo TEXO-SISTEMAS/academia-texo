@@ -27,7 +27,7 @@ function getRedirectLocation(url: string, token: string): Promise<string | null>
         const loc = res.headers.location ?? null;
         res.destroy();
         req.destroy();
-        resolve(loc && (res.statusCode ?? 0) >= 300 ? loc : null);
+        resolve(loc && (res.statusCode ?? 0) >= 300 && (res.statusCode ?? 0) < 400 ? loc : null);
       }
     );
     req.on("error", () => resolve(null));
@@ -42,7 +42,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const auth = getAuthClient();
-    const token = await auth.getAccessToken();
+    const client = await auth.getClient();
+    const tokenRes = await (client as { getAccessToken: () => Promise<{ token: string | null }> }).getAccessToken();
+    const token = tokenRes.token;
     if (!token) throw new Error("No se pudo obtener token.");
 
     const driveApiUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
@@ -67,6 +69,8 @@ export async function GET(req: NextRequest) {
 
     const driveRes = await fetch(driveApiUrl, { headers: fetchHeaders });
     if (!driveRes.ok && driveRes.status !== 206) {
+      const errBody = await driveRes.text();
+      console.error(`[drive/stream] Drive error ${driveRes.status} for fileId=${fileId}:`, errBody);
       return new NextResponse(`Drive error: ${driveRes.status}`, { status: driveRes.status });
     }
 
