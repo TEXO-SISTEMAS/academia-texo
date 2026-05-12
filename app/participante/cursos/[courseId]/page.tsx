@@ -459,6 +459,7 @@ export default function CourseViewPage() {
                 {activeResource.title}
               </h2>
               <ResourceViewer
+                key={activeResource.id}
                 resource={activeResource}
                 isCompleted={progress[activeResource.id] === true}
                 onComplete={(score, answers) => handleCompleteResource(activeResource.id, score, answers)}
