@@ -284,32 +284,16 @@ function VideoResource({
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
-  const [watchedPct,      setWatchedPct]      = useState(0);
-  const [useFallback,     setUseFallback]     = useState(!streamSrc);
-  const [buffering,       setBuffering]       = useState(false);
-  const [completing,      setCompleting]      = useState(false);
-  const [isPlaying,       setIsPlaying]       = useState(false);
-  const [videoDuration,   setVideoDuration]   = useState(0);
-  const [displayTime,     setDisplayTime]     = useState(0);
-  const [fallbackTime,    setFallbackTime]    = useState(0);
-  const [fallbackReady,   setFallbackReady]   = useState(false);
-  const [fallbackStarted, setFallbackStarted] = useState(false);
+  const [watchedPct,    setWatchedPct]    = useState(0);
+  const [useFallback,   setUseFallback]   = useState(!streamSrc);
+  const [buffering,     setBuffering]     = useState(false);
+  const [completing,    setCompleting]    = useState(false);
+  const [isPlaying,     setIsPlaying]     = useState(false);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [displayTime,   setDisplayTime]   = useState(0);
 
-  const REQUIRED          = 100;
-  const MIN_FALLBACK_TIME = 120;
-  const ready = !useFallback ? watchedPct >= REQUIRED : fallbackReady;
-
-  useEffect(() => {
-    if (!useFallback || !fallbackStarted || fallbackReady) return;
-    const interval = setInterval(() => {
-      setFallbackTime((t) => {
-        const next = t + 1;
-        if (next >= MIN_FALLBACK_TIME) setFallbackReady(true);
-        return next;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [useFallback, fallbackStarted, fallbackReady]);
+  const REQUIRED = 100;
+  const ready    = watchedPct >= REQUIRED;
 
   const saveWatched = useCallback(() => {
     if (!userId || !courseId) return;
@@ -376,39 +360,33 @@ function VideoResource({
     setCompleting(false);
   }
 
-  // Iframe fallback (Drive embed — timer arranca cuando el usuario presiona reproducir)
+  // Error de carga — el stream falló y no hay fallback viable
   if (useFallback) {
-    const fallbackPct = Math.min(100, Math.round((fallbackTime / MIN_FALLBACK_TIME) * 100));
-    const fallbackMsg = fallbackReady
-      ? "Video completado ✓"
-      : fallbackStarted
-      ? `Visto: ${fallbackPct}% — mirá el video completo`
-      : "Iniciá el video para habilitar el avance";
     return (
       <div>
-        {!fallbackStarted ? (
-          <div
-            className="w-full flex flex-col items-center justify-center gap-3 rounded-xl bg-gray-900 cursor-pointer select-none"
-            style={{ height: "500px" }}
-            onClick={() => setFallbackStarted(true)}
-          >
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-colors">
-              <svg viewBox="0 0 24 24" fill="white" width="28" height="28">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            </div>
-            <span className="text-sm text-white/60">Hacé clic para ver el video</span>
+        <div
+          className="w-full flex flex-col items-center justify-center gap-4 rounded-xl bg-gray-900 select-none"
+          style={{ height: "320px" }}
+        >
+          <div className="w-14 h-14 rounded-full bg-texo-rojo/20 flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#C0544A" strokeWidth="2" width="28" height="28">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
           </div>
-        ) : (
-          <iframe
-            src={toDriveEmbedUrl(driveUrl ?? "")}
-            width="100%"
-            style={{ height: "500px", border: "none", borderRadius: "8px" }}
-            allow="autoplay"
-          />
-        )}
-        <EngagementBar pct={fallbackPct} message={fallbackMsg} ready={fallbackReady} />
-        <ActionButton ready={fallbackReady} completing={completing} onComplete={handleComplete} />
+          <div className="text-center px-6">
+            <p className="text-white font-medium text-sm mb-1">No se pudo cargar el video</p>
+            <p className="text-white/40 text-xs">Recargá la página o intentá desde otro navegador</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-xs text-texo-amarillo hover:underline"
+          >
+            Recargar página
+          </button>
+        </div>
+        <ActionButton ready={true} completing={completing} onComplete={handleComplete} />
       </div>
     );
   }
