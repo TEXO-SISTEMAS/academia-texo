@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import https from "https";
 
 const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
   ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
@@ -12,8 +13,28 @@ function getAuthClient() {
   });
 }
 
-// Cache de URLs directas del CDN de Drive (en memoria)
+// Cache de URLs directas del CDN de Drive
 const cdnCache = new Map<string, { url: string; expires: number }>();
+
+// Usa https nativo para capturar el header Location sin descargar el body
+function getRedirectLocation(url: string, token: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const u = new URL(url);
+    const req = https.request(
+      { hostname: u.hostname, path: u.pathname + u.search, method: "GET",
+        headers: { Authorization: `Bearer ${token}` } },
+      (res) => {
+        const loc = res.headers.location ?? null;
+        res.destroy();
+        req.destroy();
+        resolve(loc && (res.statusCode ?? 0) >= 300 ? loc : null);
+      }
+    );
+    req.on("error", () => resolve(null));
+    req.setTimeout(6000, () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
 
 export async function GET(req: NextRequest) {
   const fileId = req.nextUrl.searchParams.get("fileId");
@@ -27,55 +48,40 @@ export async function GET(req: NextRequest) {
     const driveApiUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
     const rangeHeader = req.headers.get("range");
 
-    // Revisar caché de URL directa
+    // 1. Revisar caché
     const cached = cdnCache.get(fileId);
     if (cached && cached.expires > Date.now()) {
-      return NextResponse.redirect(cached.url, { status: 307 });
+      return new NextResponse(null, { status: 307, headers: { Location: cached.url } });
     }
 
-    // Probe sin seguir redirecciones para obtener la URL del CDN de Google
-    const probeRes = await fetch(driveApiUrl, {
-      headers: { Authorization: `Bearer ${token}` },
-      redirect: "manual",
-    });
-
-    if (probeRes.status >= 300 && probeRes.status < 400) {
-      const location = probeRes.headers.get("location");
-      if (location) {
-        // Cachear por 50 minutos (las URLs del CDN de Drive son válidas ~1h)
-        cdnCache.set(fileId, { url: location, expires: Date.now() + 50 * 60 * 1000 });
-        return NextResponse.redirect(location, { status: 307 });
-      }
+    // 2. Obtener URL directa del CDN de Drive
+    const cdnUrl = await getRedirectLocation(driveApiUrl, token);
+    if (cdnUrl) {
+      cdnCache.set(fileId, { url: cdnUrl, expires: Date.now() + 50 * 60 * 1000 });
+      return new NextResponse(null, { status: 307, headers: { Location: cdnUrl } });
     }
 
-    // Fallback: proxy directo (para archivos pequeños que Drive devuelve sin redirigir)
-    const fetchHeaders: Record<string, string> = {
-      Authorization: `Bearer ${token}`,
-    };
+    // 3. Fallback: proxy directo (archivos pequeños que Drive devuelve sin redirigir)
+    const fetchHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (rangeHeader) fetchHeaders["Range"] = rangeHeader;
 
     const driveRes = await fetch(driveApiUrl, { headers: fetchHeaders });
-
     if (!driveRes.ok && driveRes.status !== 206) {
-      console.error(`[drive/stream] Drive error ${driveRes.status} para fileId=${fileId}`);
-      return new NextResponse(`Error de Drive: ${driveRes.status}`, { status: driveRes.status });
+      return new NextResponse(`Drive error: ${driveRes.status}`, { status: driveRes.status });
     }
 
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", driveRes.headers.get("content-type") ?? "video/mp4");
     responseHeaders.set("Accept-Ranges", "bytes");
     responseHeaders.set("Cache-Control", "public, max-age=3600");
-    const contentLength = driveRes.headers.get("content-length");
-    if (contentLength) responseHeaders.set("Content-Length", contentLength);
-    const contentRange = driveRes.headers.get("content-range");
-    if (contentRange) responseHeaders.set("Content-Range", contentRange);
+    const cl = driveRes.headers.get("content-length");
+    if (cl) responseHeaders.set("Content-Length", cl);
+    const cr = driveRes.headers.get("content-range");
+    if (cr) responseHeaders.set("Content-Range", cr);
 
-    return new NextResponse(driveRes.body, {
-      status: driveRes.status,
-      headers: responseHeaders,
-    });
+    return new NextResponse(driveRes.body, { status: driveRes.status, headers: responseHeaders });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Error desconocido";
+    const message = err instanceof Error ? err.message : "Error";
     console.error("[drive/stream] Error:", message);
     return new NextResponse(`Error: ${message}`, { status: 500 });
   }
