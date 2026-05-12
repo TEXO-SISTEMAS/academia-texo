@@ -285,13 +285,29 @@ function VideoResource({
 
   const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
 
-  const [watchedPct,  setWatchedPct]  = useState(0);
-  const [useFallback, setUseFallback] = useState(!streamSrc);
-  const [buffering,   setBuffering]   = useState(false);
-  const [completing,  setCompleting]  = useState(false);
+  const [watchedPct,      setWatchedPct]      = useState(0);
+  const [useFallback,     setUseFallback]     = useState(!streamSrc);
+  const [buffering,       setBuffering]       = useState(false);
+  const [completing,      setCompleting]      = useState(false);
+  const [fallbackTime,    setFallbackTime]    = useState(0);
+  const [fallbackReady,   setFallbackReady]   = useState(false);
+  const [fallbackStarted, setFallbackStarted] = useState(false);
 
-  const REQUIRED = 100;
-  const ready = useFallback || watchedPct >= REQUIRED;
+  const REQUIRED          = 100;
+  const MIN_FALLBACK_TIME = 120;
+  const ready = !useFallback ? watchedPct >= REQUIRED : fallbackReady;
+
+  useEffect(() => {
+    if (!useFallback || !fallbackStarted || fallbackReady) return;
+    const interval = setInterval(() => {
+      setFallbackTime((t) => {
+        const next = t + 1;
+        if (next >= MIN_FALLBACK_TIME) setFallbackReady(true);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [useFallback, fallbackStarted, fallbackReady]);
 
   const saveWatched = useCallback(() => {
     if (!userId || !courseId) return;
@@ -302,12 +318,17 @@ function VideoResource({
   }, [userId, courseId, resourceId]);
 
   function handleSeeking() {
-    // Guardar posición antes del salto y marcar seeking
-    seekingRef.current = true;
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const maxWatched = watchedSetRef.current.size > 0
+      ? Array.from(watchedSetRef.current).reduce((a, b) => Math.max(a, b), -1)
+      : 0;
+    if (video.currentTime > maxWatched + 1) {
+      video.currentTime = lastTimeRef.current;
+    }
   }
 
   function handleSeeked() {
-    seekingRef.current = false;
     const video = videoRef.current;
     if (video) lastTimeRef.current = video.currentTime;
   }
@@ -353,17 +374,43 @@ function VideoResource({
     setCompleting(false);
   }
 
-  // Iframe fallback (Drive embed — sin tracking)
+  // Iframe fallback (Drive embed — timer arranca cuando el usuario presiona reproducir)
   if (useFallback) {
+    const fallbackPct = Math.min(100, Math.round((fallbackTime / MIN_FALLBACK_TIME) * 100));
+    const fallbackMsg = fallbackReady
+      ? "Video completado ✓"
+      : fallbackStarted
+      ? `Visto: ${fallbackPct}% — mirá el video completo`
+      : "Presioná reproducir para ver el video";
     return (
       <div>
-        <iframe
-          src={toDriveEmbedUrl(driveUrl ?? "")}
-          width="100%"
-          style={{ height: "500px", border: "none", borderRadius: "8px" }}
-          allow="autoplay"
-        />
-        <ActionButton ready completing={completing} onComplete={handleComplete} />
+        <div className="relative rounded-xl overflow-hidden" style={{ height: "500px" }}>
+          <iframe
+            src={fallbackStarted ? toDriveEmbedUrl(driveUrl ?? "") : undefined}
+            width="100%"
+            height="100%"
+            style={{ border: "none" }}
+            allow="autoplay"
+          />
+          {!fallbackStarted && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70 rounded-xl">
+              <button
+                onClick={() => setFallbackStarted(true)}
+                className="flex flex-col items-center gap-3 group"
+                aria-label="Reproducir video"
+              >
+                <div className="w-20 h-20 rounded-full bg-texo-amarillo flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="w-9 h-9 text-texo-azul ml-1">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+                <span className="text-white text-sm font-medium">Reproducir video</span>
+              </button>
+            </div>
+          )}
+        </div>
+        <EngagementBar pct={fallbackPct} message={fallbackMsg} ready={fallbackReady} />
+        <ActionButton ready={fallbackReady} completing={completing} onComplete={handleComplete} />
       </div>
     );
   }
