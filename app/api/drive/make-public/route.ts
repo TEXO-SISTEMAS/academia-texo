@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
-  ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
-  : null;
+import { getDriveAuth } from "@/lib/drive-auth";
 
 async function getAccessToken(): Promise<string> {
-  const auth = new google.auth.GoogleAuth({
-    credentials: driveServiceAccount,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-  const client = await auth.getClient();
-  const tokenRes = await client.getAccessToken();
-  if (!tokenRes.token) throw new Error("No se pudo obtener access_token de la cuenta de servicio");
+  const auth     = getDriveAuth();
+  const tokenRes = await auth.getAccessToken();
+  if (!tokenRes.token) throw new Error("No se pudo obtener access_token.");
   return tokenRes.token;
 }
 
@@ -32,18 +23,12 @@ export async function POST(req: NextRequest) {
       `https://www.googleapis.com/drive/v3/files/${fileId}/permissions?supportsAllDrives=true`,
       {
         method: "POST",
-        headers: {
-          Authorization:  `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({ role: "reader", type: "anyone" }),
       }
     );
 
     if (!permRes.ok) {
-      // La política de la organización puede bloquear el permiso "anyone".
-      // No es un error fatal: el streaming usa el token de la cuenta de servicio,
-      // que siempre puede leer sus propios archivos.
       const errText = await permRes.text();
       console.warn(`[make-public] Permiso público no aplicado (${permRes.status}): ${errText}`);
     }

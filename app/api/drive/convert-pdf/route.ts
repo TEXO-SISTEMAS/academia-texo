@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { PassThrough } from "stream";
+import { getDriveAuth } from "@/lib/drive-auth";
 
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
@@ -12,15 +13,6 @@ const DOCX_MIMES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/msword",
 ];
-
-function getDriveAuth() {
-  const raw = process.env.DRIVE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error("DRIVE_SERVICE_ACCOUNT_JSON no configurado.");
-  return new google.auth.GoogleAuth({
-    credentials: JSON.parse(raw),
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-}
 
 /**
  * POST /api/drive/convert-pdf
@@ -48,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
 
     const auth  = getDriveAuth();
-    const drive = google.drive({ version: "v3", auth });
+    const drive = google.drive({ version: "v3", auth: auth as Parameters<typeof google.drive>[0]["auth"] });
 
     // Obtener la carpeta padre del archivo original
     const fileMeta = await drive.files.get({

@@ -1,16 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
-
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
-  ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
-  : null;
-
-function getAuthClient() {
-  return new google.auth.GoogleAuth({
-    credentials: driveServiceAccount,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
-  });
-}
+import { getDriveAuth } from "@/lib/drive-auth";
 
 export async function GET(req: NextRequest) {
   const fileId = req.nextUrl.searchParams.get("fileId");
@@ -20,14 +9,11 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const auth = getAuthClient();
-    const token = await auth.getAccessToken();
+    const auth     = getDriveAuth();
+    const tokenRes = await auth.getAccessToken();
+    if (!tokenRes.token) throw new Error("No se pudo obtener token de acceso.");
 
-    if (!token) {
-      throw new Error("No se pudo obtener token de acceso.");
-    }
-
-    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true&access_token=${token}`;
+    const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true&access_token=${tokenRes.token}`;
 
     return NextResponse.json({ url }, {
       headers: { "Cache-Control": "no-store" },

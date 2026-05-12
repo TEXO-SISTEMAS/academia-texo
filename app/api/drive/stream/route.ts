@@ -1,22 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { google } from "googleapis";
 import https from "https";
-
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON
-  ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON)
-  : null;
-
-function getAuthClient() {
-  return new google.auth.GoogleAuth({
-    credentials: driveServiceAccount,
-    scopes: ["https://www.googleapis.com/auth/drive"],
-  });
-}
+import { getDriveAuth } from "@/lib/drive-auth";
 
 // Cache de URLs directas del CDN de Drive
 const cdnCache = new Map<string, { url: string; expires: number }>();
 
-// Usa https nativo para capturar el header Location sin descargar el body
+// Captura el header Location sin descargar el body
 function getRedirectLocation(url: string, token: string): Promise<string | null> {
   return new Promise((resolve) => {
     const u = new URL(url);
@@ -41,29 +30,28 @@ export async function GET(req: NextRequest) {
   if (!fileId) return new NextResponse("fileId requerido", { status: 400 });
 
   try {
-    const auth = getAuthClient();
-    const client = await auth.getClient();
-    const tokenRes = await (client as { getAccessToken: () => Promise<{ token: string | null }> }).getAccessToken();
-    const token = tokenRes.token;
+    const auth    = getDriveAuth();
+    const tokenRes = await auth.getAccessToken();
+    const token   = tokenRes.token;
     if (!token) throw new Error("No se pudo obtener token.");
 
     const driveApiUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
     const rangeHeader = req.headers.get("range");
 
-    // 1. Revisar caché
+    // 1. Revisar caché CDN
     const cached = cdnCache.get(fileId);
     if (cached && cached.expires > Date.now()) {
       return new NextResponse(null, { status: 307, headers: { Location: cached.url } });
     }
 
-    // 2. Obtener URL directa del CDN de Drive
+    // 2. Obtener URL directa del CDN de Drive (evita proxying del body)
     const cdnUrl = await getRedirectLocation(driveApiUrl, token);
     if (cdnUrl) {
       cdnCache.set(fileId, { url: cdnUrl, expires: Date.now() + 50 * 60 * 1000 });
       return new NextResponse(null, { status: 307, headers: { Location: cdnUrl } });
     }
 
-    // 3. Fallback: proxy directo (archivos pequeños que Drive devuelve sin redirigir)
+    // 3. Fallback: proxy directo
     const fetchHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (rangeHeader) fetchHeaders["Range"] = rangeHeader;
 
