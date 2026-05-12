@@ -302,12 +302,17 @@ function VideoResource({
   }, [userId, courseId, resourceId]);
 
   function handleSeeking() {
-    // Guardar posición antes del salto y marcar seeking
-    seekingRef.current = true;
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const maxWatched = watchedSetRef.current.size > 0
+      ? Math.max(...watchedSetRef.current)
+      : 0;
+    if (video.currentTime > maxWatched + 1) {
+      video.currentTime = lastTimeRef.current;
+    }
   }
 
   function handleSeeked() {
-    seekingRef.current = false;
     const video = videoRef.current;
     if (video) lastTimeRef.current = video.currentTime;
   }
