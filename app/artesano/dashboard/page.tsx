@@ -511,7 +511,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
             <th className="px-4 py-3 text-left">Participante</th>
             <th className="px-4 py-3 text-center">Cursos inscritos</th>
             <th className="px-4 py-3 text-center">Progreso %</th>
-            <th className="px-4 py-3 text-center">Créditos 🏆</th>
+            <th className="px-4 py-3 text-center">Créditos 🎟️</th>
             <th className="px-4 py-3 text-center">Última actividad</th>
           </tr>
         </thead>
@@ -535,7 +535,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
               <td className="px-4 py-3 text-center">
                 {p.creditos > 0 ? (
                   <span className="inline-flex items-center gap-1 bg-texo-amarillo/20 text-texo-azul dark:text-texo-amarillo font-bold text-xs px-2 py-1 rounded-full">
-                    🏆 {p.creditos}
+                    🎟️ {p.creditos}
                   </span>
                 ) : (
                   <span className="text-gray-400 text-xs">—</span>

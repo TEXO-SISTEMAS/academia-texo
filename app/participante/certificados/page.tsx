@@ -134,7 +134,7 @@ export default function CertificadosPage() {
         </div>
         {/* Contador de créditos */}
         <div className="flex items-center gap-3 bg-texo-amarillo/10 border border-texo-amarillo/30 rounded-2xl px-5 py-3 self-start sm:self-auto">
-          <span className="text-3xl">🏆</span>
+          <span className="text-3xl">🎟️</span>
           <div>
             <p className="text-2xl font-extrabold text-texo-azul dark:text-texo-amarillo leading-none">{totalCredits}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
@@ -171,7 +171,7 @@ export default function CertificadosPage() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-bold text-texo-azul dark:text-white text-base truncate">{course.title}</p>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold bg-texo-amarillo/20 text-texo-azul dark:text-texo-amarillo px-2 py-0.5 rounded-full shrink-0">
-                    🏆 1 crédito
+                    🎟️ 1 crédito
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
