@@ -1,61 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import https from "https";
 import { getDriveAuth } from "@/lib/drive-auth";
 
-// Cache de URLs directas del CDN de Drive
-const cdnCache = new Map<string, { url: string; expires: number }>();
-
-// Captura el header Location sin descargar el body
-function getRedirectLocation(url: string, token: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    const u = new URL(url);
-    const req = https.request(
-      { hostname: u.hostname, path: u.pathname + u.search, method: "GET",
-        headers: { Authorization: `Bearer ${token}` } },
-      (res) => {
-        const loc = res.headers.location ?? null;
-        res.destroy();
-        req.destroy();
-        resolve(loc && (res.statusCode ?? 0) >= 300 && (res.statusCode ?? 0) < 400 ? loc : null);
-      }
-    );
-    req.on("error", () => resolve(null));
-    req.setTimeout(6000, () => { req.destroy(); resolve(null); });
-    req.end();
-  });
-}
-
+/**
+ * Proxy directo de videos desde Google Drive con OAuth token.
+ * Se eliminó el CDN redirect porque las URLs del CDN de Google expiran
+ * en pocos minutos, causando que el video se congele antes de terminar.
+ * El OAuth token dura 1 hora — suficiente para cualquier video.
+ */
 export async function GET(req: NextRequest) {
   const fileId = req.nextUrl.searchParams.get("fileId");
   if (!fileId) return new NextResponse("fileId requerido", { status: 400 });
 
   try {
-    const auth    = getDriveAuth();
+    const auth     = getDriveAuth();
     const tokenRes = await auth.getAccessToken();
-    const token   = tokenRes.token;
+    const token    = tokenRes.token;
     if (!token) throw new Error("No se pudo obtener token.");
 
-    const driveApiUrl = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
-    const rangeHeader = req.headers.get("range");
+    const driveApiUrl   = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`;
+    const rangeHeader   = req.headers.get("range");
 
-    // 1. Revisar caché CDN
-    const cached = cdnCache.get(fileId);
-    if (cached && cached.expires > Date.now()) {
-      return new NextResponse(null, { status: 307, headers: { Location: cached.url } });
-    }
-
-    // 2. Obtener URL directa del CDN de Drive (evita proxying del body)
-    const cdnUrl = await getRedirectLocation(driveApiUrl, token);
-    if (cdnUrl) {
-      cdnCache.set(fileId, { url: cdnUrl, expires: Date.now() + 50 * 60 * 1000 });
-      return new NextResponse(null, { status: 307, headers: { Location: cdnUrl } });
-    }
-
-    // 3. Fallback: proxy directo
     const fetchHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
     if (rangeHeader) fetchHeaders["Range"] = rangeHeader;
 
     const driveRes = await fetch(driveApiUrl, { headers: fetchHeaders });
+
     if (!driveRes.ok && driveRes.status !== 206) {
       const errBody = await driveRes.text();
       console.error(`[drive/stream] Drive error ${driveRes.status} for fileId=${fileId}:`, errBody);
@@ -65,7 +34,7 @@ export async function GET(req: NextRequest) {
     const responseHeaders = new Headers();
     responseHeaders.set("Content-Type", driveRes.headers.get("content-type") ?? "video/mp4");
     responseHeaders.set("Accept-Ranges", "bytes");
-    responseHeaders.set("Cache-Control", "public, max-age=3600");
+    responseHeaders.set("Cache-Control", "no-store");
     const cl = driveRes.headers.get("content-length");
     if (cl) responseHeaders.set("Content-Length", cl);
     const cr = driveRes.headers.get("content-range");

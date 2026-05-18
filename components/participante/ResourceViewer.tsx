@@ -292,7 +292,7 @@ function VideoResource({
   const [videoDuration, setVideoDuration] = useState(0);
   const [displayTime,   setDisplayTime]   = useState(0);
 
-  const REQUIRED = 95;
+  const REQUIRED = 100;
   const ready    = watchedPct >= REQUIRED;
 
   const saveWatched = useCallback(() => {
