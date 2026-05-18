@@ -602,6 +602,44 @@ export async function getCourseProgressStats(
   return { completed, total, enrolled: true };
 }
 
+/**
+ * Otorga 1 crédito al participante por completar un curso.
+ * Si ya tenía el crédito, no hace nada (idempotente).
+ */
+export async function awardCredit(userId: string, courseId: string): Promise<void> {
+  const ref = doc(db, "progress", userId, "courses", courseId);
+  const snap = await getDoc(ref);
+  if (snap.exists() && snap.data().creditEarned === true) return; // ya otorgado
+  await updateDoc(ref, {
+    creditEarned: true,
+    creditEarnedAt: serverTimestamp(),
+  });
+}
+
+export interface CreditInfo {
+  courseId: string;
+  earnedAt: Date;
+}
+
+/**
+ * Devuelve la lista de créditos obtenidos por el usuario
+ * (un crédito por propedéutico con creditEarned === true).
+ */
+export async function getUserCredits(userId: string): Promise<CreditInfo[]> {
+  const snap = await getDocs(collection(db, "progress", userId, "courses"));
+  const credits: CreditInfo[] = [];
+  snap.docs.forEach((d) => {
+    if (d.data().creditEarned === true) {
+      const ts = d.data().creditEarnedAt;
+      credits.push({
+        courseId: d.id,
+        earnedAt: ts ? (ts as { toDate(): Date }).toDate() : new Date(),
+      });
+    }
+  });
+  return credits;
+}
+
 
 // ─── Dashboard global de Participantes ──────────────────────────────────────────────
 

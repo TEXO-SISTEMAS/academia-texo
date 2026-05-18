@@ -37,6 +37,7 @@ export interface ParticipantStats {
   cursosInscritos: number
   progresoPromedio: number
   ultimaActividad: Date | null
+  creditos: number
 }
 
 export async function getAllParticipants(): Promise<ParticipantStats[]> {
@@ -49,6 +50,8 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
 
       let totalProgress = 0
       let latestDate: Date | null = null
+
+      let creditos = 0
 
       for (const courseDoc of coursesSnap.docs) {
         const resourcesSnap = await getDocs(
@@ -63,6 +66,8 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
           const d = enrolledAt.toDate()
           if (!latestDate || d > latestDate) latestDate = d
         }
+
+        if (courseDoc.data().creditEarned === true) creditos++
       }
 
       const avgProgress = coursesSnap.size > 0
@@ -74,6 +79,7 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
         cursosInscritos: coursesSnap.size,
         progresoPromedio: avgProgress,
         ultimaActividad: latestDate,
+        creditos,
       }
     })
   )

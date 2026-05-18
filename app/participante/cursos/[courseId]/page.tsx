@@ -11,6 +11,7 @@ import {
   getResourceProgress,
   markResourceCompleted,
   enrollParticipant,
+  awardCredit,
 } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import type { Course, Chapter, Resource, ResourceType, QuizAnswer } from "@/types";
@@ -184,6 +185,8 @@ export default function CourseViewPage() {
 
     if (allDone) {
       setCompletedAt(new Date());
+      // Otorgar crédito (idempotente — no duplica si ya fue otorgado)
+      awardCredit(firebaseUser.uid, courseId).catch(() => {});
       setShowCertificate(true);
     } else if (score === undefined) {
       // Solo para recursos que no son quiz (quiz tiene su propio toast en QuizViewer)

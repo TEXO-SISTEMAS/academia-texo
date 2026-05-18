@@ -59,8 +59,19 @@ export default function CertificateModal({
           </button>
         </div>
 
+        {/* Badge de crédito — solo en celebración */}
+        {isCelebration && (
+          <div className="mx-6 mt-4 flex items-center gap-3 bg-texo-amarillo/10 border border-texo-amarillo/30 rounded-xl px-4 py-3">
+            <span className="text-2xl">🏆</span>
+            <div>
+              <p className="text-sm font-bold text-texo-azul dark:text-texo-amarillo">+1 Crédito obtenido</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Podés ver todos tus créditos en la pestaña Certificados</p>
+            </div>
+          </div>
+        )}
+
         {/* Certificado — preview escalado a ~800px de ancho */}
-        <div className="px-6 pt-6 pb-2 overflow-hidden">
+        <div className="px-6 pt-4 pb-2 overflow-hidden">
           <div style={{ width: "800px", margin: "0 auto", height: `${Math.round(850 * 800 / 1200)}px`, overflow: "hidden" }}>
             <div style={{ transform: "scale(0.667)", transformOrigin: "top left" }}>
               <Certificate

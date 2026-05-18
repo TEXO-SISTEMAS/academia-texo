@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getAllPublishedCourses, getCourseProgressStats } from "@/lib/firestore";
+import { getAllPublishedCourses, getCourseProgressStats, getUserCredits } from "@/lib/firestore";
 import { useAuth } from "@/lib/auth-context";
 import type { Course } from "@/types";
 import CourseCard from "@/components/shared/CourseCard";
@@ -15,6 +15,7 @@ type Filter = "all" | "in-progress" | "not-started" | "completed";
 export default function ParticipanteDashboard() {
   const { firebaseUser } = useAuth();
   const [courses, setCourses] = useState<CourseWithStats[]>([]);
+  const [totalCredits, setTotalCredits] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -26,16 +27,20 @@ export default function ParticipanteDashboard() {
       setLoading(true);
       try {
         const published = await getAllPublishedCourses();
-        const withStats = await Promise.all(
-          published.map(async (course) => {
-            const stats = await getCourseProgressStats(
-              firebaseUser!.uid,
-              course.id
-            );
-            return { ...course, stats };
-          })
-        );
+        const [withStats, credits] = await Promise.all([
+          Promise.all(
+            published.map(async (course) => {
+              const stats = await getCourseProgressStats(
+                firebaseUser!.uid,
+                course.id
+              );
+              return { ...course, stats };
+            })
+          ),
+          getUserCredits(firebaseUser!.uid),
+        ]);
         setCourses(withStats);
+        setTotalCredits(credits.length);
       } finally {
         setLoading(false);
       }
@@ -58,13 +63,27 @@ export default function ParticipanteDashboard() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
-          Recursos
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-          Aprendé a tu ritmo
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white pb-2 border-b-[3px] border-texo-amarillo inline-block">
+            Recursos
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            Aprendé a tu ritmo
+          </p>
+        </div>
+        {/* Créditos */}
+        {totalCredits !== null && (
+          <div className="flex items-center gap-3 bg-texo-amarillo/10 border border-texo-amarillo/30 rounded-2xl px-4 py-2.5 self-start sm:self-auto">
+            <span className="text-2xl">🏆</span>
+            <div className="leading-none">
+              <p className="text-xl font-extrabold text-texo-azul dark:text-texo-amarillo">{totalCredits}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                {totalCredits === 1 ? "crédito" : "créditos"}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Búsqueda y filtro */}

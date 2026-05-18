@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { collection, getDocs, getDoc, doc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { getCourse, getChaptersByCourse, getResourcesByChapter } from "@/lib/firestore";
+import { getCourse, getChaptersByCourse, getResourcesByChapter, getUserCredits } from "@/lib/firestore";
 import CertificateModal from "@/components/participante/CertificateModal";
 
 interface CompletedCourse {
@@ -17,6 +17,7 @@ interface CompletedCourse {
 export default function CertificadosPage() {
   const { firebaseUser } = useAuth();
   const [completedCourses, setCompletedCourses] = useState<CompletedCourse[]>([]);
+  const [totalCredits, setTotalCredits] = useState(0);
   const [loading, setLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<CompletedCourse | null>(null);
 
@@ -100,6 +101,10 @@ export default function CertificadosPage() {
       console.log("[Certificados] Certificados de cursos eliminados:", deletedCount);
 
       setCompletedCourses(results.sort((a, b) => b.completedAt.getTime() - a.completedAt.getTime()));
+
+      // Créditos (puede ser mayor que completedCourses si algunos cursos fueron eliminados)
+      const credits = await getUserCredits(firebaseUser.uid);
+      setTotalCredits(credits.length);
     } finally {
       setLoading(false);
     }
@@ -120,10 +125,24 @@ export default function CertificadosPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-texo-azul dark:text-white mb-2">Mis Certificados</h1>
-      <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
-        Propedéuticos completados al 100%
-      </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-texo-azul dark:text-white mb-1">Mis Certificados</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
+            Propedéuticos completados al 100%
+          </p>
+        </div>
+        {/* Contador de créditos */}
+        <div className="flex items-center gap-3 bg-texo-amarillo/10 border border-texo-amarillo/30 rounded-2xl px-5 py-3 self-start sm:self-auto">
+          <span className="text-3xl">🏆</span>
+          <div>
+            <p className="text-2xl font-extrabold text-texo-azul dark:text-texo-amarillo leading-none">{totalCredits}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {totalCredits === 1 ? "crédito obtenido" : "créditos obtenidos"}
+            </p>
+          </div>
+        </div>
+      </div>
 
       {completedCourses.length === 0 ? (
         <div className="text-center py-20">
@@ -149,7 +168,12 @@ export default function CertificadosPage() {
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-texo-azul dark:text-white text-base truncate">{course.title}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-bold text-texo-azul dark:text-white text-base truncate">{course.title}</p>
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold bg-texo-amarillo/20 text-texo-azul dark:text-texo-amarillo px-2 py-0.5 rounded-full shrink-0">
+                    🏆 1 crédito
+                  </span>
+                </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   Completado el{" "}
                   {course.completedAt.toLocaleDateString("es-AR", {
