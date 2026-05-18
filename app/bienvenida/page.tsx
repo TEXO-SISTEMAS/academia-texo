@@ -33,7 +33,11 @@ export default function BienvenidaPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!firebaseUser) return;
+    if (!firebaseUser) {
+      // Sin sesión activa → redirigir a login en vez de quedar colgado
+      router.replace("/login");
+      return;
+    }
 
     async function fetchName() {
       const uid = firebaseUser!.uid;

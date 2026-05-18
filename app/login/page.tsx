@@ -52,7 +52,7 @@ export default function LoginPage() {
         return;
       }
       const { role } = result as { role: string };
-      window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/bienvenida");
+      window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);

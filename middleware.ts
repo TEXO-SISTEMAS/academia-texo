@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
     if (role) {
       return NextResponse.redirect(
         new URL(
-          role === "artesano" ? "/artesano/dashboard" : "/bienvenida",
+          role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard",
           request.url
         )
       );
@@ -65,7 +65,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (
-    (pathname.startsWith("/participante") || pathname.startsWith("/bienvenida")) &&
+    pathname.startsWith("/participante") &&
     role !== "participante"
   ) {
     return NextResponse.redirect(
