@@ -282,28 +282,17 @@ function VideoResource({
   const lastSavedRef    = useRef(0);
   const isPlayingRef    = useRef(false);
 
-  const [videoSrc,      setVideoSrc]      = useState<string | null>(null);
+  const streamSrc = fileId ? `/api/drive/stream?fileId=${fileId}` : null;
+
   const [watchedPct,    setWatchedPct]    = useState(0);
-  const [useFallback,   setUseFallback]   = useState(!fileId);
+  const [useFallback,   setUseFallback]   = useState(!streamSrc);
   const [buffering,     setBuffering]     = useState(false);
   const [completing,    setCompleting]    = useState(false);
   const [isPlaying,     setIsPlaying]     = useState(false);
   const [videoDuration, setVideoDuration] = useState(0);
   const [displayTime,   setDisplayTime]   = useState(0);
 
-  // Obtener URL directa con OAuth token (válido 1h, no expira mid-stream como el CDN)
-  useEffect(() => {
-    if (!fileId) { setUseFallback(true); return; }
-    fetch(`/api/drive/video-url?fileId=${fileId}`)
-      .then((r) => r.json())
-      .then((data: { url?: string; error?: string }) => {
-        if (data.url) setVideoSrc(data.url);
-        else setUseFallback(true);
-      })
-      .catch(() => setUseFallback(true));
-  }, [fileId]);
-
-  const REQUIRED = 100;
+  const REQUIRED = 95;
   const ready    = watchedPct >= REQUIRED;
 
   const saveWatched = useCallback(() => {
@@ -412,18 +401,6 @@ function VideoResource({
     );
   }
 
-  // Mientras se obtiene la URL del video
-  if (!videoSrc) {
-    return (
-      <div
-        className="w-full flex items-center justify-center rounded-xl bg-black"
-        style={{ height: "320px" }}
-      >
-        <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   const progressMsg = watchedPct >= REQUIRED
     ? "Video completado ✓"
     : `Visto: ${watchedPct}% — debés ver el video completo`;
@@ -438,7 +415,7 @@ function VideoResource({
       >
         <video
           ref={videoRef}
-          src={videoSrc ?? undefined}
+          src={streamSrc!}
           preload="metadata"
           style={{ width: "100%", maxHeight: "500px", display: "block" }}
           onTimeUpdate={handleTimeUpdate}
