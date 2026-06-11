@@ -9,10 +9,12 @@ import type admin from "firebase-admin";
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
 function getDriveAuth() {
+  const b64 = process.env.DRIVE_SERVICE_ACCOUNT_JSON_B64;
   const raw = process.env.DRIVE_SERVICE_ACCOUNT_JSON;
-  if (!raw) throw new Error("DRIVE_SERVICE_ACCOUNT_JSON no configurado.");
+  const json = b64 ? Buffer.from(b64, "base64").toString("utf8") : raw;
+  if (!json) throw new Error("DRIVE_SERVICE_ACCOUNT_JSON(_B64) no configurado.");
   return new google.auth.GoogleAuth({
-    credentials: JSON.parse(raw),
+    credentials: JSON.parse(json),
     scopes: ["https://www.googleapis.com/auth/drive"],
   });
 }
@@ -21,16 +23,24 @@ function getDriveAuth() {
 
 type PlainData = Record<string, unknown>;
 
+function serializeValue(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (typeof value === "object" && "toDate" in (value as object)) {
+    return (value as admin.firestore.Timestamp).toDate().toISOString();
+  }
+  if (Array.isArray(value)) {
+    return value.map(serializeValue);
+  }
+  if (typeof value === "object") {
+    return serializeDoc(value as admin.firestore.DocumentData);
+  }
+  return value;
+}
+
 function serializeDoc(data: admin.firestore.DocumentData): PlainData {
   const result: PlainData = {};
   for (const [key, value] of Object.entries(data)) {
-    if (value && typeof value === "object" && "toDate" in value) {
-      result[key] = (value as admin.firestore.Timestamp).toDate().toISOString();
-    } else if (value !== null && typeof value === "object" && !Array.isArray(value)) {
-      result[key] = serializeDoc(value as admin.firestore.DocumentData);
-    } else {
-      result[key] = value;
-    }
+    result[key] = serializeValue(value);
   }
   return result;
 }
@@ -66,9 +76,6 @@ async function exportCollection(
 export async function GET(request: NextRequest) {
   // Verificar que venga de Vercel Cron
   const authHeader = request.headers.get("authorization");
-  console.log("[Backup] Authorization header:", authHeader);
-  console.log("[Backup] Expected:", `Bearer ${process.env.CRON_SECRET}`);
-  console.log("[Backup] Match:", authHeader === `Bearer ${process.env.CRON_SECRET}`);
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

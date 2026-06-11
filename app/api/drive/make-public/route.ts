@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDriveAuth } from "@/lib/drive-auth";
+import { requireAuth } from "@/lib/api-auth";
 
 async function getAccessToken(): Promise<string> {
   const auth     = getDriveAuth();
@@ -10,6 +11,9 @@ async function getAccessToken(): Promise<string> {
 
 export async function POST(req: NextRequest) {
   try {
+    const authCheck = await requireAuth(req, { role: "artesano" });
+    if (!authCheck.ok) return authCheck.response;
+
     const { fileId } = await req.json() as { fileId: string };
     if (!fileId) {
       return NextResponse.json({ error: "fileId requerido" }, { status: 400 });

@@ -1,6 +1,14 @@
 import admin from "firebase-admin";
 
 function getServiceAccount() {
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64;
+  if (b64) {
+    try {
+      return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+    } catch {
+      // continuar al fallback
+    }
+  }
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     try {
       return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);

@@ -102,8 +102,9 @@ export default function CourseViewPage() {
   function isChapterUnlocked(idx: number): boolean {
     if (idx === 0) return true;
     const prev = chaptersData[idx - 1];
+    // Un capítulo previo vacío no debe bloquear el siguiente: se trata como "saltable".
     return (
-      prev.resources.length > 0 &&
+      prev.resources.length === 0 ||
       prev.resources.every((r) => progress[r.id] === true)
     );
   }
@@ -118,8 +119,9 @@ export default function CourseViewPage() {
 
   function isChapterCompleted(idx: number): boolean {
     const { resources } = chaptersData[idx];
+    // Capítulo vacío se considera "completado" para no romper el desbloqueo en cascada.
     return (
-      resources.length > 0 && resources.every((r) => progress[r.id] === true)
+      resources.length === 0 || resources.every((r) => progress[r.id] === true)
     );
   }
 
@@ -172,11 +174,11 @@ export default function CourseViewPage() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleCompleteResource(resourceId: string, score?: number, answers?: QuizAnswer[]) {
+  async function handleCompleteResource(resourceId: string, score?: number, answers?: QuizAnswer[], observations?: string) {
     if (!firebaseUser) return;
     const allResources = chaptersData.flatMap((cd) => cd.resources);
     const resourceTitle = allResources.find((r) => r.id === resourceId)?.title;
-    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers, resourceTitle);
+    await markResourceCompleted(firebaseUser.uid, courseId, resourceId, score, answers, resourceTitle, observations);
     const newProgress = { ...progress, [resourceId]: true };
     setProgress(newProgress);
 
@@ -465,7 +467,7 @@ export default function CourseViewPage() {
                 key={activeResource.id}
                 resource={activeResource}
                 isCompleted={progress[activeResource.id] === true}
-                onComplete={(score, answers) => handleCompleteResource(activeResource.id, score, answers)}
+                onComplete={(score, answers, observations) => handleCompleteResource(activeResource.id, score, answers, observations)}
                 nextAction={getNextAction()}
                 userId={firebaseUser?.uid}
                 courseId={courseId}

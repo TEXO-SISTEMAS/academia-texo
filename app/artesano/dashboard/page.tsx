@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { Fragment, useState, useEffect, useCallback } from 'react'
 import { getArtesanoCourses, getAllParticipants, getQuizResponses, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer } from '@/lib/stats'
 import {
   BarChart,
@@ -357,9 +357,8 @@ function CuestionariosView() {
                   : 'text-gray-500'
 
                 return (
-                  <>
+                  <Fragment key={rowKey}>
                     <tr
-                      key={rowKey}
                       className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                       onClick={() => setExpandedRow(isExpanded ? null : rowKey)}
                     >
@@ -382,7 +381,7 @@ function CuestionariosView() {
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={`${rowKey}-detail`} className="bg-gray-50 dark:bg-gray-800/40">
+                      <tr className="bg-gray-50 dark:bg-gray-800/40">
                         <td colSpan={6} className="px-6 py-4">
                           <div className="flex flex-col gap-4">
                             {r.respuestasDetalladas.length > 0 ? (
@@ -392,11 +391,21 @@ function CuestionariosView() {
                             ) : (
                               <p className="text-xs text-gray-400">Sin detalle disponible.</p>
                             )}
+                            {r.observaciones && (
+                              <div className="mt-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <p className="text-xs font-semibold text-texo-azul dark:text-texo-amarillo uppercase tracking-wide mb-1">
+                                  Observaciones del participante
+                                </p>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                                  {r.observaciones}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>

@@ -14,7 +14,7 @@ interface NavbarProps {
 }
 
 export default function Navbar({ links = [] }: NavbarProps) {
-  const { firebaseUser, logout } = useAuth();
+  const { firebaseUser, userRole, logout } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -52,7 +52,16 @@ export default function Navbar({ links = [] }: NavbarProps) {
     <nav className="bg-texo-azul text-white sticky top-0 z-50 shadow-md">
       <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-4">
         {/* Logo */}
-        <Link href="/" className="shrink-0">
+        <Link
+          href={
+            userRole === "artesano"
+              ? "/artesano/dashboard"
+              : userRole === "participante"
+              ? "/participante/dashboard"
+              : "/"
+          }
+          className="shrink-0"
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo.png" alt="Academia TEXO" style={{ height: "40px", width: "auto" }} />
         </Link>

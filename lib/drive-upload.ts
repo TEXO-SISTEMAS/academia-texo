@@ -1,8 +1,18 @@
+import { auth } from "@/lib/firebase";
+
 export interface DriveUploadResult {
   fileId: string;
   webViewLink: string;
   directLink: string;
   pdfFileId?: string; // presente si el archivo fue convertido a PDF (DOCX/PPT)
+}
+
+/** Obtiene el ID Token de Firebase del usuario actual. Lanza si no hay sesión. */
+async function getAuthHeader(): Promise<{ Authorization: string }> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No hay sesión activa.");
+  const token = await user.getIdToken();
+  return { Authorization: `Bearer ${token}` };
 }
 
 export async function uploadFileResumable(
@@ -11,10 +21,12 @@ export async function uploadFileResumable(
   onProgress?: (pct: number) => void,
   courseId = ""
 ): Promise<DriveUploadResult> {
+  const authHeader = await getAuthHeader();
+
   // 1. Iniciar resumable upload — obtiene la uploadUrl de Drive
   const initRes = await fetch("/api/drive/resumable-init", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeader },
     body: JSON.stringify({
       fileName:    file.name,
       mimeType:    file.type || "video/mp4",
@@ -50,7 +62,7 @@ export async function uploadFileResumable(
     body.append("total",     String(file.size));
     body.append("mimeType",  file.type || "video/mp4");
 
-    const res = await fetch("/api/drive/upload-chunk", { method: "POST", body });
+    const res = await fetch("/api/drive/upload-chunk", { method: "POST", headers: authHeader, body });
 
     if (!res.ok) {
       const data = await res.json() as { error?: string };
@@ -74,7 +86,7 @@ export async function uploadFileResumable(
   // 3. Hacer el archivo público
   const pubRes = await fetch("/api/drive/make-public", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeader },
     body: JSON.stringify({ fileId }),
   });
 
@@ -99,7 +111,7 @@ export async function uploadFileResumable(
     try {
       const convRes = await fetch("/api/drive/convert-pdf", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader },
         body: JSON.stringify({ fileId, mimeType: fileMime, fileName: file.name }),
       });
       if (convRes.ok) {
@@ -120,6 +132,7 @@ export async function uploadFileToDrive(
   onProgress?: (pct: number) => void,
   courseId = ""
 ): Promise<DriveUploadResult> {
+  const authHeader = await getAuthHeader();
   return new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -156,6 +169,7 @@ export async function uploadFileToDrive(
     xhr.addEventListener("abort", () => reject(new Error("Subida cancelada.")));
 
     xhr.open("POST", "/api/drive/upload");
+    xhr.setRequestHeader("Authorization", authHeader.Authorization);
     xhr.send(formData);
   });
 }

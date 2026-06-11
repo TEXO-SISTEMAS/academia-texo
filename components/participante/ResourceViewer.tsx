@@ -26,7 +26,7 @@ interface NextAction {
 interface Props {
   resource: Resource;
   isCompleted: boolean;
-  onComplete: (score?: number, answers?: QuizAnswer[]) => Promise<void>;
+  onComplete: (score?: number, answers?: QuizAnswer[], observations?: string) => Promise<void>;
   nextAction?: NextAction | null;
   userId?: string;
   courseId?: string;
@@ -36,7 +36,7 @@ interface EngagementProps {
   userId?: string;
   courseId?: string;
   resourceId: string;
-  onComplete: (score?: number, answers?: QuizAnswer[]) => Promise<void>;
+  onComplete: (score?: number, answers?: QuizAnswer[], observations?: string) => Promise<void>;
   nextAction?: NextAction | null;
 }
 
@@ -221,7 +221,7 @@ export default function ResourceViewer({
           ) : (
             <QuizViewer
               content={resource.content as QuizContent}
-              onComplete={(score, answers) => onComplete(score, answers)}
+              onComplete={(score, answers, observations) => onComplete(score, answers, observations)}
             />
           )}
         </div>

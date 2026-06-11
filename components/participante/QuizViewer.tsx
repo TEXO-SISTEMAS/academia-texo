@@ -8,7 +8,7 @@ import type { QuizAnswer } from "@/types";
 
 interface Props {
   content: QuizContent;
-  onComplete: (score: number, answers: QuizAnswer[]) => Promise<void>;
+  onComplete: (score: number, answers: QuizAnswer[], observations?: string) => Promise<void>;
 }
 
 // Por pregunta: null = sin responder (single) | number = respuesta single | number[] = respuestas múltiples
@@ -67,7 +67,8 @@ export default function QuizViewer({ content, onComplete }: Props) {
       questionIndex: i,
       selectedOptions: Array.isArray(a) ? a : a !== null ? [a as number] : [],
     }));
-    await onComplete(score, serialized);
+    const obs = content.allowObservations && observations.trim() ? observations.trim() : undefined;
+    await onComplete(score, serialized, obs);
   }
 
   return (

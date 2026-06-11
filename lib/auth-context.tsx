@@ -28,6 +28,26 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+
+// Espera a que onAuthStateChanged confirme la sesión, con timeout para no colgar el login.
+function waitForAuthSettled(timeoutMs = 8000): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      unsub();
+      reject(new Error("Timeout esperando confirmación de sesión."));
+    }, timeoutMs);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (!user || settled) return;
+      settled = true;
+      clearTimeout(timer);
+      unsub();
+      resolve();
+    });
+  });
+}
 import { getOrCreateUser, recordLoginBackground } from "@/lib/firestore";
 import { setCookie, deleteCookie } from "@/lib/cookies";
 import type { UserRole } from "@/types";
@@ -114,11 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
-    await new Promise<void>((resolve) => {
-      const unsub = onAuthStateChanged(auth, (user) => {
-        if (user) { unsub(); resolve(); }
-      });
-    });
+    await waitForAuthSettled();
 
     const role = data.role as UserRole;
     setCookie("user-role", role);
@@ -159,11 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signInWithCustomToken(auth, data.token);
 
     // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
-    await new Promise<void>((resolve) => {
-      const unsub = onAuthStateChanged(auth, (user) => {
-        if (user) { unsub(); resolve(); }
-      });
-    });
+    await waitForAuthSettled();
 
     const role = data.role as UserRole;
     setCookie("user-role", role);

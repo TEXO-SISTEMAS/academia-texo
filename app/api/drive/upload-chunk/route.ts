@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth(req, { role: "artesano" });
+    if (!auth.ok) return auth.response;
+
     const formData = await req.formData();
     const chunk     = formData.get("chunk")     as File   | null;
     const uploadUrl = formData.get("uploadUrl") as string | null;

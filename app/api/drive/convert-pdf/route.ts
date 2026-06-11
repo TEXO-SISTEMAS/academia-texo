@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { PassThrough } from "stream";
 import { getDriveAuth } from "@/lib/drive-auth";
+import { requireAuth } from "@/lib/api-auth";
 
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
@@ -22,6 +23,9 @@ const DOCX_MIMES = [
  */
 export async function POST(req: NextRequest) {
   try {
+    const authCheck = await requireAuth(req, { role: "artesano" });
+    if (!authCheck.ok) return authCheck.response;
+
     const { fileId, mimeType, fileName } = await req.json() as {
       fileId: string;
       mimeType: string;

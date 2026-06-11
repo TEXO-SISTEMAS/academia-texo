@@ -123,12 +123,19 @@ export default function ChapterResourcesPage() {
   }
 
   async function handleMove(index: number, direction: "up" | "down") {
-    const newResources = [...resources];
     const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= resources.length) return;
+    const previous = resources;
+    const newResources = [...resources];
     [newResources[index], newResources[swapIndex]] = [newResources[swapIndex], newResources[index]];
     setResources(newResources);
-    await reorderResources(courseId, chapterId, newResources.map((r) => r.id));
-    toast.success("Orden guardado");
+    try {
+      await reorderResources(courseId, chapterId, newResources.map((r) => r.id));
+      toast.success("Orden guardado");
+    } catch {
+      setResources(previous);
+      toast.error("No se pudo guardar el orden. Reintentá.");
+    }
   }
 
   return (

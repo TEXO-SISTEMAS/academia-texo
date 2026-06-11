@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { PassThrough } from "stream";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const driveServiceAccount = process.env.DRIVE_SERVICE_ACCOUNT_JSON ? JSON.parse(process.env.DRIVE_SERVICE_ACCOUNT_JSON) : null;
+import { requireAuth } from "@/lib/api-auth";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive"];
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
+function getDriveServiceAccount() {
+  const b64 = process.env.DRIVE_SERVICE_ACCOUNT_JSON_B64;
+  if (b64) return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
+  const raw = process.env.DRIVE_SERVICE_ACCOUNT_JSON;
+  if (raw) return JSON.parse(raw);
+  return null;
+}
+
 function getAuthClient() {
-  return new google.auth.GoogleAuth({ credentials: driveServiceAccount, scopes: SCOPES });
+  return new google.auth.GoogleAuth({ credentials: getDriveServiceAccount(), scopes: SCOPES });
 }
 
 /** Busca una subcarpeta por nombre dentro de parentId en el Shared Drive. */
@@ -50,6 +57,9 @@ async function createFolder(
 
 export async function POST(req: NextRequest) {
   try {
+    const authCheck = await requireAuth(req, { role: "artesano" });
+    if (!authCheck.ok) return authCheck.response;
+
     const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
     console.log("[drive/upload] GOOGLE_DRIVE_FOLDER_ID:", ROOT_FOLDER_ID ?? "(no definido)");
 

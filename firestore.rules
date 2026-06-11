@@ -31,8 +31,9 @@ service cloud.firestore {
     // ── allowedUsers ──────────────────────────────────────────────────────────
 
     match /allowedUsers/{email} {
-      // Usuarios autenticados pueden leer (para futuras verificaciones en cliente)
-      allow read: if isAuthenticated();
+      // Cada usuario solo puede leer su propio doc (uid coincide con email en esta app).
+      // Los artesanos pueden leer todos (panel de admin / dashboards).
+      allow read: if isAuthenticated() && (request.auth.uid == email || isArtesano());
       // Solo se escribe desde el Admin SDK / Firebase Console — nunca desde el cliente
       allow write: if false;
     }
@@ -56,16 +57,25 @@ service cloud.firestore {
     // ── Courses ───────────────────────────────────────────────────────────────
 
     match /courses/{courseId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      // Cualquier usuario autenticado puede leer cursos (participantes ven publicados).
+      allow read: if isAuthenticated();
+      // Artesanos: pueden crear, modificar y archivar cualquier curso.
+      allow create, delete: if isAuthenticated() && isArtesano();
+      allow update: if isAuthenticated() && (
+        isArtesano() ||
+        // Participantes pueden actualizar solo los contadores agregados
+        // (enrolledCount via enrollParticipant, completedCount via awardCredit).
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['enrolledCount', 'completedCount'])
+      );
 
       match /chapters/{chapterId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && isArtesano();
 
         match /resources/{resourceId} {
-          allow read: if request.auth != null;
-          allow write: if request.auth != null;
+          allow read: if isAuthenticated();
+          allow write: if isAuthenticated() && isArtesano();
         }
       }
     }
@@ -75,8 +85,10 @@ service cloud.firestore {
     match /auditLog/{logId} {
       // Solo el admin puede leer (verificación por UID)
       allow read: if isAuthenticated() && request.auth.uid == 'danilo.sosa@texo.com.py';
-      // Cualquier usuario autenticado puede escribir (silentAudit desde cliente)
-      allow write: if isAuthenticated();
+      // Cualquier usuario autenticado puede CREAR (silentAudit desde cliente),
+      // pero nadie puede modificar o borrar entradas — solo Admin SDK / consola.
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
     }
 
     // ── LoginHistory ──────────────────────────────────────────────────────────

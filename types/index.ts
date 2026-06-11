@@ -215,4 +215,5 @@ export interface ResourceProgress {
   completedAt: Timestamp;
   score?: number;
   answers?: QuizAnswer[];
+  observations?: string;
 }

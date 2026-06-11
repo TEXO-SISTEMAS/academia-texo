@@ -8,7 +8,11 @@ export async function GET(req: NextRequest) {
 
   const clientId     = process.env.GOOGLE_OAUTH_CLIENT_ID!;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET!;
-  const redirectUri  = "http://localhost:3000/api/auth/oauth-callback";
+  // Derivar redirect_uri del origen del request, con fallback a env var.
+  // Debe coincidir con uno de los URIs autorizados en Google Cloud Console.
+  const redirectUri =
+    process.env.OAUTH_REDIRECT_URI ??
+    `${req.nextUrl.origin}/api/auth/oauth-callback`;
 
   const bodyParams = new URLSearchParams({
     code,
@@ -18,11 +22,7 @@ export async function GET(req: NextRequest) {
     grant_type:    "authorization_code",
   });
 
-  console.log("[oauth-callback] code:", code?.substring(0, 20));
-  console.log("[oauth-callback] client_id:", clientId);
-  console.log("[oauth-callback] client_secret (primeros 6):", clientSecret?.substring(0, 6));
-  console.log("[oauth-callback] redirect_uri que se envía:", redirectUri);
-  console.log("[oauth-callback] body completo:", bodyParams.toString());
+  console.log("[oauth-callback] intercambio iniciado | redirect_uri:", redirectUri);
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -37,7 +37,12 @@ export async function GET(req: NextRequest) {
     error_description?: string;
   };
 
-  console.log("[oauth-callback] respuesta de Google:", JSON.stringify(data));
+  // No loguear tokens. Solo errores o estado.
+  if (data.error) {
+    console.log("[oauth-callback] error de Google:", data.error, data.error_description);
+  } else {
+    console.log("[oauth-callback] tokens recibidos:", { hasAccess: !!data.access_token, hasRefresh: !!data.refresh_token });
+  }
 
   if (data.error || !data.refresh_token) {
     return new NextResponse(

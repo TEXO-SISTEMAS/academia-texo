@@ -42,7 +42,7 @@ export default function CourseDetailPage() {
         getChaptersByCourse(courseId),
       ]);
       if (!courseData) {
-        router.replace("/artesano/dashboard");
+        router.replace("/artesano/cursos");
         return;
       }
       setCourse(courseData);
@@ -77,7 +77,7 @@ export default function CourseDetailPage() {
     try {
       await deleteCourse(courseId);
       toast.success("Propedéutico eliminado");
-      router.replace("/artesano/dashboard");
+      router.replace("/artesano/cursos");
     } catch {
       toast.error("Ocurrió un error. Intentá de nuevo.");
       setDeleting(false);
@@ -139,12 +139,19 @@ export default function CourseDetailPage() {
   }
 
   async function handleMove(index: number, direction: "up" | "down") {
-    const newChapters = [...chapters];
     const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= chapters.length) return;
+    const previous = chapters;
+    const newChapters = [...chapters];
     [newChapters[index], newChapters[swapIndex]] = [newChapters[swapIndex], newChapters[index]];
     setChapters(newChapters);
-    await reorderChapters(courseId, newChapters.map((c) => c.id));
-    toast.success("Orden guardado");
+    try {
+      await reorderChapters(courseId, newChapters.map((c) => c.id));
+      toast.success("Orden guardado");
+    } catch {
+      setChapters(previous);
+      toast.error("No se pudo guardar el orden. Reintentá.");
+    }
   }
 
   if (loading) {
@@ -159,7 +166,7 @@ export default function CourseDetailPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <Link
-        href="/artesano/dashboard"
+        href="/artesano/cursos"
         className="text-sm text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
       >
         ← Propedéuticos

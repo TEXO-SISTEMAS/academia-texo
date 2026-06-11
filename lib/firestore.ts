@@ -134,11 +134,18 @@ export async function createCourse(
   data: Pick<Course, "title" | "description" | "coverImageUrl" | "welcomeMessage">,
   artesanoId: string
 ): Promise<Course> {
-  // Contar los cursos existentes del artesano para asignar el número correlativo
+  // Asignar courseNumber correlativo: max(courseNumber existente) + 1, ignorando borrados.
+  // Usar el máximo evita colisiones cuando hay cursos eliminados o ediciones manuales.
   const existingSnap = await getDocs(
     query(collection(db, "courses"), where("createdBy", "==", artesanoId))
   );
-  const courseNumber = existingSnap.size + 1;
+  const maxNumber = existingSnap.docs.reduce((max, d) => {
+    const data = d.data();
+    if (data.deleted === true) return max;
+    const n = typeof data.courseNumber === "number" ? data.courseNumber : 0;
+    return n > max ? n : max;
+  }, 0);
+  const courseNumber = maxNumber + 1;
 
   const payload: Record<string, unknown> = {
     title: data.title,
@@ -242,24 +249,33 @@ export async function deleteCourse(courseId: string): Promise<void> {
   const deletedAt = serverTimestamp();
   const courseSnap = await getDoc(doc(db, "courses", courseId));
   const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
-  const batch = writeBatch(db);
 
+  // Recolectar todas las refs a marcar como deleted, luego chunkear en batches
+  // de 500 (límite de Firestore writeBatch).
+  const targets: { ref: ReturnType<typeof doc> }[] = [];
   const chaptersSnap = await getDocs(
     collection(db, "courses", courseId, "chapters")
   );
-
   for (const chapterDoc of chaptersSnap.docs) {
     const resourcesSnap = await getDocs(
       collection(db, "courses", courseId, "chapters", chapterDoc.id, "resources")
     );
     for (const resourceDoc of resourcesSnap.docs) {
-      batch.update(resourceDoc.ref, { deleted: true, deletedAt });
+      targets.push({ ref: resourceDoc.ref });
     }
-    batch.update(chapterDoc.ref, { deleted: true, deletedAt });
+    targets.push({ ref: chapterDoc.ref });
+  }
+  targets.push({ ref: doc(db, "courses", courseId) });
+
+  const CHUNK = 450; // margen de seguridad bajo el límite de 500
+  for (let i = 0; i < targets.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const t of targets.slice(i, i + CHUNK)) {
+      batch.update(t.ref, { deleted: true, deletedAt });
+    }
+    await batch.commit();
   }
 
-  batch.update(doc(db, "courses", courseId), { deleted: true, deletedAt });
-  await batch.commit();
   silentAudit({
     userId: auth.currentUser?.uid ?? "",
     userEmail: auth.currentUser?.email ?? "",
@@ -521,7 +537,8 @@ export async function markResourceCompleted(
   resourceId: string,
   score?: number,
   answers?: QuizAnswer[],
-  resourceTitle?: string
+  resourceTitle?: string,
+  observations?: string
 ): Promise<void> {
   const progressRef = doc(
     db,
@@ -540,6 +557,7 @@ export async function markResourceCompleted(
     completedAt: serverTimestamp(),
     ...(score !== undefined && { score }),
     ...(answers !== undefined && { answers }),
+    ...(observations !== undefined && observations.trim() !== "" && { observations }),
   };
 
   await setDoc(progressRef, payload);
@@ -614,6 +632,10 @@ export async function awardCredit(userId: string, courseId: string): Promise<voi
     creditEarned: true,
     creditEarnedAt: serverTimestamp(),
   });
+  // Incrementar contador agregado del curso (solo la primera vez por usuario).
+  await updateDoc(doc(db, "courses", courseId), {
+    completedCount: increment(1),
+  }).catch(() => {});
 }
 
 export interface CreditInfo {

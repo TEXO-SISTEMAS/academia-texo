@@ -30,6 +30,7 @@ export interface QuizResponse {
   totalPreguntas: number
   completado: boolean
   fecha: Date
+  observaciones?: string
 }
 
 export interface ParticipantStats {
@@ -239,6 +240,9 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
           totalPreguntas: originalQuestions.length || savedAnswers.length,
           completado: (resourceData.completed as boolean | undefined) ?? false,
           fecha: (resourceData.completedAt as Timestamp | undefined)?.toDate() ?? new Date(),
+          observaciones: typeof resourceData.observations === "string" && resourceData.observations.trim() !== ""
+            ? (resourceData.observations as string)
+            : undefined,
         })
       }
     }

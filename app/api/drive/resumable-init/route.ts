@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDriveAuth } from "@/lib/drive-auth";
+import { requireAuth } from "@/lib/api-auth";
 
 const SHARED_DRIVE_ID = "0AOIl1AbCEbVfUk9PVA";
 
@@ -49,6 +50,9 @@ async function findOrCreateFolder(accessToken: string, name: string, parentId: s
 
 export async function POST(req: NextRequest) {
   try {
+    const authCheck = await requireAuth(req, { role: "artesano" });
+    if (!authCheck.ok) return authCheck.response;
+
     const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
     if (!ROOT_FOLDER_ID) {
       return NextResponse.json({ error: "GOOGLE_DRIVE_FOLDER_ID no configurado" }, { status: 500 });
