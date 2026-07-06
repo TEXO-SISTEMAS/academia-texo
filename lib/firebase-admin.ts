@@ -8,16 +8,25 @@ function getServiceAccount() {
   if (b64) {
     try {
       return JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
-    } catch {
-      // continuar al fallback
+    } catch (err) {
+      console.error("[firebase-admin] Falló parseo de B64:", err instanceof Error ? err.message : err);
     }
   }
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+  if (raw) {
     try {
-      return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
-    } catch {
-      // continuar al fallback
+      return JSON.parse(raw);
+    } catch (err) {
+      console.error(
+        "[firebase-admin] Falló parseo de FIREBASE_SERVICE_ACCOUNT_JSON:",
+        err instanceof Error ? err.message : err,
+        "| length:", raw.length,
+        "| primeros 30 chars:", JSON.stringify(raw.slice(0, 30)),
+        "| últimos 10 chars:", JSON.stringify(raw.slice(-10))
+      );
     }
+  } else {
+    console.error("[firebase-admin] FIREBASE_SERVICE_ACCOUNT_JSON no está definida.");
   }
   if (process.env.NODE_ENV === "development") {
     try {
