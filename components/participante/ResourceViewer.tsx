@@ -187,16 +187,23 @@ export default function ResourceViewer({
   userId,
   courseId,
 }: Props) {
-  // Tipos no-quiz ya completados → mostrar bloque directamente
-  if (isCompleted && resource.type !== "quiz") {
-    return <CompletedBlock nextAction={nextAction} />;
+  const [showContent, setShowContent] = useState(false);
+
+  // Recurso completado y no pidió "volver a ver" → bloque completado
+  if (isCompleted && !showContent) {
+    return <CompletedBlock nextAction={nextAction} onReview={() => setShowContent(true)} />;
   }
+
+  // onComplete no-op cuando ya está completado (no sobreescribir estado)
+  const safeComplete = isCompleted
+    ? async () => {}
+    : onComplete;
 
   const ep: EngagementProps = {
     userId,
     courseId,
     resourceId: resource.id,
-    onComplete,
+    onComplete: safeComplete,
     nextAction,
   };
 
@@ -216,14 +223,10 @@ export default function ResourceViewer({
     case "quiz":
       return (
         <div>
-          {isCompleted ? (
-            <CompletedBlock nextAction={nextAction} />
-          ) : (
-            <QuizViewer
-              content={resource.content as QuizContent}
-              onComplete={(score, answers) => onComplete(score, answers)}
-            />
-          )}
+          <QuizViewer
+            content={resource.content as QuizContent}
+            onComplete={isCompleted ? async () => {} : (score, answers) => onComplete(score, answers)}
+          />
         </div>
       );
 
@@ -1476,12 +1479,38 @@ function IframeDocViewer({
 
 // ── CompletedBlock ────────────────────────────────────────────────────────────
 
-function CompletedBlock({ nextAction }: { nextAction?: NextAction | null }) {
+function CompletedBlock({
+  nextAction,
+  onReview,
+}: {
+  nextAction?: NextAction | null;
+  onReview?: () => void;
+}) {
+  const badge = (
+    <div className="inline-flex items-center gap-2 text-texo-verde font-medium text-sm bg-texo-verde/10 px-4 py-2 rounded-lg">
+      <span>✓</span> Completado
+    </div>
+  );
+
+  const reviewBtn = onReview && (
+    <button
+      onClick={onReview}
+      className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 px-4 py-2 rounded-lg transition-colors"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      Volver a ver
+    </button>
+  );
+
   if (nextAction === null) {
     return (
       <div className="mt-4 space-y-3">
-        <div className="inline-flex items-center gap-2 text-texo-verde font-medium text-sm bg-texo-verde/10 px-4 py-2 rounded-lg">
-          <span>✓</span> Completado
+        <div className="flex flex-wrap items-center gap-3">
+          {badge}
+          {reviewBtn}
         </div>
         <div className="w-full bg-gradient-to-r from-texo-azul to-texo-verde rounded-2xl p-6 text-center text-white">
           <div className="text-5xl mb-2">🎉</div>
@@ -1495,9 +1524,8 @@ function CompletedBlock({ nextAction }: { nextAction?: NextAction | null }) {
   if (nextAction) {
     return (
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="inline-flex items-center gap-2 text-texo-verde font-medium text-sm bg-texo-verde/10 px-4 py-2 rounded-lg">
-          <span>✓</span> Completado
-        </div>
+        {badge}
+        {reviewBtn}
         <button
           onClick={nextAction.onClick}
           className="inline-flex items-center gap-2 bg-texo-amarillo text-texo-azul font-semibold px-5 py-2 rounded-lg text-sm hover:bg-texo-amarillo/90 transition-colors"
@@ -1509,8 +1537,9 @@ function CompletedBlock({ nextAction }: { nextAction?: NextAction | null }) {
   }
 
   return (
-    <div className="mt-4 inline-flex items-center gap-2 text-texo-verde font-medium text-sm bg-texo-verde/10 px-4 py-2 rounded-lg">
-      <span>✓</span> Completado
+    <div className="mt-4 flex flex-wrap items-center gap-3">
+      {badge}
+      {reviewBtn}
     </div>
   );
 }
