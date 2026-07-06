@@ -3,7 +3,6 @@ import Footer from "@/components/shared/Footer";
 
 const PARTICIPANTE_LINKS = [
   { label: "Propedéuticos", href: "/participante/dashboard" },
-  { label: "Mis Certificados", href: "/participante/certificados" },
 ];
 
 export default function ParticipanteLayout({
