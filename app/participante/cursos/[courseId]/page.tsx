@@ -289,6 +289,28 @@ export default function CourseViewPage() {
             </div>
           </div>
 
+          {/* Cómo completar */}
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-6">
+            <p className="text-xs font-semibold text-texo-azul dark:text-texo-amarillo uppercase tracking-wide mb-3">
+              Cómo completar este propedéutico
+            </p>
+            <ul className="flex flex-col gap-2.5">
+              {[
+                { icon: "▶", text: "Avanzá por cada cápsula en orden — la siguiente se habilita al terminar la anterior." },
+                { icon: "✓", text: "Completá todos los recursos de cada cápsula: videos, presentaciones, documentos y cuestionarios." },
+                { icon: "📋", text: "En los cuestionarios respondé todas las preguntas antes de enviar." },
+                { icon: "🏅", text: `Al finalizar las ${chaptersData.length === 1 ? "cápsula" : `${chaptersData.length} cápsulas`} obtenés tu certificado.` },
+              ].map(({ icon, text }, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-gray-600 dark:text-gray-300">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-texo-azul/10 dark:bg-texo-amarillo/10 flex items-center justify-center text-xs">
+                    {icon}
+                  </span>
+                  {text}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <button
             onClick={handleStartCourse}
             className="w-full bg-texo-amarillo text-texo-azul font-bold py-3 px-6 rounded-xl text-base hover:bg-texo-amarillo/90 transition-colors"
