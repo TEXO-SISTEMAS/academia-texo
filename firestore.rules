@@ -17,7 +17,8 @@ service cloud.firestore {
     }
 
     function isArtesano() {
-      return getUserRole() == 'artesano';
+      // 'admin' tiene los mismos privilegios de contenido que 'artesano'.
+      return getUserRole() == 'artesano' || getUserRole() == 'admin';
     }
 
     function isCourseOwner(courseId) {
