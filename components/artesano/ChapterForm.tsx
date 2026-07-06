@@ -7,6 +7,7 @@ interface Props {
   initial?: Pick<Chapter, "title" | "description">;
   onSubmit: (title: string, description: string) => Promise<void>;
   onCancel: () => void;
+  onDelete?: () => Promise<void>;
   title: string;
 }
 
@@ -14,11 +15,14 @@ export default function ChapterForm({
   initial,
   onSubmit,
   onCancel,
+  onDelete,
   title,
 }: Props) {
   const [chapterTitle, setChapterTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [loading, setLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,6 +79,42 @@ export default function ChapterForm({
               {loading ? "Guardando..." : "Guardar"}
             </button>
           </div>
+
+          {onDelete && (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mt-1">
+              {!confirmDelete ? (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="text-xs text-gray-400 hover:text-texo-rojo transition-colors"
+                >
+                  Eliminar cápsula
+                </button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <p className="text-xs text-texo-rojo flex-1">¿Confirmás que querés eliminar esta cápsula?</p>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                  >
+                    No
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={async () => {
+                      setDeleting(true);
+                      await onDelete();
+                    }}
+                    className="text-xs font-semibold text-white bg-texo-rojo px-3 py-1.5 rounded-lg hover:bg-texo-rojo/90 disabled:opacity-50 transition-colors"
+                  >
+                    {deleting ? "Eliminando..." : "Sí, eliminar"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </form>
       </div>
     </div>
