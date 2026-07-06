@@ -85,6 +85,8 @@ export interface FileContent {
 
 export interface QuizQuestion {
   questionText: string;
+  /** 'choice' (default, legacy) = selección entre opciones. 'open' = respuesta libre de texto. */
+  questionType?: "choice" | "open";
   options: string[];
   correctIndex?: number;
   multipleChoice?: boolean;
@@ -208,6 +210,8 @@ export interface CourseEnrollment {
 export interface QuizAnswer {
   questionIndex: number;
   selectedOptions: number[];
+  /** Respuesta de texto libre, solo para preguntas questionType === "open". */
+  textAnswer?: string;
 }
 
 export interface ResourceProgress {

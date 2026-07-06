@@ -252,6 +252,28 @@ function SummaryCard({ label, value, color }: { label: string; value: string | n
 }
 
 function QuizAnswerDetail({ index, data }: { index: number; data: QuizDetailedAnswer }) {
+  if (data.esAbierta) {
+    return (
+      <div className="text-sm">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-base text-texo-azul dark:text-texo-amarillo">💬</span>
+          <p className="font-medium text-gray-800 dark:text-gray-200">
+            {index + 1}. {data.pregunta}
+          </p>
+        </div>
+        <div className="pl-6">
+          {data.respuestaAbierta ? (
+            <p className="text-xs text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-3 py-2 whitespace-pre-wrap">
+              {data.respuestaAbierta}
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 italic">Sin respuesta.</p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="text-sm">
       <div className="flex items-center gap-2 mb-1.5">

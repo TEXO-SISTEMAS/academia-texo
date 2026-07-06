@@ -31,6 +31,7 @@ type SourceMode = "upload" | "text";
 function makeEmptyQuestion(optCount = 4): QuizQuestion {
   return {
     questionText: "",
+    questionType: "choice",
     options: Array.from({ length: optCount }, () => ""),
     correctIndex: 0,
     multipleChoice: false,
@@ -42,6 +43,7 @@ function initQuestions(resource?: Resource): QuizQuestion[] {
   if (resource?.type === "quiz") {
     return (resource.content as QuizContent).questions.map((q) => ({
       ...q,
+      questionType: q.questionType ?? "choice",
       multipleChoice: q.multipleChoice ?? false,
       correctIndex: q.correctIndex ?? 0,
       correctIndexes: q.correctIndexes ?? [],
@@ -220,6 +222,12 @@ export default function ResourceForm({
     );
   }
 
+  function updateQuestionType(index: number, value: "choice" | "open") {
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === index ? { ...q, questionType: value } : q))
+    );
+  }
+
   function updateOption(qIndex: number, oIndex: number, value: string) {
     setQuestions((prev) =>
       prev.map((q, i) =>
@@ -390,18 +398,22 @@ export default function ResourceForm({
         case "quiz": {
           const cleanQuestions = questions
             .filter((q) => q.questionText.trim() !== "")
-            .map((q) => ({
-              questionText: q.questionText ?? "",
-              options: [
-                q.options?.[0] ?? "",
-                q.options?.[1] ?? "",
-                q.options?.[2] ?? "",
-                q.options?.[3] ?? "",
-              ],
-              correctIndex: q.correctIndex ?? 0,
-              multipleChoice: q.multipleChoice ?? false,
-              correctIndexes: q.correctIndexes ?? [],
-            }));
+            .map((q) =>
+              q.questionType === "open"
+                ? {
+                    questionText: q.questionText ?? "",
+                    questionType: "open" as const,
+                    options: [],
+                  }
+                : {
+                    questionText: q.questionText ?? "",
+                    questionType: "choice" as const,
+                    options: q.options.map((o) => o ?? ""),
+                    correctIndex: q.correctIndex ?? 0,
+                    multipleChoice: q.multipleChoice ?? false,
+                    correctIndexes: q.correctIndexes ?? [],
+                  }
+            );
           if (cleanQuestions.length === 0) {
             setError("El cuestionario debe tener al menos una pregunta.");
             setLoading(false);
@@ -605,11 +617,23 @@ const isLegacyType = type === "text" || type === "file";
               </div>
 
               {/* Preguntas */}
-              {questions.map((q, qi) => (
+              {questions.map((q, qi) => {
+                const isOpen = q.questionType === "open";
+                return (
                 <div key={qi} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-3">
-                    Pregunta {qi + 1}
-                  </span>
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      Pregunta {qi + 1}
+                    </span>
+                    <select
+                      value={q.questionType ?? "choice"}
+                      onChange={(e) => updateQuestionType(qi, e.target.value as "choice" | "open")}
+                      className="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
+                    >
+                      <option value="choice">Opción múltiple</option>
+                      <option value="open">Respuesta abierta</option>
+                    </select>
+                  </div>
 
                   <input
                     type="text"
@@ -620,57 +644,67 @@ const isLegacyType = type === "text" || type === "file";
                     className={`${inputClass} mb-3`}
                   />
 
-                  <label className="flex items-center gap-2 mb-3 cursor-pointer w-fit">
-                    <input
-                      type="checkbox"
-                      checked={q.multipleChoice ?? false}
-                      onChange={() => toggleMultipleChoice(qi)}
-                      className="accent-texo-amarillo w-4 h-4"
-                    />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                      Permite múltiple respuesta
-                    </span>
-                  </label>
-
-                  <div className="flex flex-col gap-2">
-                    {q.options.map((opt, oi) => (
-                      <div key={oi} className="flex items-center gap-2">
-                        {q.multipleChoice ? (
-                          <input
-                            type="checkbox"
-                            checked={(q.correctIndexes ?? []).includes(oi)}
-                            onChange={() => toggleCorrectIndex(qi, oi)}
-                            className="accent-texo-verde w-4 h-4 shrink-0"
-                            title="Marcar como respuesta correcta"
-                          />
-                        ) : (
-                          <input
-                            type="radio"
-                            name={`correct-${qi}`}
-                            checked={(q.correctIndex ?? 0) === oi}
-                            onChange={() => updateCorrectIndex(qi, oi)}
-                            className="accent-texo-verde w-4 h-4 shrink-0"
-                            title="Marcar como respuesta correcta"
-                          />
-                        )}
+                  {isOpen ? (
+                    <p className="text-xs text-gray-400">
+                      El participante escribirá su respuesta libremente. No se corrige automáticamente —
+                      podés revisarla en el panel de Cuestionarios.
+                    </p>
+                  ) : (
+                    <>
+                      <label className="flex items-center gap-2 mb-3 cursor-pointer w-fit">
                         <input
-                          type="text"
-                          placeholder={`Opción ${oi + 1}`}
-                          value={opt}
-                          onChange={(e) => updateOption(qi, oi, e.target.value)}
-                          required
-                          className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent"
+                          type="checkbox"
+                          checked={q.multipleChoice ?? false}
+                          onChange={() => toggleMultipleChoice(qi)}
+                          className="accent-texo-amarillo w-4 h-4"
                         />
+                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                          Permite múltiple respuesta
+                        </span>
+                      </label>
+
+                      <div className="flex flex-col gap-2">
+                        {q.options.map((opt, oi) => (
+                          <div key={oi} className="flex items-center gap-2">
+                            {q.multipleChoice ? (
+                              <input
+                                type="checkbox"
+                                checked={(q.correctIndexes ?? []).includes(oi)}
+                                onChange={() => toggleCorrectIndex(qi, oi)}
+                                className="accent-texo-verde w-4 h-4 shrink-0"
+                                title="Marcar como respuesta correcta"
+                              />
+                            ) : (
+                              <input
+                                type="radio"
+                                name={`correct-${qi}`}
+                                checked={(q.correctIndex ?? 0) === oi}
+                                onChange={() => updateCorrectIndex(qi, oi)}
+                                className="accent-texo-verde w-4 h-4 shrink-0"
+                                title="Marcar como respuesta correcta"
+                              />
+                            )}
+                            <input
+                              type="text"
+                              placeholder={`Opción ${oi + 1}`}
+                              value={opt}
+                              onChange={(e) => updateOption(qi, oi, e.target.value)}
+                              required
+                              className="flex-1 border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent"
+                            />
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {q.multipleChoice
-                      ? "Marcá todas las respuestas correctas con el checkbox."
-                      : "El radio marcado indica la única respuesta correcta."}
-                  </p>
+                      <p className="text-xs text-gray-400 mt-2">
+                        {q.multipleChoice
+                          ? "Marcá todas las respuestas correctas con el checkbox."
+                          : "El radio marcado indica la única respuesta correcta."}
+                      </p>
+                    </>
+                  )}
                 </div>
-              ))}
+                );
+              })}
 
               {/* Observaciones */}
               <label className="flex items-center gap-2 cursor-pointer">

@@ -17,6 +17,8 @@ export interface QuizDetailedAnswer {
   opcionesSeleccionadas: number[]
   opcionesCorrectas: number[]
   esCorrecta: boolean
+  esAbierta?: boolean
+  respuestaAbierta?: string
 }
 
 export interface QuizResponse {
@@ -213,6 +215,19 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
 
         const respuestasDetalladas: QuizDetailedAnswer[] = originalQuestions.map((q, qi) => {
           const saved = savedAnswers.find(a => a.questionIndex === qi)
+
+          if (q.questionType === "open") {
+            return {
+              pregunta: q.questionText,
+              opciones: [],
+              opcionesSeleccionadas: [],
+              opcionesCorrectas: [],
+              esCorrecta: true,
+              esAbierta: true,
+              respuestaAbierta: saved?.textAnswer ?? "",
+            }
+          }
+
           const selected = saved?.selectedOptions ?? []
           const correctIndexes = q.multipleChoice
             ? (q.correctIndexes ?? [])
@@ -229,6 +244,8 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
           }
         })
 
+        const gradedQuestionCount = originalQuestions.filter(q => q.questionType !== "open").length
+
         responses.push({
           participante: userId,
           curso: courseName,
@@ -237,7 +254,7 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
           recursoTitulo,
           respuestasDetalladas,
           score: (resourceData.score as number | undefined) ?? 0,
-          totalPreguntas: originalQuestions.length || savedAnswers.length,
+          totalPreguntas: gradedQuestionCount || originalQuestions.length || savedAnswers.length,
           completado: (resourceData.completed as boolean | undefined) ?? false,
           fecha: (resourceData.completedAt as Timestamp | undefined)?.toDate() ?? new Date(),
           observaciones: typeof resourceData.observations === "string" && resourceData.observations.trim() !== ""
