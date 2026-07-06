@@ -13,14 +13,16 @@ interface Props {
   initialTitle?: string;
   initialDescription?: string;
   initialWelcomeMessage?: string;
+  initialCompletionInstructions?: string;
 }
 
-export default function CourseFormModal({ onCreated, onClose, editCourseId, initialTitle = "", initialDescription = "", initialWelcomeMessage = "" }: Props) {
+export default function CourseFormModal({ onCreated, onClose, editCourseId, initialTitle = "", initialDescription = "", initialWelcomeMessage = "", initialCompletionInstructions = "" }: Props) {
   const { firebaseUser } = useAuth();
   const isEdit = !!editCourseId;
   const [title, setTitle] = useState(isEdit ? initialTitle : "");
   const [description, setDescription] = useState(isEdit ? initialDescription : "");
   const [welcomeMessage, setWelcomeMessage] = useState(isEdit ? initialWelcomeMessage : "");
+  const [completionInstructions, setCompletionInstructions] = useState(isEdit ? initialCompletionInstructions : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,10 +33,10 @@ export default function CourseFormModal({ onCreated, onClose, editCourseId, init
     setError(null);
     try {
       if (isEdit) {
-        await updateCourse(editCourseId, { title, description, welcomeMessage: welcomeMessage || undefined });
+        await updateCourse(editCourseId, { title, description, welcomeMessage: welcomeMessage || undefined, completionInstructions: completionInstructions || undefined });
         toast.success("Propedéutico actualizado");
       } else {
-        await createCourse({ title, description, welcomeMessage: welcomeMessage || undefined }, firebaseUser.uid);
+        await createCourse({ title, description, welcomeMessage: welcomeMessage || undefined, completionInstructions: completionInstructions || undefined }, firebaseUser.uid);
         toast.success("Propedéutico creado correctamente");
       }
       onCreated();
@@ -88,6 +90,19 @@ export default function CourseFormModal({ onCreated, onClose, editCourseId, init
               className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent resize-none"
             />
             <p className="mt-1 text-xs text-gray-400">Se muestra en la pantalla de inicio del propedéutico, antes de acceder a las cápsulas.</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Cómo completar este propedéutico <span className="font-normal text-gray-400">(opcional)</span>
+            </label>
+            <textarea
+              placeholder="Ej: Revisá cada cápsula en orden, completá los cuestionarios y al finalizar obtendrás tu certificado..."
+              value={completionInstructions}
+              onChange={(e) => setCompletionInstructions(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo focus:border-transparent resize-none"
+            />
+            <p className="mt-1 text-xs text-gray-400">Instrucciones que verá el participante en la pantalla de inicio.</p>
           </div>
           {error && (
             <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg">{error}</p>

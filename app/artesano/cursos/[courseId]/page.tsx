@@ -345,6 +345,7 @@ export default function CourseDetailPage() {
           initialTitle={course.title}
           initialDescription={course.description ?? ""}
           initialWelcomeMessage={course.welcomeMessage ?? ""}
+          initialCompletionInstructions={course.completionInstructions ?? ""}
           onCreated={() => { setShowEditCourse(false); loadData(); }}
           onClose={() => setShowEditCourse(false)}
         />

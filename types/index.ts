@@ -24,6 +24,7 @@ export interface Course {
   published: boolean;
   courseNumber?: number; // asignado automáticamente al crear — undefined en cursos previos
   welcomeMessage?: string; // Mensaje de bienvenida/introducción
+  completionInstructions?: string; // Sección "Cómo completar este propedéutico"
   deleted?: boolean;
   deletedAt?: Timestamp;
   deletedBy?: string;
