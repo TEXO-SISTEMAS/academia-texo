@@ -131,7 +131,7 @@ export async function getUserRole(uid: string): Promise<UserRole | null> {
 // ─── Cursos ───────────────────────────────────────────────────────────────────
 
 export async function createCourse(
-  data: Pick<Course, "title" | "description" | "coverImageUrl" | "welcomeMessage">,
+  data: Pick<Course, "title" | "description" | "coverImageUrl" | "welcomeMessage" | "completionInstructions">,
   artesanoId: string
 ): Promise<Course> {
   // Asignar courseNumber correlativo: max(courseNumber existente) + 1, ignorando borrados.
@@ -226,7 +226,7 @@ export async function getAllCourses(): Promise<Course[]> {
 
 export async function updateCourse(
   courseId: string,
-  data: Partial<Pick<Course, "title" | "description" | "coverImageUrl" | "welcomeMessage">>
+  data: Partial<Pick<Course, "title" | "description" | "coverImageUrl" | "welcomeMessage" | "completionInstructions">>
 ): Promise<void> {
   await updateDoc(doc(db, "courses", courseId), data);
   silentAudit({
