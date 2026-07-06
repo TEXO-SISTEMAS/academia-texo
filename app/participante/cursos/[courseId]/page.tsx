@@ -189,7 +189,8 @@ export default function CourseViewPage() {
       setCompletedAt(new Date());
       // Otorgar crédito (idempotente — no duplica si ya fue otorgado)
       awardCredit(firebaseUser.uid, courseId).catch(() => {});
-      setShowCertificate(true);
+      // Certificado deshabilitado hasta tener diseño finalizado
+      // setShowCertificate(true);
     } else if (score === undefined) {
       // Solo para recursos que no son quiz (quiz tiene su propio toast en QuizViewer)
       toast.success("¡Recurso completado! Siguiente desbloqueado 🎉");
