@@ -162,6 +162,14 @@ export default function ResourceForm({
     initQuestions(initialResource)
   );
 
+  const [quizMode, setQuizMode] = useState<"choice" | "open">(() => {
+    if (initialResource?.type === "quiz") {
+      const qs = (initialResource.content as QuizContent).questions;
+      return qs.every((q) => q.questionType === "open") ? "open" : "choice";
+    }
+    return "choice";
+  });
+
   const [questionCount, setQuestionCount] = useState<number>(() => {
     if (initialResource?.type === "quiz") {
       return Math.min(10, Math.max(1, (initialResource.content as QuizContent).questions.length));
@@ -172,7 +180,7 @@ export default function ResourceForm({
   const [optionsPerQuestion, setOptionsPerQuestion] = useState<number>(() => {
     if (initialResource?.type === "quiz") {
       const first = (initialResource.content as QuizContent).questions[0];
-      if (first) return Math.min(5, Math.max(3, first.options.length));
+      if (first && first.questionType !== "open") return Math.min(5, Math.max(3, first.options.length));
     }
     return 4;
   });
@@ -262,7 +270,12 @@ export default function ResourceForm({
     setQuestionCount(newCount);
     setQuestions((prev) => {
       if (newCount > prev.length) {
-        return [...prev, ...Array.from({ length: newCount - prev.length }, () => makeEmptyQuestion(optionsPerQuestion))];
+        const extras = Array.from({ length: newCount - prev.length }, () =>
+          quizMode === "open"
+            ? { questionText: "", questionType: "open" as const, options: [] }
+            : makeEmptyQuestion(optionsPerQuestion)
+        );
+        return [...prev, ...extras];
       }
       return prev.slice(0, newCount);
     });
@@ -570,7 +583,45 @@ const isLegacyType = type === "text" || type === "file";
           {type === "quiz" && (
             <div className="flex flex-col gap-4">
 
-              {/* Configuración del cuestionario */}
+              {/* Paso 1: tipo de cuestionario */}
+              <div>
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Tipo de cuestionario
+                </label>
+                <div className="flex gap-2">
+                  {(["choice", "open"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => {
+                        setQuizMode(mode);
+                        const newType = mode;
+                        setQuestions(
+                          Array.from({ length: questionCount }, () =>
+                            newType === "open"
+                              ? { questionText: "", questionType: "open" as const, options: [] }
+                              : makeEmptyQuestion(optionsPerQuestion)
+                          )
+                        );
+                      }}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border transition-colors ${
+                        quizMode === mode
+                          ? "bg-texo-amarillo text-texo-azul border-texo-amarillo"
+                          : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-texo-amarillo"
+                      }`}
+                    >
+                      {mode === "choice" ? "✅ Opción múltiple" : "✍️ Respuesta abierta"}
+                    </button>
+                  ))}
+                </div>
+                {quizMode === "open" && (
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    El participante escribirá su respuesta libremente. No se corrige automáticamente — podés revisarla en el panel de Cuestionarios.
+                  </p>
+                )}
+              </div>
+
+              {/* Paso 2: configuración */}
               <div className="flex gap-4 flex-wrap">
                 <div>
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Cantidad de preguntas</label>
@@ -584,38 +635,28 @@ const isLegacyType = type === "text" || type === "file";
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Opciones por pregunta</label>
-                  <select
-                    value={optionsPerQuestion}
-                    onChange={(e) => handleOptionsPerQuestionChange(Number(e.target.value))}
-                    className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
-                  >
-                    <option value={3}>3 opciones</option>
-                    <option value={4}>4 opciones</option>
-                    <option value={5}>5 opciones</option>
-                  </select>
-                </div>
+                {quizMode === "choice" && (
+                  <div>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Opciones por pregunta</label>
+                    <select
+                      value={optionsPerQuestion}
+                      onChange={(e) => handleOptionsPerQuestionChange(Number(e.target.value))}
+                      className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
+                    >
+                      <option value={3}>3 opciones</option>
+                      <option value={4}>4 opciones</option>
+                      <option value={5}>5 opciones</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Preguntas */}
-              {questions.map((q, qi) => {
-                const isOpen = q.questionType === "open";
-                return (
+              {questions.map((q, qi) => (
                 <div key={qi} className="border border-gray-200 dark:border-gray-700 rounded-xl p-4">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Pregunta {qi + 1}
-                    </span>
-                    <select
-                      value={q.questionType ?? "choice"}
-                      onChange={(e) => updateQuestionType(qi, e.target.value as "choice" | "open")}
-                      className="text-xs border border-gray-300 dark:border-gray-600 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
-                    >
-                      <option value="choice">Opción múltiple</option>
-                      <option value="open">Respuesta abierta</option>
-                    </select>
-                  </div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Pregunta {qi + 1}
+                  </p>
 
                   <input
                     type="text"
@@ -626,11 +667,8 @@ const isLegacyType = type === "text" || type === "file";
                     className={`${inputClass} mb-3`}
                   />
 
-                  {isOpen ? (
-                    <p className="text-xs text-gray-400">
-                      El participante escribirá su respuesta libremente. No se corrige automáticamente —
-                      podés revisarla en el panel de Cuestionarios.
-                    </p>
+                  {quizMode === "open" ? (
+                    <p className="text-xs text-gray-400">El participante escribirá su respuesta aquí.</p>
                   ) : (
                     <>
                       <label className="flex items-center gap-2 mb-3 cursor-pointer w-fit">
@@ -685,8 +723,7 @@ const isLegacyType = type === "text" || type === "file";
                     </>
                   )}
                 </div>
-                );
-              })}
+              ))}
             </div>
           )}
 
