@@ -14,7 +14,7 @@ export default function ArtesanoLayout({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-texo-dark flex flex-col">
       <Navbar links={ARTESANO_LINKS} />
-      <div className="flex-1">{children}</div>
+      <div className="flex-1 pb-12">{children}</div>
       <Footer />
     </div>
   );
