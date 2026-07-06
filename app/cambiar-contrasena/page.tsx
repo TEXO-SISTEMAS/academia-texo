@@ -109,7 +109,7 @@ export default function CambiarContrasenaPage() {
 
       setSuccess(true);
       setTimeout(() => {
-        window.location.replace("/artesano/dashboard");
+        window.location.replace("/artesano/cursos");
       }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error inesperado.");

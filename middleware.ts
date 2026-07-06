@@ -37,7 +37,7 @@ export function middleware(request: NextRequest) {
     if (role) {
       return NextResponse.redirect(
         new URL(
-          role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard",
+          role === "artesano" ? "/artesano/cursos" : "/participante/dashboard",
           request.url
         )
       );
@@ -69,7 +69,7 @@ export function middleware(request: NextRequest) {
     role !== "participante"
   ) {
     return NextResponse.redirect(
-      new URL("/artesano/dashboard", request.url)
+      new URL("/artesano/cursos", request.url)
     );
   }
 

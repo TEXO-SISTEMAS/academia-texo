@@ -31,7 +31,7 @@ export default function LoginPage() {
       const destination = role === "admin"
         ? "/admin"
         : role === "artesano"
-        ? "/artesano/dashboard"
+        ? "/artesano/cursos"
         : "/participante/dashboard";
       window.location.href = destination;
     } catch (err) {
@@ -52,7 +52,7 @@ export default function LoginPage() {
         return;
       }
       const { role } = result as { role: string };
-      window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
+      window.location.replace(role === "artesano" ? "/artesano/cursos" : "/participante/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al ingresar. Intentá de nuevo.");
       setProcessing(false);

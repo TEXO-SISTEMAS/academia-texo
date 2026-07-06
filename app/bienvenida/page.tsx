@@ -23,7 +23,7 @@ export default function BienvenidaPage() {
 
     let ruta = "/participante/dashboard";
     if (role === "admin") ruta = "/admin";
-    else if (role === "artesano") ruta = "/artesano/dashboard";
+    else if (role === "artesano") ruta = "/artesano/cursos";
     else if (!role) {
       router.replace("/login");
       return;

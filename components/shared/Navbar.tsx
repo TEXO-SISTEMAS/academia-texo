@@ -55,7 +55,7 @@ export default function Navbar({ links = [] }: NavbarProps) {
         <Link
           href={
             userRole === "artesano"
-              ? "/artesano/dashboard"
+              ? "/artesano/cursos"
               : userRole === "participante"
               ? "/participante/dashboard"
               : "/"
