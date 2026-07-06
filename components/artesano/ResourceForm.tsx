@@ -164,7 +164,7 @@ export default function ResourceForm({
 
   const [questionCount, setQuestionCount] = useState<number>(() => {
     if (initialResource?.type === "quiz") {
-      return Math.min(5, Math.max(1, (initialResource.content as QuizContent).questions.length));
+      return Math.min(10, Math.max(1, (initialResource.content as QuizContent).questions.length));
     }
     return 3;
   });
@@ -175,20 +175,6 @@ export default function ResourceForm({
       if (first) return Math.min(5, Math.max(3, first.options.length));
     }
     return 4;
-  });
-
-  const [allowObservations, setAllowObservations] = useState<boolean>(() => {
-    if (initialResource?.type === "quiz") {
-      return (initialResource.content as QuizContent).allowObservations ?? false;
-    }
-    return false;
-  });
-
-  const [observationsLabel, setObservationsLabel] = useState<string>(() => {
-    if (initialResource?.type === "quiz") {
-      return (initialResource.content as QuizContent).observationsLabel ?? "";
-    }
-    return "";
   });
 
   // Upload
@@ -419,11 +405,7 @@ export default function ResourceForm({
             setLoading(false);
             return;
           }
-          content = {
-            questions: cleanQuestions,
-            allowObservations,
-            ...(allowObservations && observationsLabel.trim() ? { observationsLabel: observationsLabel.trim() } : {}),
-          };
+          content = { questions: cleanQuestions };
           break;
         }
         // legacy — no debería llegar acá desde el form, pero por si acaso
@@ -597,7 +579,7 @@ const isLegacyType = type === "text" || type === "file";
                     onChange={(e) => handleQuestionCountChange(Number(e.target.value))}
                     className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-texo-amarillo"
                   >
-                    {[1, 2, 3, 4, 5].map((n) => (
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                       <option key={n} value={n}>{n} {n === 1 ? "pregunta" : "preguntas"}</option>
                     ))}
                   </select>
@@ -705,28 +687,6 @@ const isLegacyType = type === "text" || type === "file";
                 </div>
                 );
               })}
-
-              {/* Observaciones */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allowObservations}
-                  onChange={(e) => setAllowObservations(e.target.checked)}
-                  className="accent-texo-amarillo w-4 h-4"
-                />
-                <span className="text-sm text-gray-700 dark:text-gray-300">
-                  Incluir campo de observaciones para el participante
-                </span>
-              </label>
-              {allowObservations && (
-                <input
-                  type="text"
-                  value={observationsLabel}
-                  onChange={(e) => setObservationsLabel(e.target.value)}
-                  placeholder='Ej: Comentarios adicionales, Observaciones, Sugerencias...'
-                  className={inputClass}
-                />
-              )}
             </div>
           )}
 

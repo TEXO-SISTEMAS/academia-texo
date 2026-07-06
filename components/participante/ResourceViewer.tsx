@@ -221,7 +221,7 @@ export default function ResourceViewer({
           ) : (
             <QuizViewer
               content={resource.content as QuizContent}
-              onComplete={(score, answers, observations) => onComplete(score, answers, observations)}
+              onComplete={(score, answers) => onComplete(score, answers)}
             />
           )}
         </div>

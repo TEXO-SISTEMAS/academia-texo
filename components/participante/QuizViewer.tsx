@@ -8,7 +8,7 @@ import type { QuizAnswer } from "@/types";
 
 interface Props {
   content: QuizContent;
-  onComplete: (score: number, answers: QuizAnswer[], observations?: string) => Promise<void>;
+  onComplete: (score: number, answers: QuizAnswer[]) => Promise<void>;
 }
 
 // Por pregunta: null = sin responder (single) | number = respuesta single | number[] = múltiples | string = respuesta abierta
@@ -21,7 +21,6 @@ export default function QuizViewer({ content, onComplete }: Props) {
       return q.multipleChoice ? [] : null;
     })
   );
-  const [observations, setObservations] = useState("");
   const [loading, setLoading] = useState(false);
 
   const allAnswered = answers.every((a, i) => {
@@ -91,8 +90,7 @@ export default function QuizViewer({ content, onComplete }: Props) {
         selectedOptions: Array.isArray(a) ? a : a !== null && typeof a === "number" ? [a] : [],
       };
     });
-    const obs = content.allowObservations && observations.trim() ? observations.trim() : undefined;
-    await onComplete(score, serialized, obs);
+    await onComplete(score, serialized);
   }
 
   return (
@@ -175,21 +173,6 @@ export default function QuizViewer({ content, onComplete }: Props) {
           </div>
         );
       })}
-
-      {content.allowObservations && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {content.observationsLabel || "Observaciones"} <span className="text-gray-400 font-normal">(opcional)</span>
-          </label>
-          <textarea
-            value={observations}
-            onChange={(e) => setObservations(e.target.value)}
-            placeholder="Escribí tus comentarios o dudas sobre este cuestionario..."
-            rows={3}
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo resize-none"
-          />
-        </div>
-      )}
 
       <button
         onClick={handleSubmit}
