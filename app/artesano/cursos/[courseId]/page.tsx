@@ -14,6 +14,7 @@ import {
   createChapter,
   updateChapter,
   reorderChapters,
+  deleteChapter,
 } from "@/lib/firestore";
 import type { Course, Chapter } from "@/types";
 import ChapterForm from "@/components/artesano/ChapterForm";
@@ -124,6 +125,18 @@ export default function CourseDetailPage() {
     }
     setShowChapterForm(false);
     loadData();
+  }
+
+  async function handleDeleteChapter(chapter: Chapter) {
+    const ok = await confirmToast(`¿Eliminar la cápsula "${chapter.title}"? Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    try {
+      await deleteChapter(courseId, chapter.id);
+      setChapters((prev) => prev.filter((c) => c.id !== chapter.id));
+      toast.success("Cápsula eliminada");
+    } catch {
+      toast.error("No se pudo eliminar la cápsula");
+    }
   }
 
   async function handleEditChapter(title: string, description: string) {
@@ -306,6 +319,18 @@ export default function CourseDetailPage() {
                 >
                   Recursos
                 </Link>
+                <button
+                  onClick={() => handleDeleteChapter(chapter)}
+                  title="Eliminar cápsula"
+                  className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-texo-rojo dark:hover:text-texo-rojo hover:bg-texo-rojo/10 transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                    <path d="M9 6V4h6v2" />
+                  </svg>
+                </button>
               </div>
             </li>
           ))}
