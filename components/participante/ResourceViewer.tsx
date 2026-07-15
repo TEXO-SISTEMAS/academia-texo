@@ -875,14 +875,6 @@ function PdfResource({
     return () => { cancelled = true; };
   }, [fileId]);
 
-  const handleSave = useCallback(
-    (pagesViewed: number[]) => {
-      if (!userId || !courseId) return;
-      updateResourceEngagement(userId, courseId, resourceId, { pagesViewed }).catch(() => {});
-    },
-    [userId, courseId, resourceId]
-  );
-
   async function handleComplete() {
     setCompleting(true);
     if (userId && courseId) {
@@ -892,22 +884,6 @@ function PdfResource({
     }
     await onComplete();
     setCompleting(false);
-  }
-
-  function renderBottom({ current, total, allReady }: PageStatus) {
-    if (total === 0) {
-      return <ActionButton ready={true} completing={completing} onComplete={handleComplete} />;
-    }
-    const pct = allReady ? 100 : Math.round((current - 1) / total * 100);
-    const msg = allReady
-      ? "PDF completado ✓"
-      : `Página ${current} de ${total}`;
-    return (
-      <div>
-        <EngagementBar pct={Math.min(100, pct)} message={msg} ready={allReady} />
-        <ActionButton ready={true} completing={completing} onComplete={handleComplete} />
-      </div>
-    );
   }
 
   // Cargando / procesando
@@ -921,21 +897,28 @@ function PdfResource({
           <div className="w-10 h-10 border-2 border-texo-amarillo/30 border-t-texo-amarillo rounded-full animate-spin" />
           <p className="text-sm text-gray-500 dark:text-gray-400">{loadingMsg}</p>
         </div>
-        {renderBottom({ current: 0, total: 0, allReady: false })}
       </div>
     );
   }
 
-  // Slides cargadas → visor de imágenes con navegación
+  // Páginas cargadas → todas apiladas en scroll
   if (slides?.length) {
     return (
-      <TrackedPageViewer
-        preloadedPages={slides}
-        minTimePerPage={MIN_PDF_TIME}
-        onReadyChange={setReady}
-        onSave={handleSave}
-        renderBottom={renderBottom}
-      />
+      <div>
+        <div className="flex flex-col gap-2 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+          {slides.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={i}
+              src={src}
+              alt={`Página ${i + 1}`}
+              style={{ width: "100%", display: "block" }}
+              draggable={false}
+            />
+          ))}
+        </div>
+        <ActionButton ready={true} completing={completing} onComplete={handleComplete} />
+      </div>
     );
   }
 
@@ -954,7 +937,7 @@ function PdfResource({
           {slidesError}
         </p>
       </div>
-      {renderBottom({ current: 0, total: 0, allReady: false })}
+      <ActionButton ready={true} completing={completing} onComplete={handleComplete} />
     </div>
   );
 }
