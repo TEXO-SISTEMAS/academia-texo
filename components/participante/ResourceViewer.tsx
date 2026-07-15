@@ -1120,10 +1120,12 @@ function PresentationResource({
       : total === 0
       ? "Revisá la presentación"
       : `Diapositiva ${current} de ${total} — revisá cada diapositiva`;
+    // ready || allReady: cubre el caso iframe fallback donde onReadyChange nunca se llama
+    // pero TrackedPageViewer sí pasa allReady=true en el PageStatus
     return (
       <div>
         {total > 0 && <EngagementBar pct={pct} message={msg} ready={allReady} />}
-        <ActionButton ready={ready} completing={completing} onComplete={handleComplete} />
+        <ActionButton ready={ready || allReady} completing={completing} onComplete={handleComplete} />
       </div>
     );
   }
