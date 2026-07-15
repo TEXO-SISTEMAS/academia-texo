@@ -16,7 +16,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import type { Course, Chapter, Resource, ResourceType, QuizAnswer } from "@/types";
 import ResourceViewer from "@/components/participante/ResourceViewer";
-import CertificateModal from "@/components/participante/CertificateModal";
+import CreditModal from "@/components/participante/CreditModal";
 
 interface ChapterData {
   chapter: Chapter;
@@ -189,8 +189,7 @@ export default function CourseViewPage() {
       setCompletedAt(new Date());
       // Otorgar crédito (idempotente — no duplica si ya fue otorgado)
       awardCredit(firebaseUser.uid, courseId).catch(() => {});
-      // Certificado deshabilitado hasta tener diseño finalizado
-      // setShowCertificate(true);
+      setShowCertificate(true);
     } else if (score === undefined) {
       // Solo para recursos que no son quiz (quiz tiene su propio toast en QuizViewer)
       toast.success("¡Recurso completado! Siguiente desbloqueado 🎉");
@@ -315,13 +314,11 @@ export default function CourseViewPage() {
   return (
     <div className="flex flex-col" style={{ height: "calc(100vh - 56px)" }}>
 
-      {showCertificate && course && firebaseUser && (
-        <CertificateModal
-          participantName={firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Participante"}
+      {showCertificate && course && (
+        <CreditModal
           courseTitle={course.title}
           completedAt={completedAt}
           onClose={() => setShowCertificate(false)}
-          isCelebration
         />
       )}
 
