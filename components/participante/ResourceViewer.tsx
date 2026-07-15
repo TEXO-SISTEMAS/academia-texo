@@ -194,9 +194,12 @@ export default function ResourceViewer({
     return <CompletedBlock nextAction={nextAction} onReview={() => setShowContent(true)} />;
   }
 
-  // onComplete no-op cuando ya está completado (no sobreescribir estado)
+  // Si ya está completado: "Podés avanzar" navega al siguiente o vuelve al bloque completado
   const safeComplete = isCompleted
-    ? async () => {}
+    ? async () => {
+        if (nextAction) nextAction.onClick();
+        else setShowContent(false);
+      }
     : onComplete;
 
   const ep: EngagementProps = {
