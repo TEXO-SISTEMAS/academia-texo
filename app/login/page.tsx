@@ -3,13 +3,49 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
+type Step = "email" | "password" | "link-sent";
+
 export default function LoginPage() {
-  const { loginWithGoogle, sendMagicLink } = useAuth();
+  const { loginWithGoogle, checkEmailRole, sendMagicLink, loginArtesano } = useAuth();
+  const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
-  const [loadingEmail, setLoadingEmail] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleEmailSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const role = await checkEmailRole(email.trim().toLowerCase());
+      if (role === "artesano") {
+        setStep("password");
+      } else {
+        await sendMagicLink(email.trim().toLowerCase());
+        setStep("link-sent");
+      }
+    } catch {
+      setError("Error al verificar el correo. Intentá de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!password) return;
+    setError(null);
+    setLoading(true);
+    try {
+      await loginArtesano(email.trim().toLowerCase(), password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión.");
+      setLoading(false);
+    }
+  }
 
   async function handleGoogle() {
     setError(null);
@@ -22,20 +58,6 @@ export default function LoginPage() {
         setError("No se pudo iniciar sesión con Google. Intentá de nuevo.");
       }
       setLoadingGoogle(false);
-    }
-  }
-
-  async function handleEmail(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setError(null);
-    setLoadingEmail(true);
-    try {
-      await sendMagicLink(email.trim());
-      setEmailSent(true);
-    } catch {
-      setError("No se pudo enviar el link. Verificá el correo e intentá de nuevo.");
-      setLoadingEmail(false);
     }
   }
 
@@ -55,18 +77,9 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 flex flex-col gap-4">
-          <div className="text-center">
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white">Ingresá a La Academia</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Elegí cómo querés ingresar</p>
-          </div>
 
-          {error && (
-            <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">
-              {error}
-            </p>
-          )}
-
-          {emailSent ? (
+          {/* Link sent */}
+          {step === "link-sent" && (
             <div className="text-center py-2">
               <div className="text-3xl mb-3">📬</div>
               <p className="text-sm font-semibold text-gray-800 dark:text-white">¡Link enviado!</p>
@@ -74,16 +87,67 @@ export default function LoginPage() {
                 Revisá tu correo <span className="font-medium">{email}</span> y hacé click en el link para ingresar.
               </p>
               <button
-                onClick={() => { setEmailSent(false); setEmail(""); }}
+                onClick={() => { setStep("email"); setEmail(""); setError(null); }}
                 className="mt-4 text-xs text-texo-verde underline"
               >
                 Usar otro correo
               </button>
             </div>
-          ) : (
+          )}
+
+          {/* Password step (artesano) */}
+          {step === "password" && (
             <>
-              {/* Email magic link */}
-              <form onSubmit={handleEmail} className="flex flex-col gap-2">
+              <div className="text-center">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Ingresá tu contraseña</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">{email}</p>
+              </div>
+
+              {error && (
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+              )}
+
+              <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  required
+                  autoFocus
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white bg-white dark:bg-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-verde"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !password}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white bg-texo-verde hover:bg-texo-verde/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Ingresar"}
+                </button>
+              </form>
+
+              <button
+                onClick={() => { setStep("email"); setPassword(""); setError(null); }}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center"
+              >
+                ← Volver
+              </button>
+            </>
+          )}
+
+          {/* Email step */}
+          {step === "email" && (
+            <>
+              <div className="text-center">
+                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Ingresá a La Academia</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Usá tu correo para continuar</p>
+              </div>
+
+              {error && (
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+              )}
+
+              <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2">
                 <input
                   type="email"
                   value={email}
@@ -94,29 +158,19 @@ export default function LoginPage() {
                 />
                 <button
                   type="submit"
-                  disabled={loadingEmail || !email.trim()}
+                  disabled={loading || !email.trim()}
                   className="w-full flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-white bg-texo-verde hover:bg-texo-verde/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loadingEmail ? (
-                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                      <polyline points="22,6 12,13 2,6"/>
-                    </svg>
-                  )}
-                  {loadingEmail ? "Enviando..." : "Ingresar con correo"}
+                  {loading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : "Continuar"}
                 </button>
               </form>
 
-              {/* Divider */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
                 <span className="text-xs text-gray-400">o</span>
                 <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
               </div>
 
-              {/* Google */}
               <button
                 onClick={handleGoogle}
                 disabled={loadingGoogle}

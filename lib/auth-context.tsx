@@ -16,6 +16,7 @@ import {
   sendSignInLinkToEmail,
   isSignInWithEmailLink,
   signInWithEmailLink,
+  signInWithCustomToken,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDoc, doc } from "firebase/firestore";
@@ -29,7 +30,9 @@ interface AuthContextType {
   userRole: UserRole | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  checkEmailRole: (email: string) => Promise<"artesano" | "participante">;
   sendMagicLink: (email: string) => Promise<void>;
+  loginArtesano: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -104,6 +107,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  async function checkEmailRole(email: string): Promise<"artesano" | "participante"> {
+    return getRoleForEmail(email);
+  }
+
+  async function loginArtesano(email: string, password: string): Promise<void> {
+    const res = await fetch("/api/auth/login-artesano", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      if (data.error === "invalid_password") throw new Error("Contraseña incorrecta.");
+      throw new Error("Error al iniciar sesión.");
+    }
+    const data = await res.json() as { token: string; role: string };
+    await signInWithCustomToken(auth, data.token);
+    setCookie("user-role", "artesano");
+    recordLoginBackground(auth.currentUser!.uid, navigator.userAgent);
+    window.location.replace("/artesano/dashboard");
+  }
+
   async function sendMagicLink(email: string): Promise<void> {
     const actionCodeSettings = {
       url: `${window.location.origin}/login`,
@@ -120,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userRole, loading, loginWithGoogle, sendMagicLink, logout }}
+      value={{ firebaseUser, userRole, loading, loginWithGoogle, checkEmailRole, sendMagicLink, loginArtesano, logout }}
     >
       {children}
     </AuthContext.Provider>

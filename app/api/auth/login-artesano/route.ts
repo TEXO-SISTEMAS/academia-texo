@@ -34,43 +34,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "not_artesano" }, { status: 403 });
     }
 
-    // 2. Verificar contraseña via Firebase Auth REST API
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: "server_config_error" }, { status: 500 });
+    // 2. Verificar contraseña contra Firestore
+    const storedPassword: string = userData.password ?? "";
+    if (!storedPassword || storedPassword !== password) {
+      return NextResponse.json({ error: "invalid_password" }, { status: 401 });
     }
 
-    const firebaseRes = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, returnSecureToken: true }),
-      }
-    );
-
-    if (!firebaseRes.ok) {
-      const errData = await firebaseRes.json().catch(() => ({}));
-      const errMessage = (errData as { error?: { message?: string } })?.error?.message ?? "";
-      console.log("[login-artesano] Firebase Auth error:", errMessage);
-      if (errMessage.includes("INVALID_PASSWORD") || errMessage.includes("EMAIL_NOT_FOUND") || errMessage.includes("INVALID_LOGIN_CREDENTIALS")) {
-        return NextResponse.json({ error: "invalid_password" }, { status: 401 });
-      }
-      return NextResponse.json({ error: "auth_error" }, { status: 500 });
-    }
-
-    // 3. Leer idToken de la respuesta de Firebase
-    const firebaseData = await firebaseRes.json() as { idToken?: string };
-    const firebaseIdToken = firebaseData.idToken ?? "";
-
-    // 4. Si requiere cambio de contraseña, retornar idToken real (no custom token)
-    const forcePasswordChange = userData.forcePasswordChange === true;
-    if (forcePasswordChange) {
-      console.log("[login-artesano] forcePasswordChange para:", email);
-      return NextResponse.json({ requiresPasswordChange: true, idToken: firebaseIdToken, role, name });
-    }
-
-    // 5. Login normal → generar custom token
+    // 3. Generar custom token
     const adminAuth = getAdminAuth();
     const token = await adminAuth.createCustomToken(email, { role });
 
