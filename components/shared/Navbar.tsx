@@ -63,7 +63,7 @@ export default function Navbar({ links = [] }: NavbarProps) {
           className="shrink-0"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="Academia TEXO" style={{ height: "40px", width: "auto" }} />
+          <img src="/texo.png" alt="Academia TEXO" style={{ height: "40px", width: "auto" }} />
         </Link>
 
         {/* Desktop links */}
