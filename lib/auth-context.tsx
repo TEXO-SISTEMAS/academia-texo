@@ -108,7 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function checkEmailRole(email: string): Promise<"artesano" | "participante"> {
-    return getRoleForEmail(email);
+    const res = await fetch("/api/auth/check-role", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => ({ role: "participante" })) as { role: string };
+    return data.role === "artesano" ? "artesano" : "participante";
   }
 
   async function loginArtesano(email: string, password: string): Promise<void> {
