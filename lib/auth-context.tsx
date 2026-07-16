@@ -50,22 +50,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Complete email link sign-in if landing on /login with a magic link
-    if (typeof window !== "undefined" && isSignInWithEmailLink(auth, window.location.href)) {
-      const email = window.localStorage.getItem("emailForSignIn");
-      if (email) {
-        signInWithEmailLink(auth, email, window.location.href)
-          .then(async (result) => {
-            window.localStorage.removeItem("emailForSignIn");
-            const role = await getRoleForEmail(result.user.email ?? "");
-            await getOrCreateUser(result.user.uid, result.user.email ?? "", role, result.user.displayName ?? undefined);
-            setCookie("user-role", role);
-            recordLoginBackground(result.user.uid, navigator.userAgent);
-            window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
-          })
-          .catch(() => {});
-      }
-    }
+    if (typeof window === "undefined") return;
+    if (!isSignInWithEmailLink(auth, window.location.href)) return;
+
+    // Email puede venir en la URL (?email=...) o en localStorage
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email") || window.localStorage.getItem("emailForSignIn") || "";
+    if (!email) return;
+
+    signInWithEmailLink(auth, email, window.location.href)
+      .then(async (result) => {
+        window.localStorage.removeItem("emailForSignIn");
+        const role = await getRoleForEmail(result.user.email ?? "");
+        await getOrCreateUser(result.user.uid, result.user.email ?? "", role, result.user.displayName ?? undefined);
+        setCookie("user-role", role);
+        recordLoginBackground(result.user.uid, navigator.userAgent);
+        window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -137,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function sendMagicLink(email: string): Promise<void> {
     const actionCodeSettings = {
-      url: `${window.location.origin}/login`,
+      url: `${window.location.origin}/login?email=${encodeURIComponent(email)}`,
       handleCodeInApp: true,
     };
     await sendSignInLinkToEmail(auth, email, actionCodeSettings);
