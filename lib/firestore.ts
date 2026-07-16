@@ -98,21 +98,24 @@ export function recordLoginBackground(userId: string, userAgent: string): void {
 export async function getOrCreateUser(
   uid: string,
   email: string,
-  claimedRole?: UserRole
+  claimedRole?: UserRole,
+  displayName?: string
 ): Promise<User> {
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
 
   if (userSnap.exists()) {
-    const existingUser = { id: userSnap.id, ...userSnap.data() } as User;
-    // El JWT claim es autoritativo — auth-context usa claimedRole directamente,
-    // no hace falta sincronizarlo al doc (y la regla de Firestore lo bloquearía)
-    return existingUser;
+    // Actualizar displayName si Google provee uno y el doc lo tiene como fallback
+    const existing = userSnap.data();
+    if (displayName && existing.displayName !== displayName) {
+      await updateDoc(userRef, { displayName });
+    }
+    return { id: userSnap.id, ...existing, displayName: displayName ?? existing.displayName } as User;
   }
 
   const newUser = {
     email,
-    displayName: email.split("@")[0],
+    displayName: displayName ?? email.split("@")[0],
     role: claimedRole ?? ("participante" as UserRole),
     createdAt: serverTimestamp(),
   };

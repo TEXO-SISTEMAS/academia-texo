@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (fbUser) {
         try {
           const role = await getRoleForEmail(fbUser.email ?? "");
-          await getOrCreateUser(fbUser.uid, fbUser.email ?? "", role);
+          await getOrCreateUser(fbUser.uid, fbUser.email ?? "", role, fbUser.displayName ?? undefined);
           setFirebaseUser(fbUser);
           setUserRole(role);
           setCookie("user-role", role);
@@ -72,7 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const result = await signInWithPopup(auth, provider);
     const email = result.user.email ?? "";
     const role = await getRoleForEmail(email);
-    await getOrCreateUser(result.user.uid, email, role);
+    const displayName = result.user.displayName ?? undefined;
+    await getOrCreateUser(result.user.uid, email, role, displayName);
     setCookie("user-role", role);
     recordLoginBackground(result.user.uid, navigator.userAgent);
     window.location.replace(
