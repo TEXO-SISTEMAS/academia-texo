@@ -13,6 +13,9 @@ import {
   signOut,
   signInWithPopup,
   GoogleAuthProvider,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { getDoc, doc } from "firebase/firestore";
@@ -26,6 +29,7 @@ interface AuthContextType {
   userRole: UserRole | null;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
+  sendMagicLink: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -41,6 +45,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Complete email link sign-in if landing on /login with a magic link
+    if (typeof window !== "undefined" && isSignInWithEmailLink(auth, window.location.href)) {
+      const email = window.localStorage.getItem("emailForSignIn");
+      if (email) {
+        signInWithEmailLink(auth, email, window.location.href)
+          .then(async (result) => {
+            window.localStorage.removeItem("emailForSignIn");
+            const role = await getRoleForEmail(result.user.email ?? "");
+            await getOrCreateUser(result.user.uid, result.user.email ?? "", role, result.user.displayName ?? undefined);
+            setCookie("user-role", role);
+            recordLoginBackground(result.user.uid, navigator.userAgent);
+            window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
+          })
+          .catch(() => {});
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -81,6 +104,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
+  async function sendMagicLink(email: string): Promise<void> {
+    const actionCodeSettings = {
+      url: `${window.location.origin}/login`,
+      handleCodeInApp: true,
+    };
+    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+    window.localStorage.setItem("emailForSignIn", email);
+  }
+
   async function logout(): Promise<void> {
     await signOut(auth);
     deleteCookie("user-role");
@@ -88,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userRole, loading, loginWithGoogle, logout }}
+      value={{ firebaseUser, userRole, loading, loginWithGoogle, sendMagicLink, logout }}
     >
       {children}
     </AuthContext.Provider>
