@@ -71,7 +71,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-white/40 text-xs mt-6">
-          © {new Date().getFullYear()} DANILO SOSA | TEXO SISTEMAS
+          © {new Date().getFullYear()} Desarrollado por Danilo Sosa | Texo Sistemas
         </p>
       </div>
     </div>
