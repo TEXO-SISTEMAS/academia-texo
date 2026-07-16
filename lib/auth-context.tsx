@@ -13,9 +13,6 @@ import {
   signOut,
   signInWithPopup,
   GoogleAuthProvider,
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
   signInWithCustomToken,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -31,7 +28,7 @@ interface AuthContextType {
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   checkEmailRole: (email: string) => Promise<"artesano" | "participante">;
-  sendMagicLink: (email: string) => Promise<void>;
+  loginParticipante: (email: string) => Promise<void>;
   loginArtesano: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -48,27 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-
-    // Email puede venir en la URL (?email=...) o en localStorage
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email") || window.localStorage.getItem("emailForSignIn") || "";
-    if (!email) return;
-
-    signInWithEmailLink(auth, email, window.location.href)
-      .then(async (result) => {
-        window.localStorage.removeItem("emailForSignIn");
-        const role = await getRoleForEmail(result.user.email ?? "");
-        await getOrCreateUser(result.user.uid, result.user.email ?? "", role, result.user.displayName ?? undefined);
-        setCookie("user-role", role);
-        recordLoginBackground(result.user.uid, navigator.userAgent);
-        window.location.replace(role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard");
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -137,13 +113,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.replace("/artesano/dashboard");
   }
 
-  async function sendMagicLink(email: string): Promise<void> {
-    const actionCodeSettings = {
-      url: `${window.location.origin}/login?email=${encodeURIComponent(email)}`,
-      handleCodeInApp: true,
-    };
-    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-    window.localStorage.setItem("emailForSignIn", email);
+  async function loginParticipante(email: string): Promise<void> {
+    const res = await fetch("/api/auth/login-participante", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!res.ok) throw new Error("Error al iniciar sesión.");
+    const data = await res.json() as { token: string };
+    await signInWithCustomToken(auth, data.token);
+    await getOrCreateUser(auth.currentUser!.uid, email, "participante");
+    setCookie("user-role", "participante");
+    recordLoginBackground(auth.currentUser!.uid, navigator.userAgent);
+    window.location.replace("/participante/dashboard");
   }
 
   async function logout(): Promise<void> {
@@ -153,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userRole, loading, loginWithGoogle, checkEmailRole, sendMagicLink, loginArtesano, logout }}
+      value={{ firebaseUser, userRole, loading, loginWithGoogle, checkEmailRole, loginParticipante, loginArtesano, logout }}
     >
       {children}
     </AuthContext.Provider>

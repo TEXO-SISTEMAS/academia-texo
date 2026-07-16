@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 
-type Step = "email" | "password" | "link-sent";
+type Step = "email" | "password";
 
 export default function LoginPage() {
-  const { loginWithGoogle, checkEmailRole, sendMagicLink, loginArtesano } = useAuth();
+  const { loginWithGoogle, checkEmailRole, loginParticipante, loginArtesano } = useAuth();
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,13 +23,12 @@ export default function LoginPage() {
       const role = await checkEmailRole(email.trim().toLowerCase());
       if (role === "artesano") {
         setStep("password");
+        setLoading(false);
       } else {
-        await sendMagicLink(email.trim().toLowerCase());
-        setStep("link-sent");
+        await loginParticipante(email.trim().toLowerCase());
       }
     } catch {
-      setError("Error al verificar el correo. Intentá de nuevo.");
-    } finally {
+      setError("Error al iniciar sesión. Intentá de nuevo.");
       setLoading(false);
     }
   }
@@ -77,23 +76,6 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 flex flex-col gap-4">
-
-          {/* Link sent */}
-          {step === "link-sent" && (
-            <div className="text-center py-2">
-              <div className="text-3xl mb-3">📬</div>
-              <p className="text-sm font-semibold text-gray-800 dark:text-white">¡Link enviado!</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Revisá tu correo <span className="font-medium">{email}</span> y hacé click en el link para ingresar.
-              </p>
-              <button
-                onClick={() => { setStep("email"); setEmail(""); setError(null); }}
-                className="mt-4 text-xs text-texo-verde underline"
-              >
-                Usar otro correo
-              </button>
-            </div>
-          )}
 
           {/* Password step (artesano) */}
           {step === "password" && (
