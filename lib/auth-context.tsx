@@ -7,47 +7,16 @@ import {
   useState,
   ReactNode,
 } from "react";
-
-// Almacenamiento temporal del token durante el flujo de cambio de contraseña obligatorio.
-// Usa sessionStorage para sobrevivir la navegación completa de window.location.replace().
-const PENDING_TOKEN_KEY = "pending-password-change-token";
-
-export function getPendingPasswordChangeToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return sessionStorage.getItem(PENDING_TOKEN_KEY);
-}
-
-export function clearPendingPasswordChangeToken(): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(PENDING_TOKEN_KEY);
-}
 import {
   User as FirebaseUser,
   onAuthStateChanged,
-  signInWithCustomToken,
   signOut,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-
-// Espera a que onAuthStateChanged confirme la sesión, con timeout para no colgar el login.
-function waitForAuthSettled(timeoutMs = 8000): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      unsub();
-      reject(new Error("Timeout esperando confirmación de sesión."));
-    }, timeoutMs);
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (!user || settled) return;
-      settled = true;
-      clearTimeout(timer);
-      unsub();
-      resolve();
-    });
-  });
-}
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { getOrCreateUser, recordLoginBackground } from "@/lib/firestore";
 import { setCookie, deleteCookie } from "@/lib/cookies";
 import type { UserRole } from "@/types";
@@ -56,12 +25,17 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   userRole: UserRole | null;
   loading: boolean;
-  login: (email: string) => Promise<{ role: UserRole } | { requiresPassword: true; role: UserRole; name: string }>;
-  loginWithPassword: (email: string, password: string) => Promise<{ role: UserRole } | { requiresPasswordChange: true }>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+async function getRoleForEmail(email: string): Promise<UserRole> {
+  const snap = await getDoc(doc(db, "allowedUsers", email));
+  if (snap.exists() && snap.data().role === "artesano") return "artesano";
+  return "participante";
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -72,27 +46,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       if (fbUser) {
         try {
-          // Leer el role del custom token claim para que getOrCreateUser
-          // cree el doc con el rol correcto en el primer login
-          const tokenResult = await fbUser.getIdTokenResult();
-          const claimedRole = tokenResult.claims.role as UserRole | undefined;
-
-          const user = await getOrCreateUser(
-            fbUser.uid,
-            fbUser.email ?? "",
-            claimedRole
-          );
-          // El claim del token es autoritativo — si existe, usarlo para la cookie
-          const effectiveRole: UserRole = claimedRole ?? user.role;
+          const role = await getRoleForEmail(fbUser.email ?? "");
+          await getOrCreateUser(fbUser.uid, fbUser.email ?? "", role);
           setFirebaseUser(fbUser);
-          setUserRole(effectiveRole);
-          setCookie("user-role", effectiveRole);
-        } catch (error) {
-          console.error("Error al obtener usuario:", error);
-          // El usuario SÍ está autenticado en Firebase Auth — no borrarlo.
-          // Solo limpiar el rol si no se pudo leer de Firestore.
+          setUserRole(role);
+          setCookie("user-role", role);
+        } catch {
           setFirebaseUser(fbUser);
-          setUserRole(null);
+          setUserRole("participante");
+          setCookie("user-role", "participante");
         }
       } else {
         setFirebaseUser(null);
@@ -105,85 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  async function login(email: string): Promise<{ role: UserRole } | { requiresPassword: true; role: UserRole; name: string }> {
-    const res = await fetch("/api/auth/verify", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      if (data.error === "not_authorized") {
-        throw new Error("Tu correo no está autorizado. Contactá al administrador.");
-      }
-      throw new Error("Error al verificar acceso. Intentá de nuevo.");
-    }
-
-    // Artesano: requiere contraseña — no hay token todavía
-    if (data.requiresPassword) {
-      return { requiresPassword: true, role: data.role as UserRole, name: data.name as string };
-    }
-
-    try {
-      await signInWithCustomToken(auth, data.token);
-    } catch (signInErr) {
-      console.error("[LOGIN] signInWithCustomToken ERROR:", signInErr);
-      throw signInErr;
-    }
-
-    // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
-    await waitForAuthSettled();
-
-    const role = data.role as UserRole;
+  async function loginWithGoogle(): Promise<void> {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const email = result.user.email ?? "";
+    const role = await getRoleForEmail(email);
+    await getOrCreateUser(result.user.uid, email, role);
     setCookie("user-role", role);
-
-    const uid = auth.currentUser?.uid;
-    if (uid) recordLoginBackground(uid, navigator.userAgent);
-
-    return { role };
-  }
-
-  async function loginWithPassword(email: string, password: string): Promise<{ role: UserRole } | { requiresPasswordChange: true }> {
-    const res = await fetch("/api/auth/login-artesano", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      if (data.error === "invalid_password") {
-        throw new Error("Contraseña incorrecta.");
-      }
-      if (data.error === "not_authorized") {
-        throw new Error("Tu correo no está autorizado. Contactá al administrador.");
-      }
-      throw new Error("Error al verificar acceso. Intentá de nuevo.");
-    }
-
-    // Primer login: requiere cambio de contraseña obligatorio
-    if (data.requiresPasswordChange) {
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(PENDING_TOKEN_KEY, data.idToken as string);
-      }
-      return { requiresPasswordChange: true };
-    }
-
-    await signInWithCustomToken(auth, data.token);
-
-    // Esperar a que onAuthStateChanged confirme la sesión y setee la cookie
-    await waitForAuthSettled();
-
-    const role = data.role as UserRole;
-    setCookie("user-role", role);
-
-    const uid = auth.currentUser?.uid;
-    if (uid) recordLoginBackground(uid, navigator.userAgent);
-
-    return { role };
+    recordLoginBackground(result.user.uid, navigator.userAgent);
+    window.location.replace(
+      role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard"
+    );
   }
 
   async function logout(): Promise<void> {
@@ -193,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userRole, loading, login, loginWithPassword, logout }}
+      value={{ firebaseUser, userRole, loading, loginWithGoogle, logout }}
     >
       {children}
     </AuthContext.Provider>

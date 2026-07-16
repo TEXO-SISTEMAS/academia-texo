@@ -12,7 +12,15 @@
       "Bash(iconv:*)",
       "Bash(python3:*)",
       "Bash(npx tsx:*)",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(grep:*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(git push *)",
+      "Bash(npx next *)",
+      "Bash(git check-ignore *)",
+      "Bash(ls \"C:\\\\Users\\\\Usuario\\\\Desktop\\\\academia-texo\\\\service-account*.json\" 2>/dev/null; ls \"C:\\\\Users\\\\Usuario\\\\Desktop\\\\academia-texo\\\\\"*.json 2>/dev/null | grep -i service)"
     ]
   }
 }

@@ -27,11 +27,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Cambio de contraseña obligatorio: accesible sin sesión
-  if (pathname.startsWith("/cambiar-contrasena")) {
-    return NextResponse.next();
-  }
-
   // Ruta de login: si ya está autenticado, redirigir al lugar correcto
   if (pathname.startsWith("/login")) {
     if (role) {

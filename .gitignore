@@ -38,3 +38,8 @@ service-account-drive.json
 
 # Firestore backups (datos sensibles)
 /backups/
+
+.env.prueba
+academia-texo (1).env
+NOMINA PARA CORREOS.xlsx
+.claude/worktrees/
