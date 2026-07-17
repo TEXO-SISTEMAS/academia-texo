@@ -34,13 +34,27 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Cambiar a rama backups (crearla si no existe)
-          git fetch origin backups 2>/dev/null || true
-          git checkout backups 2>/dev/null || git checkout --orphan backups
+          # Guardar el archivo generado en una ubicación temporal
+          DATE=$(date -u +'%Y-%m-%d')
+          BACKUP_FILE="backups/firestore-${DATE}.json"
+          cp "$BACKUP_FILE" /tmp/firestore-backup.json
 
-          # Traer solo el archivo de backup generado
-          git checkout main -- backups/
+          # Cambiar a rama backups (crearla huérfana si no existe)
+          git fetch origin backups 2>/dev/null || true
+          if git show-ref --quiet refs/remotes/origin/backups; then
+            git checkout backups
+          else
+            git checkout --orphan backups
+            git rm -rf . 2>/dev/null || true
+          fi
+
+          # Restaurar el archivo de backup
+          mkdir -p backups
+          cp /tmp/firestore-backup.json "$BACKUP_FILE"
+
+          # Mantener solo los últimos 30 backups
+          ls backups/firestore-*.json 2>/dev/null | sort | head -n -30 | xargs rm -f || true
 
           git add backups/
-          git diff --staged --quiet && echo "Sin cambios" || git commit -m "backup: Firestore $(date -u +'%Y-%m-%d')"
+          git diff --staged --quiet && echo "Sin cambios nuevos" || git commit -m "backup: Firestore ${DATE}"
           git push origin backups
