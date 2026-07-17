@@ -380,7 +380,7 @@ function CuestionariosView() {
     <div className="flex flex-col gap-6">
       <div>
         <h2 className="text-xl font-bold text-texo-azul dark:text-white">Respuestas de cuestionarios</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Respuestas y calificaciones de los participantes</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Hacé click en una fila para ver las respuestas completas</p>
       </div>
 
       <input
@@ -440,8 +440,13 @@ function CuestionariosView() {
                       <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
                         {r.respuestasDetalladas.length}
                       </td>
-                      <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-xs">
-                        {r.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{r.fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                          <svg className={`w-4 h-4 transition-transform flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </td>
                     </tr>
                     {isExpanded && (
