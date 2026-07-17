@@ -254,13 +254,16 @@ export async function getModuleActivity(): Promise<ModuleActivity[]> {
 
 export async function getQuizResponses(): Promise<QuizResponse[]> {
   console.log('[Quiz] Buscando respuestas...')
-  const progressSnap = await getDocs(collection(db, 'progress'))
+  const progressSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'participante')))
   console.log('[Quiz] Usuarios encontrados:', progressSnap.size)
   const responses: QuizResponse[] = []
 
   for (const userDoc of progressSnap.docs) {
     const userId = userDoc.id
-    const coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+    let coursesSnap
+    try {
+      coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+    } catch { continue }
 
     for (const courseDoc of coursesSnap.docs) {
       const courseId = courseDoc.id
