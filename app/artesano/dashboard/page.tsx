@@ -16,6 +16,12 @@ import {
   Cell,
 } from 'recharts'
 
+const tooltipStyle = {
+  contentStyle: { backgroundColor: '#1a2a2e', border: '1px solid #31484E', borderRadius: 8, color: '#f9fafb' },
+  labelStyle: { color: '#E8B84B', fontWeight: 600 },
+  itemStyle: { color: '#d1d5db' },
+}
+
 export default function ArtesanoDashboard() {
   const [activeTab, setActiveTab] = useState<'propedeuticos' | 'participantes' | 'cuestionarios'>('propedeuticos')
   const [searchQuery, setSearchQuery] = useState('')
@@ -162,6 +168,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={170} />
               <Tooltip
+                {...tooltipStyle}
                 formatter={(v: number) => [v, 'Participantes']}
                 labelFormatter={(label: string, payload) => {
                   const curso = payload?.[0]?.payload?.curso
@@ -185,7 +192,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip {...tooltipStyle} />
               <Legend />
               <Bar dataKey="Inscriptos" fill="#31484E" radius={[4, 4, 0, 0]} />
               <Bar dataKey="En progreso" fill="#E8B84B" radius={[4, 4, 0, 0]} />
@@ -222,6 +229,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
               <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} unit=" min" />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={140} />
               <Tooltip
+                {...tooltipStyle}
                 formatter={(v: number) => {
                   if (v < 60) return [`${v} min`, 'Promedio']
                   return [`${Math.floor(v / 60)}h ${v % 60}min`, 'Promedio']
@@ -548,7 +556,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
                   <Cell key={i} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip {...tooltipStyle} />
               <Legend
                 verticalAlign="bottom"
                 height={36}
@@ -574,7 +582,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-              <Tooltip />
+              <Tooltip {...tooltipStyle} />
               <Bar dataKey="value" name="Participantes" fill="#31484E" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
