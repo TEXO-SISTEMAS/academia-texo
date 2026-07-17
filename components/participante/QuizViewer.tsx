@@ -121,8 +121,8 @@ export default function QuizViewer({ content, onComplete }: Props) {
                 value={typeof currentAnswer === "string" ? currentAnswer : ""}
                 onChange={(e) => updateOpenAnswer(qi, e.target.value)}
                 placeholder="Escribí tu respuesta..."
-                rows={3}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo resize-none"
+                rows={4}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2.5 text-sm bg-white dark:bg-gray-800 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-amarillo resize-y min-h-[100px]"
               />
             ) : (
               <>
