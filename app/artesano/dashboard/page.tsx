@@ -412,11 +412,13 @@ function CuestionariosView() {
               {filtered.map((r, idx) => {
                 const rowKey = `${r.participante}-${r.recursoId}-${idx}`
                 const isExpanded = expandedRow === rowKey
-                const scoreColor = r.totalPreguntas > 0
-                  ? r.score / r.totalPreguntas >= 0.7 ? 'text-texo-verde'
+                const allOpen = r.respuestasDetalladas.length > 0
+                  && r.respuestasDetalladas.every(d => d.esAbierta)
+                const scoreColor = allOpen || r.totalPreguntas === 0
+                  ? 'text-gray-400'
+                  : r.score / r.totalPreguntas >= 0.7 ? 'text-texo-verde'
                   : r.score / r.totalPreguntas >= 0.4 ? 'text-texo-amarillo'
                   : 'text-texo-rojo'
-                  : 'text-gray-500'
 
                 return (
                   <Fragment key={rowKey}>
@@ -432,7 +434,7 @@ function CuestionariosView() {
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{r.recursoTitulo}</td>
                       <td className="px-4 py-3 text-center">
                         <span className={`font-semibold ${scoreColor}`}>
-                          {r.score}/{r.totalPreguntas}
+                          {allOpen ? '—' : `${r.score}/${r.totalPreguntas}`}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
