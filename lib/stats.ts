@@ -191,7 +191,7 @@ export async function getModuleActivity(): Promise<ModuleActivity[]> {
   const usersSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'participante')))
 
   // mapa: courseId+resourceId → count
-  const activityMap: Record<string, { label: string; courseTitle: string; count: number }> = {}
+  const activityMap: Record<string, { moduleLabel: string; courseTitle: string; count: number }> = {}
 
   await Promise.all(usersSnap.docs.map(async (userDoc) => {
     const userId = userDoc.id
