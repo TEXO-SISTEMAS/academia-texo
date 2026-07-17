@@ -34,7 +34,7 @@ service cloud.firestore {
     match /allowedUsers/{email} {
       // Cada usuario solo puede leer su propio doc (uid coincide con email en esta app).
       // Los artesanos pueden leer todos (panel de admin / dashboards).
-      allow read: if isAuthenticated() && (request.auth.uid == email || isArtesano());
+      allow read: if isAuthenticated() && (request.auth.token.email == email || isArtesano());
       // Solo se escribe desde el Admin SDK / Firebase Console — nunca desde el cliente
       allow write: if false;
     }
@@ -42,8 +42,8 @@ service cloud.firestore {
     // ── Users ─────────────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      // Cualquier usuario autenticado puede leer su propio documento
-      allow read: if isAuthenticated() && isOwner(userId);
+      // El propio usuario puede leer su doc; artesanos pueden leer todos (para dashboard)
+      allow read: if isAuthenticated() && (isOwner(userId) || isArtesano());
 
       // Creación: solo el propio usuario (primer login via auth-context)
       allow create: if isAuthenticated() && isOwner(userId);

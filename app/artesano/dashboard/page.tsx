@@ -90,7 +90,10 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const [data, activity] = await Promise.all([getArtesanoCourses(), getModuleActivity()])
+      const [data, activity] = await Promise.all([
+        getArtesanoCourses().catch(() => [] as CourseStats[]),
+        getModuleActivity().catch(() => [] as ModuleActivity[]),
+      ])
       setCourses(data)
       setModuleActivity(activity)
     } finally {
