@@ -44,16 +44,24 @@ export interface ParticipantStats {
 }
 
 export async function getAllParticipants(): Promise<ParticipantStats[]> {
-  const progressSnap = await getDocs(collection(db, 'progress'))
+  // Leer usuarios desde /users (más confiable que leer docs padre de /progress)
+  const usersSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'participante')))
 
   const participants = await Promise.all(
-    progressSnap.docs.map(async (userDoc) => {
+    usersSnap.docs.map(async (userDoc) => {
       const userId = userDoc.id
-      const coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+      const userData = userDoc.data()
+      const email = (userData.email as string | undefined) ?? userId
+
+      let coursesSnap
+      try {
+        coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+      } catch {
+        return { email, cursosInscritos: 0, progresoPromedio: 0, ultimaActividad: null, creditos: 0 }
+      }
 
       let totalProgress = 0
       let latestDate: Date | null = null
-
       let creditos = 0
 
       for (const courseDoc of coursesSnap.docs) {
@@ -64,10 +72,17 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
         const total = resourcesSnap.size
         totalProgress += total > 0 ? (completed / total) * 100 : 0
 
+        for (const rDoc of resourcesSnap.docs) {
+          const completedAt = rDoc.data().completedAt as Timestamp | undefined
+          if (completedAt) {
+            const d = completedAt.toDate()
+            if (!latestDate || d > latestDate) latestDate = d
+          }
+        }
+
         const enrolledAt = courseDoc.data().enrolledAt as Timestamp | undefined
-        if (enrolledAt) {
-          const d = enrolledAt.toDate()
-          if (!latestDate || d > latestDate) latestDate = d
+        if (enrolledAt && !latestDate) {
+          latestDate = enrolledAt.toDate()
         }
 
         if (courseDoc.data().creditEarned === true) creditos++
@@ -78,7 +93,7 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
         : 0
 
       return {
-        email: userId,
+        email,
         cursosInscritos: coursesSnap.size,
         progresoPromedio: avgProgress,
         ultimaActividad: latestDate,
@@ -164,6 +179,77 @@ export async function getArtesanoCourses(): Promise<CourseStats[]> {
         }
       })
   )
+}
+
+export interface ModuleActivity {
+  moduleLabel: string   // "Capítulo N · Recurso X"
+  courseTitle: string
+  count: number         // cuántos participantes están en ese recurso como último completado
+}
+
+export async function getModuleActivity(): Promise<ModuleActivity[]> {
+  const usersSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'participante')))
+
+  // mapa: courseId+resourceId → count
+  const activityMap: Record<string, { label: string; courseTitle: string; count: number }> = {}
+
+  await Promise.all(usersSnap.docs.map(async (userDoc) => {
+    const userId = userDoc.id
+    let coursesSnap
+    try {
+      coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
+    } catch { return }
+
+    for (const courseDoc of coursesSnap.docs) {
+      const courseId = courseDoc.id
+      let courseName = courseId
+
+      try {
+        const cSnap = await getDoc(doc(db, `courses/${courseId}`))
+        if (cSnap.exists()) courseName = (cSnap.data().title as string) ?? courseId
+      } catch { /* ignore */ }
+
+      const resourcesSnap = await getDocs(
+        collection(db, `progress/${userId}/courses/${courseId}/resources`)
+      )
+
+      // Encontrar el último recurso completado o el primero no completado
+      const completedDocs = resourcesSnap.docs.filter(d => d.data().completed)
+      const lastResource = completedDocs.length > 0
+        ? completedDocs.reduce((a, b) => {
+            const aT = (a.data().completedAt as Timestamp | undefined)?.toMillis() ?? 0
+            const bT = (b.data().completedAt as Timestamp | undefined)?.toMillis() ?? 0
+            return bT > aT ? b : a
+          })
+        : null
+
+      if (!lastResource) return
+
+      const key = `${courseId}::${lastResource.id}`
+      if (!activityMap[key]) {
+        activityMap[key] = { label: lastResource.id, courseTitle: courseName, count: 0 }
+
+        // Intentar obtener el título real del recurso
+        try {
+          const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
+          for (const chapterDoc of chaptersSnap.docs) {
+            const rSnap = await getDoc(doc(db, `courses/${courseId}/chapters/${chapterDoc.id}/resources/${lastResource.id}`))
+            if (rSnap.exists()) {
+              activityMap[key].label = (rSnap.data().title as string) ?? lastResource.id
+              break
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      activityMap[key].count++
+    }
+  }))
+
+  return Object.values(activityMap)
+    .filter(e => e.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10)
 }
 
 export async function getQuizResponses(): Promise<QuizResponse[]> {

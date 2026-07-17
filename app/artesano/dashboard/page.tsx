@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState, useEffect, useCallback } from 'react'
-import { getArtesanoCourses, getAllParticipants, getQuizResponses, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer } from '@/lib/stats'
+import { getArtesanoCourses, getAllParticipants, getQuizResponses, getModuleActivity, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer, type ModuleActivity } from '@/lib/stats'
 import {
   BarChart,
   Bar,
@@ -84,13 +84,15 @@ export default function ArtesanoDashboard() {
 
 function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
   const [courses, setCourses] = useState<CourseStats[]>([])
+  const [moduleActivity, setModuleActivity] = useState<ModuleActivity[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await getArtesanoCourses()
+      const [data, activity] = await Promise.all([getArtesanoCourses(), getModuleActivity()])
       setCourses(data)
+      setModuleActivity(activity)
     } finally {
       setLoading(false)
     }
@@ -133,6 +135,41 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
         <SummaryCard label="Total completaron" value={totalCompleted} color="texo-verde" />
         <SummaryCard label="Tasa promedio" value={`${avgRate}%`} color="texo-amarillo" />
       </div>
+
+      {/* Gráfico — dónde están los participantes */}
+      {moduleActivity.length > 0 && (
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+            ¿En qué módulo están los participantes?
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Último recurso completado por cada participante
+          </p>
+          <ResponsiveContainer width="100%" height={Math.max(160, moduleActivity.length * 44)}>
+            <BarChart
+              layout="vertical"
+              data={moduleActivity.map(m => ({
+                name: m.label.length > 28 ? m.label.slice(0, 28) + '…' : m.label,
+                curso: m.courseTitle,
+                Participantes: m.count,
+              }))}
+              margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={170} />
+              <Tooltip
+                formatter={(v: number) => [v, 'Participantes']}
+                labelFormatter={(label: string, payload) => {
+                  const curso = payload?.[0]?.payload?.curso
+                  return curso ? `${label} — ${curso}` : label
+                }}
+              />
+              <Bar dataKey="Participantes" fill="#3A9688" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Gráfico de barras */}
       {filtered.length > 0 ? (
