@@ -149,7 +149,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
             <BarChart
               layout="vertical"
               data={moduleActivity.map(m => ({
-                name: m.label.length > 28 ? m.label.slice(0, 28) + '…' : m.label,
+                name: m.moduleLabel.length > 28 ? m.moduleLabel.slice(0, 28) + '…' : m.moduleLabel,
                 curso: m.courseTitle,
                 Participantes: m.count,
               }))}

@@ -227,7 +227,7 @@ export async function getModuleActivity(): Promise<ModuleActivity[]> {
 
       const key = `${courseId}::${lastResource.id}`
       if (!activityMap[key]) {
-        activityMap[key] = { label: lastResource.id, courseTitle: courseName, count: 0 }
+        activityMap[key] = { moduleLabel: lastResource.id, courseTitle: courseName, count: 0 }
 
         // Intentar obtener el título real del recurso
         try {
@@ -235,7 +235,7 @@ export async function getModuleActivity(): Promise<ModuleActivity[]> {
           for (const chapterDoc of chaptersSnap.docs) {
             const rSnap = await getDoc(doc(db, `courses/${courseId}/chapters/${chapterDoc.id}/resources/${lastResource.id}`))
             if (rSnap.exists()) {
-              activityMap[key].label = (rSnap.data().title as string) ?? lastResource.id
+              activityMap[key].moduleLabel = (rSnap.data().title as string) ?? lastResource.id
               break
             }
           }
