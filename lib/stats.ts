@@ -65,11 +65,23 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
       let creditos = 0
 
       for (const courseDoc of coursesSnap.docs) {
+        const courseId = courseDoc.id
         const resourcesSnap = await getDocs(
-          collection(db, `progress/${userId}/courses/${courseDoc.id}/resources`)
+          collection(db, `progress/${userId}/courses/${courseId}/resources`)
         )
         const completed = resourcesSnap.docs.filter(d => d.data().completed).length
-        const total = resourcesSnap.size
+
+        // Contar total real de recursos del curso (no solo los visitados)
+        let totalResources = 0
+        try {
+          const chaptersSnap = await getDocs(collection(db, `courses/${courseId}/chapters`))
+          for (const ch of chaptersSnap.docs) {
+            const rSnap = await getDocs(collection(db, `courses/${courseId}/chapters/${ch.id}/resources`))
+            totalResources += rSnap.docs.filter(r => !r.data().deleted).length
+          }
+        } catch { /* si falla, usar los que tiene en progreso */ }
+
+        const total = totalResources > 0 ? totalResources : resourcesSnap.size
         totalProgress += total > 0 ? (completed / total) * 100 : 0
 
         for (const rDoc of resourcesSnap.docs) {
