@@ -493,9 +493,13 @@ function CuestionariosView() {
   )
 }
 
+type ParticipantSortKey = 'email' | 'cursosInscritos' | 'progresoPromedio' | 'creditos' | 'ultimaActividad'
+
 function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   const [participants, setParticipants] = useState<ParticipantStats[]>([])
   const [loading, setLoading] = useState(true)
+  const [sortKey, setSortKey] = useState<ParticipantSortKey>('progresoPromedio')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     getAllParticipants()
@@ -503,9 +507,25 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = participants.filter(p =>
-    p.email.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  function handleSort(key: ParticipantSortKey) {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('desc') }
+  }
+
+  const filtered = participants
+    .filter(p => p.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      let av: number | string = 0
+      let bv: number | string = 0
+      if (sortKey === 'email') { av = a.email; bv = b.email }
+      else if (sortKey === 'cursosInscritos') { av = a.cursosInscritos; bv = b.cursosInscritos }
+      else if (sortKey === 'progresoPromedio') { av = a.progresoPromedio; bv = b.progresoPromedio }
+      else if (sortKey === 'creditos') { av = a.creditos; bv = b.creditos }
+      else if (sortKey === 'ultimaActividad') { av = a.ultimaActividad?.getTime() ?? 0; bv = b.ultimaActividad?.getTime() ?? 0 }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
 
   if (loading) {
     return (
@@ -594,11 +614,26 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
           <tr>
-            <th className="px-4 py-3 text-left">Participante</th>
-            <th className="px-4 py-3 text-center">Cursos inscritos</th>
-            <th className="px-4 py-3 text-center">Progreso %</th>
-            <th className="px-4 py-3 text-center">Créditos 🎟️</th>
-            <th className="px-4 py-3 text-center">Última actividad</th>
+            {([
+              ['email', 'Participante', 'left'],
+              ['cursosInscritos', 'Cursos inscritos', 'center'],
+              ['progresoPromedio', 'Progreso %', 'center'],
+              ['creditos', 'Créditos 🎟️', 'center'],
+              ['ultimaActividad', 'Última actividad', 'center'],
+            ] as [ParticipantSortKey, string, string][]).map(([key, label, align]) => (
+              <th
+                key={key}
+                className={`px-4 py-3 text-${align} cursor-pointer select-none hover:text-texo-amarillo transition-colors`}
+                onClick={() => handleSort(key)}
+              >
+                <span className="inline-flex items-center gap-1 justify-center">
+                  {label}
+                  <span className="text-gray-400">
+                    {sortKey === key ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
+                  </span>
+                </span>
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
