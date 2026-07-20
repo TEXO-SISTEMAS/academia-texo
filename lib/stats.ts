@@ -272,6 +272,9 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
 
   for (const userDoc of progressSnap.docs) {
     const userId = userDoc.id
+    const userData = userDoc.data()
+    const participante = (userData.email as string | undefined) ?? userId
+
     let coursesSnap
     try {
       coursesSnap = await getDocs(collection(db, `progress/${userId}/courses`))
@@ -348,7 +351,7 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
         const gradedQuestionCount = originalQuestions.filter(q => q.questionType !== "open").length
 
         responses.push({
-          participante: userId,
+          participante,
           curso: courseName,
           cursoId: courseId,
           recursoId: resourceDoc.id,
