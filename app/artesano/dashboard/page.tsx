@@ -500,6 +500,7 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<ParticipantSortKey>('progresoPromedio')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
+  const [activityFilter, setActivityFilter] = useState<string | null>(null)
 
   useEffect(() => {
     getAllParticipants()
@@ -514,6 +515,14 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
 
   const filtered = participants
     .filter(p => p.email.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter(p => {
+      if (!activityFilter) return true
+      if (activityFilter === 'Muy activos') return p.progresoPromedio >= 80
+      if (activityFilter === 'Activos') return p.progresoPromedio >= 50 && p.progresoPromedio < 80
+      if (activityFilter === 'Poco activos') return p.progresoPromedio >= 20 && p.progresoPromedio < 50
+      if (activityFilter === 'Inactivos') return p.progresoPromedio < 20
+      return true
+    })
     .sort((a, b) => {
       let av: number | string = 0
       let bv: number | string = 0
@@ -568,12 +577,36 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* PieChart — distribución de actividad */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="text-sm font-bold text-gray-800 dark:text-white mb-4">Distribución de actividad</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-white">Distribución de actividad</h3>
+            {activityFilter && (
+              <button
+                onClick={() => setActivityFilter(null)}
+                className="text-xs text-texo-amarillo border border-texo-amarillo/40 px-2 py-0.5 rounded-full hover:bg-texo-amarillo/10 transition-colors"
+              >
+                {activityFilter} ✕
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-gray-400 mb-3">Click en un sector para filtrar la tabla</p>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={activityData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={80}>
+              <Pie
+                data={activityData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="45%"
+                outerRadius={80}
+                onClick={(d) => setActivityFilter(activityFilter === d.name ? null : d.name)}
+                style={{ cursor: 'pointer' }}
+              >
                 {activityData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
+                  <Cell
+                    key={i}
+                    fill={entry.color}
+                    opacity={activityFilter && activityFilter !== entry.name ? 0.35 : 1}
+                  />
                 ))}
               </Pie>
               <Tooltip {...tooltipStyle} />
@@ -610,6 +643,11 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
       </div>
 
       {/* Tabla */}
+      {activityFilter && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Mostrando <span className="font-semibold text-texo-amarillo">{activityFilter}</span> — {filtered.length} participante{filtered.length !== 1 ? 's' : ''}
+        </p>
+      )}
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 uppercase text-xs">
