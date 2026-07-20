@@ -51,7 +51,9 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
     usersSnap.docs.map(async (userDoc) => {
       const userId = userDoc.id
       const userData = userDoc.data()
-      const email = (userData.email as string | undefined) ?? userId
+      const rawEmail = (userData.email as string | undefined) ?? ''
+      // Si el doc tiene email válido úsalo; si no, el ID del doc puede ser el email (sistema custom token)
+      const email = rawEmail.includes('@') ? rawEmail : userId.includes('@') ? userId : rawEmail || userId
 
       let coursesSnap
       try {

@@ -678,10 +678,8 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
           {filtered.map(p => (
             <tr key={p.email} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
               <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                {p.email.includes('@') ? p.email.split('@')[0] : '—'}
-                {p.email.includes('@') && (
-                  <span className="block text-xs text-gray-400 font-normal">{p.email}</span>
-                )}
+                {p.email.includes('@') ? p.email.split('@')[0] : p.email || '—'}
+                <span className="block text-xs text-gray-400 font-normal">{p.email || ''}</span>
               </td>
               <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{p.cursosInscritos}</td>
               <td className="px-4 py-3 text-center">
