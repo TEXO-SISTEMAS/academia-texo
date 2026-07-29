@@ -108,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const data = await res.json() as { token: string; role: string };
     await signInWithCustomToken(auth, data.token);
+    await getOrCreateUser(auth.currentUser!.uid, email, "artesano");
     setCookie("user-role", "artesano");
     recordLoginBackground(auth.currentUser!.uid, navigator.userAgent);
     window.location.replace("/artesano/dashboard");
