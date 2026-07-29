@@ -40,7 +40,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "invalid_password" }, { status: 401 });
     }
 
-    // 3. Generar custom token
+    // 3. Crear/actualizar doc en /users con Admin SDK (bypasea reglas del cliente)
+    await adminDb.collection("users").doc(email).set(
+      { email, role: "artesano", displayName: name || email.split("@")[0] },
+      { merge: true }
+    );
+
+    // 4. Generar custom token
     const adminAuth = getAdminAuth();
     const token = await adminAuth.createCustomToken(email, { role });
 
