@@ -32,11 +32,18 @@ export function middleware(request: NextRequest) {
     if (role) {
       return NextResponse.redirect(
         new URL(
-          role === "artesano" ? "/artesano/cursos" : "/participante/dashboard",
+          role === "artesano" ? "/seleccionar" : "/participante/dashboard",
           request.url
         )
       );
     }
+    return NextResponse.next();
+  }
+
+  // Página de selección de rol: solo artesanos
+  if (pathname.startsWith("/seleccionar")) {
+    if (!role) return NextResponse.redirect(new URL("/login", request.url));
+    if (role !== "artesano") return NextResponse.redirect(new URL("/participante/dashboard", request.url));
     return NextResponse.next();
   }
 
@@ -61,11 +68,10 @@ export function middleware(request: NextRequest) {
 
   if (
     pathname.startsWith("/participante") &&
-    role !== "participante"
+    role !== "participante" &&
+    role !== "artesano"
   ) {
-    return NextResponse.redirect(
-      new URL("/artesano/cursos", request.url)
-    );
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();

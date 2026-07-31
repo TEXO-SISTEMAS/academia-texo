@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await getOrCreateUser(auth.currentUser!.uid, email, "artesano");
     setCookie("user-role", "artesano");
     recordLoginBackground(auth.currentUser!.uid, navigator.userAgent);
-    window.location.replace("/artesano/dashboard");
+    window.location.replace("/seleccionar");
   }
 
   async function loginParticipante(email: string): Promise<void> {
