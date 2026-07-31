@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCookie("user-role", role);
     recordLoginBackground(result.user.uid, navigator.userAgent);
     window.location.replace(
-      role === "artesano" ? "/artesano/dashboard" : "/participante/dashboard"
+      role === "artesano" ? "/seleccionar" : "/participante/dashboard"
     );
   }
 
