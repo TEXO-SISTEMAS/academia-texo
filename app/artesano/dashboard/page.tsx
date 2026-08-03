@@ -363,8 +363,11 @@ function CuestionariosView() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   useEffect(() => {
-    getQuizResponses()
-      .then(setResponses)
+    fetch('/api/stats/quiz')
+      .then(r => r.json())
+      .then((data: (QuizResponse & { fecha: string })[]) =>
+        setResponses(data.map(r => ({ ...r, fecha: new Date(r.fecha) })))
+      )
       .finally(() => setLoading(false))
   }, [])
 
@@ -503,8 +506,11 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   const [activityFilter, setActivityFilter] = useState<string | null>(null)
 
   useEffect(() => {
-    getAllParticipants()
-      .then(setParticipants)
+    fetch('/api/stats/participants')
+      .then(r => r.json())
+      .then((data: (ParticipantStats & { ultimaActividad: string | null })[]) =>
+        setParticipants(data.map(p => ({ ...p, ultimaActividad: p.ultimaActividad ? new Date(p.ultimaActividad) : null })))
+      )
       .finally(() => setLoading(false))
   }, [])
 
