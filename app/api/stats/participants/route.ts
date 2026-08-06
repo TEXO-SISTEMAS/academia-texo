@@ -1,13 +1,15 @@
 import { NextResponse } from "next/server";
-
-export const dynamic = 'force-dynamic';
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { ParticipantStats } from "@/lib/stats";
-import { Timestamp } from "firebase-admin/firestore";
+import type { firestore } from "firebase-admin";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    console.log('[participants] iniciando...');
     const db = getAdminDb();
+    console.log('[participants] db ok');
 
     const usersSnap = await db.collection("users").where("role", "==", "participante").get();
 
@@ -47,14 +49,14 @@ export async function GET() {
           totalProgress += total > 0 ? (completed / total) * 100 : 0;
 
           for (const rDoc of resourcesSnap.docs) {
-            const completedAt = rDoc.data().completedAt as Timestamp | undefined;
+            const completedAt = rDoc.data().completedAt as firestore.Timestamp | undefined;
             if (completedAt) {
               const d = completedAt.toDate();
               if (!latestDate || d > latestDate) latestDate = d;
             }
           }
 
-          const enrolledAt = courseDoc.data().enrolledAt as Timestamp | undefined;
+          const enrolledAt = courseDoc.data().enrolledAt as firestore.Timestamp | undefined;
           if (enrolledAt && !latestDate) latestDate = enrolledAt.toDate();
 
           if (courseDoc.data().creditEarned === true) creditos++;

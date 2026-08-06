@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { QuizDetailedAnswer } from "@/lib/stats";
 import type { QuizContent, QuizAnswer } from "@/types";
-import { Timestamp } from "firebase-admin/firestore";
+import type { firestore } from "firebase-admin";
 
 export async function GET() {
   try {
@@ -87,7 +87,7 @@ export async function GET() {
           });
 
           const gradedQuestionCount = originalQuestions.filter((q) => q.questionType !== "open").length;
-          const completedAt = resourceData.completedAt as Timestamp | undefined;
+          const completedAt = resourceData.completedAt as firestore.Timestamp | undefined;
 
           responses.push({
             participante,
