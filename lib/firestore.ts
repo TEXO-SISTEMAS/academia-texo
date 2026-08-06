@@ -514,7 +514,6 @@ export async function enrollParticipant(
 
   await setDoc(enrollRef, {
     enrolledAt: serverTimestamp(),
-    // Campos indexables para getCourseProgressSummary
     courseId,
     userId,
   });
@@ -532,6 +531,25 @@ export async function enrollParticipant(
     resourceType: "course",
     resourceTitle: courseTitle,
   });
+
+  // Write/update participantStats pre-aggregated doc
+  const statsRef = doc(db, "participantStats", userId);
+  const statsSnap = await getDoc(statsRef);
+  const email = auth.currentUser?.email ?? userId;
+  if (!statsSnap.exists()) {
+    await setDoc(statsRef, {
+      email,
+      creditos: 0,
+      ultimaActividad: null,
+      cursosInscritos: 0,
+    });
+  }
+  updateDoc(statsRef, {
+    cursosInscritos: increment(1),
+    [`courses.${courseId}.completedCount`]: 0,
+    [`courses.${courseId}.enrolledAt`]: serverTimestamp(),
+    [`courses.${courseId}.creditEarned`]: false,
+  }).catch(() => {});
 }
 
 export async function markResourceCompleted(
@@ -564,6 +582,36 @@ export async function markResourceCompleted(
   };
 
   await setDoc(progressRef, payload);
+
+  // Update participantStats pre-aggregated doc (fire-and-forget)
+  updateDoc(doc(db, "participantStats", userId), {
+    [`courses.${courseId}.completedCount`]: increment(1),
+    ultimaActividad: serverTimestamp(),
+  }).catch(() => {});
+
+  // Write quiz response to quizResponses pre-aggregated collection (fire-and-forget)
+  if (answers && answers.length > 0) {
+    const email = auth.currentUser?.email ?? userId;
+    getDoc(doc(db, "courses", courseId))
+      .then((courseSnap) => {
+        const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
+        return addDoc(collection(db, "quizResponses"), {
+          participante: email,
+          userId,
+          curso: courseTitle,
+          cursoId: courseId,
+          recursoId: resourceId,
+          recursoTitulo: resourceTitle ?? resourceId,
+          score: score ?? 0,
+          totalPreguntas: answers.length,
+          completado: true,
+          fecha: serverTimestamp(),
+          answers,
+          ...(observations && observations.trim() !== "" && { observaciones: observations }),
+        });
+      })
+      .catch(() => {});
+  }
 
   silentAudit({
     userId,
@@ -638,6 +686,11 @@ export async function awardCredit(userId: string, courseId: string): Promise<voi
   // Incrementar contador agregado del curso (solo la primera vez por usuario).
   await updateDoc(doc(db, "courses", courseId), {
     completedCount: increment(1),
+  }).catch(() => {});
+  // Update participantStats pre-aggregated doc (fire-and-forget)
+  updateDoc(doc(db, "participantStats", userId), {
+    creditos: increment(1),
+    [`courses.${courseId}.creditEarned`]: true,
   }).catch(() => {});
 }
 

@@ -104,6 +104,22 @@ service cloud.firestore {
       }
     }
 
+    // ── ParticipantStats (pre-aggregated) ────────────────────────────────────
+
+    match /participantStats/{userId} {
+      // Dashboard artesano puede leer todos; el propio usuario puede leer/escribir
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // ── QuizResponses (pre-aggregated) ────────────────────────────────────────
+
+    match /quizResponses/{docId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if false;
+    }
+
     // ── Progress ──────────────────────────────────────────────────────────────
 
     match /progress/{userId} {
