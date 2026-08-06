@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = 'force-dynamic';
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { QuizDetailedAnswer } from "@/lib/stats";
 import type { QuizContent, QuizAnswer } from "@/types";

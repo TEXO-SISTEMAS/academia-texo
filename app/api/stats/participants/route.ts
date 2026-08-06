@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = 'force-dynamic';
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { ParticipantStats } from "@/lib/stats";
 import { Timestamp } from "firebase-admin/firestore";
