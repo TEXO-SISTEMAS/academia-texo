@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useState, useEffect, useCallback } from 'react'
-import { getArtesanoCourses, getModuleActivity, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer, type ModuleActivity } from '@/lib/stats'
+import { getArtesanoCourses, getAllParticipants, getQuizResponses, getModuleActivity, type CourseStats, type ParticipantStats, type QuizResponse, type QuizDetailedAnswer, type ModuleActivity } from '@/lib/stats'
 import {
   BarChart,
   Bar,
@@ -363,15 +363,8 @@ function CuestionariosView() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/stats/quiz')
-      .then(r => r.json())
-      .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setResponses((data as (QuizResponse & { fecha: string })[]).map(r => ({ ...r, fecha: new Date(r.fecha) })))
-        } else {
-          console.error('[quiz] respuesta inesperada:', data)
-        }
-      })
+    getQuizResponses()
+      .then(setResponses)
       .catch(err => console.error('[quiz] error:', err))
       .finally(() => setLoading(false))
   }, [])
@@ -511,15 +504,8 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   const [activityFilter, setActivityFilter] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/stats/participants')
-      .then(r => r.json())
-      .then((data: unknown) => {
-        if (Array.isArray(data)) {
-          setParticipants((data as (ParticipantStats & { ultimaActividad: string | null })[]).map(p => ({ ...p, ultimaActividad: p.ultimaActividad ? new Date(p.ultimaActividad) : null })))
-        } else {
-          console.error('[participants] respuesta inesperada:', data)
-        }
-      })
+    getAllParticipants()
+      .then(setParticipants)
       .catch(err => console.error('[participants] error:', err))
       .finally(() => setLoading(false))
   }, [])
