@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
-import type { QuizResponse, QuizDetailedAnswer } from "@/lib/stats";
+import type { QuizDetailedAnswer } from "@/lib/stats";
 import type { QuizContent, QuizAnswer } from "@/types";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -9,7 +9,11 @@ export async function GET() {
     const db = getAdminDb();
 
     const usersSnap = await db.collection("users").where("role", "==", "participante").get();
-    const responses: (QuizResponse & { fecha: string })[] = [];
+    const responses: {
+    participante: string; curso: string; cursoId: string; recursoId: string; recursoTitulo: string;
+    respuestasDetalladas: QuizDetailedAnswer[]; score: number; totalPreguntas: number;
+    completado: boolean; fecha: string; observaciones?: string;
+  }[] = [];
 
     for (const userDoc of usersSnap.docs) {
       const userId = userDoc.id;
