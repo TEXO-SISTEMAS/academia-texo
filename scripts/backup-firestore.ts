@@ -1,6 +1,8 @@
 /**
  * backup-firestore.ts
  * Exporta todas las colecciones de Firestore a JSON.
+ * Usa collectionGroup para /progress ya que los docs padre no existen
+ * (solo existen las subcolecciones courses y resources debajo).
  * Usado por GitHub Actions para backup diario.
  */
 
@@ -30,15 +32,58 @@ async function exportCollection(colPath: string): Promise<Record<string, unknown
   return result;
 }
 
+/**
+ * Exporta /progress usando collectionGroup porque los docs padre
+ * progress/{userId} no existen — solo existen sus subcolecciones.
+ * Resultado: { [userId]: { __courses: { [courseId]: { ...data, __resources: {...} } } } }
+ */
+async function exportProgress(): Promise<Record<string, unknown>> {
+  const result: Record<string, unknown> = {};
+
+  // Leer todos los enrollments: progress/{uid}/courses/{cid}
+  const coursesSnap = await db.collectionGroup("courses").get();
+  for (const docSnap of coursesSnap.docs) {
+    const parts = docSnap.ref.path.split("/"); // progress, uid, courses, cid
+    if (parts.length !== 4 || parts[0] !== "progress") continue;
+    const uid = parts[1];
+    const cid = parts[3];
+
+    if (!result[uid]) result[uid] = { __courses: {} };
+    const userEntry = result[uid] as Record<string, unknown>;
+    const courses = userEntry.__courses as Record<string, unknown>;
+    courses[cid] = { ...docSnap.data(), __resources: {} };
+  }
+
+  // Leer todos los recursos de progreso: progress/{uid}/courses/{cid}/resources/{rid}
+  const resourcesSnap = await db.collectionGroup("resources").get();
+  for (const docSnap of resourcesSnap.docs) {
+    const parts = docSnap.ref.path.split("/"); // progress, uid, courses, cid, resources, rid
+    if (parts.length !== 6 || parts[0] !== "progress") continue;
+    const uid = parts[1];
+    const cid = parts[3];
+    const rid = parts[5];
+
+    if (!result[uid]) result[uid] = { __courses: {} };
+    const userEntry = result[uid] as Record<string, unknown>;
+    const courses = userEntry.__courses as Record<string, unknown>;
+    if (!courses[cid]) courses[cid] = { __resources: {} };
+    const courseEntry = courses[cid] as Record<string, unknown>;
+    const resources = courseEntry.__resources as Record<string, unknown>;
+    resources[rid] = docSnap.data();
+  }
+
+  return result;
+}
+
 async function backup() {
-  const COLLECTIONS = ["users", "allowedUsers", "courses", "progress", "auditLog", "loginHistory"];
+  const SIMPLE_COLLECTIONS = ["users", "allowedUsers", "courses", "auditLog", "loginHistory"];
   console.log("Iniciando backup...\n");
 
   const out: Record<string, unknown> = {
     _meta: { timestamp: new Date().toISOString() },
   };
 
-  for (const col of COLLECTIONS) {
+  for (const col of SIMPLE_COLLECTIONS) {
     process.stdout.write(`  Exportando /${col}...`);
     try {
       out[col] = await exportCollection(col);
@@ -46,6 +91,15 @@ async function backup() {
     } catch (err) {
       console.log(` ❌ ${err instanceof Error ? err.message : err}`);
     }
+  }
+
+  // Exportar /progress con collectionGroup
+  process.stdout.write(`  Exportando /progress (collectionGroup)...`);
+  try {
+    out["progress"] = await exportProgress();
+    console.log(` ✅ ${Object.keys(out["progress"] as object).length} usuarios`);
+  } catch (err) {
+    console.log(` ❌ ${err instanceof Error ? err.message : err}`);
   }
 
   const outDir = path.join(__dirname, "..", "backups");
