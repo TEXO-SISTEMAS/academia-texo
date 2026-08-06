@@ -77,7 +77,8 @@ export async function GET() {
     const sorted = participants.sort((a, b) => b.progresoPromedio - a.progresoPromedio);
     return NextResponse.json(sorted);
   } catch (err) {
-    console.error("[stats/participants]", err);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[stats/participants]", msg);
+    return NextResponse.json({ error: "server_error", detail: msg }, { status: 500 });
   }
 }
