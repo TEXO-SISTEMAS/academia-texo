@@ -55,17 +55,13 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
     return [d.id, email]
   }))
 
-  // Batch read 2: participantStats docs (chunked for Firestore 'in' limit of 30)
-  const statsMap = new Map<string, Record<string, unknown>>()
-  const chunks: string[][] = []
-  for (let i = 0; i < participantIds.length; i += 30) chunks.push(participantIds.slice(i, i + 30))
-  await Promise.all(chunks.map(async chunk => {
-    const snap = await getDocs(query(collection(db, 'participantStats'), where(documentId(), 'in', chunk)))
-    for (const d of snap.docs) statsMap.set(d.id, d.data() as Record<string, unknown>)
-  }))
+  // Batch read 2: collectionGroup para progreso y estructura de cursos
+  const [allCoursesSnap, allResourcesSnap] = await Promise.all([
+    getDocs(collectionGroup(db, 'courses')),
+    getDocs(collectionGroup(db, 'resources')),
+  ])
+  const courseResourceSnap = allResourcesSnap
 
-  // Batch read 3: course resource counts (for computing progress %)
-  const courseResourceSnap = await getDocs(collectionGroup(db, 'resources'))
   const courseResourceCount = new Map<string, number>()
   for (const d of courseResourceSnap.docs) {
     if (d.ref.path.startsWith('courses/') && !d.data().deleted) {
@@ -74,26 +70,88 @@ export async function getAllParticipants(): Promise<ParticipantStats[]> {
     }
   }
 
+  // Batch read 3: intentar participantStats (pre-aggregated)
+  const statsMap = new Map<string, Record<string, unknown>>()
+  const chunks: string[][] = []
+  for (let i = 0; i < participantIds.length; i += 30) chunks.push(participantIds.slice(i, i + 30))
+  await Promise.all(chunks.map(async chunk => {
+    const snap = await getDocs(query(collection(db, 'participantStats'), where(documentId(), 'in', chunk)))
+    for (const d of snap.docs) statsMap.set(d.id, d.data() as Record<string, unknown>)
+  }))
+
+  // Si hay datos pre-aggregados, usarlos (camino rápido)
+  if (statsMap.size > 0) {
+    return participantIds.map(userId => {
+      const email = userEmailMap.get(userId) ?? userId
+      const stats = statsMap.get(userId)
+      if (!stats) return { email, cursosInscritos: 0, progresoPromedio: 0, ultimaActividad: null, creditos: 0 }
+
+      const creditos = (stats.creditos as number) ?? 0
+      const ultimaActividad = (stats.ultimaActividad as Timestamp | null)?.toDate() ?? null
+      const cursosInscritos = (stats.cursosInscritos as number) ?? 0
+      const courses = (stats.courses as Record<string, { completedCount?: number }> | undefined) ?? {}
+      const courseIds = Object.keys(courses)
+
+      let totalProgress = 0
+      for (const cid of courseIds) {
+        const completed = courses[cid].completedCount ?? 0
+        const total = courseResourceCount.get(cid) ?? 1
+        totalProgress += Math.min((completed / total) * 100, 100)
+      }
+      const progresoPromedio = courseIds.length > 0 ? Math.round(totalProgress / courseIds.length) : 0
+
+      return { email, cursosInscritos, progresoPromedio, ultimaActividad, creditos }
+    }).sort((a, b) => b.progresoPromedio - a.progresoPromedio)
+  }
+
+  // Fallback: calcular desde collectionGroup (cuando migración no corrió aún)
+  const progressEnrollments = allCoursesSnap.docs.filter(d => d.ref.path.startsWith('progress/'))
+  const progressResources = allResourcesSnap.docs.filter(d => d.ref.path.startsWith('progress/'))
+
+  const enrollmentsByUser = new Map<string, typeof progressEnrollments>()
+  for (const d of progressEnrollments) {
+    const uid = d.ref.parent.parent!.id
+    if (!enrollmentsByUser.has(uid)) enrollmentsByUser.set(uid, [])
+    enrollmentsByUser.get(uid)!.push(d)
+  }
+
+  const resourcesByUserCourse = new Map<string, typeof progressResources>()
+  for (const d of progressResources) {
+    const parts = d.ref.path.split('/')
+    const key = `${parts[1]}::${parts[3]}`
+    if (!resourcesByUserCourse.has(key)) resourcesByUserCourse.set(key, [])
+    resourcesByUserCourse.get(key)!.push(d)
+  }
+
   return participantIds.map(userId => {
     const email = userEmailMap.get(userId) ?? userId
-    const stats = statsMap.get(userId)
-    if (!stats) return { email, cursosInscritos: 0, progresoPromedio: 0, ultimaActividad: null, creditos: 0 }
-
-    const creditos = (stats.creditos as number) ?? 0
-    const ultimaActividad = (stats.ultimaActividad as Timestamp | null)?.toDate() ?? null
-    const cursosInscritos = (stats.cursosInscritos as number) ?? 0
-    const courses = (stats.courses as Record<string, { completedCount?: number }> | undefined) ?? {}
-    const courseIds = Object.keys(courses)
-
+    const userEnrollments = enrollmentsByUser.get(userId) ?? []
     let totalProgress = 0
-    for (const cid of courseIds) {
-      const completed = courses[cid].completedCount ?? 0
-      const total = courseResourceCount.get(cid) ?? 1
-      totalProgress += Math.min((completed / total) * 100, 100)
-    }
-    const progresoPromedio = courseIds.length > 0 ? Math.round(totalProgress / courseIds.length) : 0
+    let latestDate: Date | null = null
+    let creditos = 0
 
-    return { email, cursosInscritos, progresoPromedio, ultimaActividad, creditos }
+    for (const enrollDoc of userEnrollments) {
+      const courseId = enrollDoc.id
+      const resources = resourcesByUserCourse.get(`${userId}::${courseId}`) ?? []
+      const completed = resources.filter(r => r.data().completed).length
+      const totalResources = courseResourceCount.get(courseId) ?? resources.length
+      totalProgress += totalResources > 0 ? (completed / totalResources) * 100 : 0
+      for (const rDoc of resources) {
+        const completedAt = rDoc.data().completedAt as Timestamp | undefined
+        if (completedAt) { const d = completedAt.toDate(); if (!latestDate || d > latestDate) latestDate = d }
+      }
+      const enrolledAt = enrollDoc.data().enrolledAt as Timestamp | undefined
+      if (enrolledAt && !latestDate) latestDate = enrolledAt.toDate()
+      if (enrollDoc.data().creditEarned === true) creditos++
+    }
+
+    return {
+      email,
+      cursosInscritos: userEnrollments.length,
+      progresoPromedio: userEnrollments.length > 0 ? Math.round(totalProgress / userEnrollments.length) : 0,
+      ultimaActividad: latestDate,
+      creditos,
+    }
   }).sort((a, b) => b.progresoPromedio - a.progresoPromedio)
 }
 
@@ -245,15 +303,18 @@ export async function getModuleActivity(): Promise<ModuleActivity[]> {
 }
 
 export async function getQuizResponses(): Promise<QuizResponse[]> {
-  // Batch read 1: pre-aggregated quiz responses
-  const quizSnap = await getDocs(collection(db, 'quizResponses'))
-  if (quizSnap.empty) return []
-
-  // Batch read 2: course titles + course resources (for quiz content/respuestasDetalladas)
+  // Siempre necesitamos: courses (títulos) + resources (contenido quiz + progreso)
   const [coursesSnap, courseResourceSnap] = await Promise.all([
     getDocs(query(collection(db, 'courses'), where('published', '==', true))),
     getDocs(collectionGroup(db, 'resources')),
   ])
+
+  // Intentar pre-aggregated primero
+  const quizSnap = await getDocs(collection(db, 'quizResponses'))
+  if (quizSnap.empty) {
+    // Fallback: calcular desde progreso directo
+    return _getQuizResponsesFromProgress(coursesSnap, courseResourceSnap)
+  }
 
   const courseNameMap = new Map(coursesSnap.docs.map(d => [d.id, d.data().title as string]))
 
@@ -323,6 +384,75 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
       fecha,
       observaciones: typeof data.observaciones === 'string' && data.observaciones.trim() !== ''
         ? data.observaciones : undefined,
+    })
+  }
+
+  return responses.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
+}
+
+type ResourceSnap = Awaited<ReturnType<typeof getDocs>>
+
+function _getQuizResponsesFromProgress(
+  coursesSnap: ResourceSnap,
+  allResourcesSnap: ResourceSnap
+): QuizResponse[] {
+  const courseNameMap = new Map(coursesSnap.docs.map(d => [d.id, d.data().title as string]))
+
+  const courseResourceMap = new Map<string, Record<string, unknown>>()
+  for (const d of allResourcesSnap.docs) {
+    if (d.ref.path.startsWith('courses/')) {
+      const parts = d.ref.path.split('/')
+      const key = `${parts[1]}::${parts[5]}`
+      courseResourceMap.set(key, d.data() as Record<string, unknown>)
+    }
+  }
+
+  const progressResources = allResourcesSnap.docs.filter(d =>
+    d.ref.path.startsWith('progress/') && Array.isArray(d.data().answers)
+  )
+
+  const responses: QuizResponse[] = []
+
+  for (const resourceDoc of progressResources) {
+    const parts = resourceDoc.ref.path.split('/')
+    const userId = parts[1]
+    const courseId = parts[3]
+    const resourceId = parts[5]
+    const resourceData = resourceDoc.data()
+    const savedAnswers = resourceData.answers as QuizAnswer[]
+    const courseName = courseNameMap.get(courseId) ?? 'Sin nombre'
+    const courseResource = courseResourceMap.get(`${courseId}::${resourceId}`)
+    const recursoTitulo = (courseResource?.title as string | undefined) ?? resourceId
+    const content = courseResource?.content as QuizContent | undefined
+    const originalQuestions = content?.questions ?? []
+
+    const respuestasDetalladas: QuizDetailedAnswer[] = originalQuestions.map((q, qi) => {
+      const saved = savedAnswers.find(a => a.questionIndex === qi)
+      if (q.questionType === 'open') {
+        return { pregunta: q.questionText, opciones: [], opcionesSeleccionadas: [], opcionesCorrectas: [], esCorrecta: true, esAbierta: true, respuestaAbierta: saved?.textAnswer ?? '' }
+      }
+      const selected = saved?.selectedOptions ?? []
+      const correctIndexes = q.multipleChoice ? (q.correctIndexes ?? []) : [q.correctIndex ?? 0]
+      const esCorrecta = q.multipleChoice
+        ? selected.length === correctIndexes.length && selected.every(i => correctIndexes.includes(i))
+        : selected[0] === correctIndexes[0]
+      return { pregunta: q.questionText, opciones: q.options, opcionesSeleccionadas: selected, opcionesCorrectas: correctIndexes, esCorrecta }
+    })
+
+    const gradedQuestionCount = originalQuestions.filter(q => q.questionType !== 'open').length
+    responses.push({
+      participante: userId,
+      curso: courseName,
+      cursoId: courseId,
+      recursoId: resourceId,
+      recursoTitulo,
+      respuestasDetalladas,
+      score: (resourceData.score as number | undefined) ?? 0,
+      totalPreguntas: gradedQuestionCount || originalQuestions.length || savedAnswers.length,
+      completado: (resourceData.completed as boolean | undefined) ?? false,
+      fecha: (resourceData.completedAt as Timestamp | undefined)?.toDate() ?? new Date(),
+      observaciones: typeof resourceData.observations === 'string' && resourceData.observations.trim() !== ''
+        ? resourceData.observations : undefined,
     })
   }
 

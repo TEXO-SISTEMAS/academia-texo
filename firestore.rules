@@ -120,6 +120,17 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ── CollectionGroup catch-all (requerido para queries collectionGroup) ───
+    // Sin estas reglas con {path=**}, los collectionGroup queries fallan.
+
+    match /{path=**}/resources/{resourceId} {
+      allow read: if isAuthenticated();
+    }
+
+    match /{path=**}/courses/{courseId} {
+      allow read: if isAuthenticated();
+    }
+
     // ── Progress ──────────────────────────────────────────────────────────────
 
     match /progress/{userId} {
