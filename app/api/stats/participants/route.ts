@@ -3,7 +3,7 @@ import { getAdminDb } from "@/lib/firebase-admin";
 import type { ParticipantStats } from "@/lib/stats";
 import type { firestore } from "firebase-admin";
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 300; // cache 5 minutos
 
 export async function GET() {
   try {
