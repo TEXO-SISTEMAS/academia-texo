@@ -363,8 +363,9 @@ function CuestionariosView() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null)
 
   useEffect(() => {
-    getQuizResponses()
-      .then(setResponses)
+    fetch('/api/stats/quiz')
+      .then(r => r.json())
+      .then(data => { if (!data.error) setResponses(data as QuizResponse[]) })
       .catch(err => console.error('[quiz] error:', err))
       .finally(() => setLoading(false))
   }, [])
@@ -504,8 +505,9 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   const [activityFilter, setActivityFilter] = useState<string | null>(null)
 
   useEffect(() => {
-    getAllParticipants()
-      .then(setParticipants)
+    fetch('/api/stats/participants')
+      .then(r => r.json())
+      .then(data => { if (!data.error) setParticipants(data as ParticipantStats[]) })
       .catch(err => console.error('[participants] error:', err))
       .finally(() => setLoading(false))
   }, [])
