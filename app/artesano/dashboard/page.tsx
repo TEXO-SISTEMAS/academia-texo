@@ -365,7 +365,15 @@ function CuestionariosView() {
   useEffect(() => {
     fetch('/api/stats/quiz')
       .then(r => r.json())
-      .then(data => { if (!data.error) setResponses(data as QuizResponse[]) })
+      .then(data => {
+        if (!data.error) {
+          const parsed = (data as QuizResponse[]).map(r => ({
+            ...r,
+            fecha: new Date(r.fecha as unknown as string),
+          }))
+          setResponses(parsed)
+        }
+      })
       .catch(err => console.error('[quiz] error:', err))
       .finally(() => setLoading(false))
   }, [])
@@ -507,7 +515,15 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
   useEffect(() => {
     fetch('/api/stats/participants')
       .then(r => r.json())
-      .then(data => { if (!data.error) setParticipants(data as ParticipantStats[]) })
+      .then(data => {
+        if (!data.error) {
+          const parsed = (data as ParticipantStats[]).map(p => ({
+            ...p,
+            ultimaActividad: p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null,
+          }))
+          setParticipants(parsed)
+        }
+      })
       .catch(err => console.error('[participants] error:', err))
       .finally(() => setLoading(false))
   }, [])
