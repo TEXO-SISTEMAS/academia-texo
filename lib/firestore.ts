@@ -518,37 +518,41 @@ export async function enrollParticipant(
     userId,
   });
 
-  await updateDoc(doc(db, "courses", courseId), {
+  // Todos los writes secundarios son fire-and-forget para no bloquear la carga de página
+  updateDoc(doc(db, "courses", courseId), {
     enrolledCount: increment(1),
-  });
+  }).catch(() => {});
 
-  const courseSnap = await getDoc(doc(db, "courses", courseId));
-  const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
-  silentAudit({
-    userId,
-    userEmail: auth.currentUser?.email ?? "",
-    action: `Participante inscripto en: ${courseTitle}`,
-    resourceType: "course",
-    resourceTitle: courseTitle,
-  });
-
-  // Write/update participantStats pre-aggregated doc
-  const statsRef = doc(db, "participantStats", userId);
-  const statsSnap = await getDoc(statsRef);
-  const email = auth.currentUser?.email ?? userId;
-  if (!statsSnap.exists()) {
-    await setDoc(statsRef, {
-      email,
-      creditos: 0,
-      ultimaActividad: null,
-      cursosInscritos: 0,
+  getDoc(doc(db, "courses", courseId)).then(courseSnap => {
+    const courseTitle = courseSnap.exists() ? (courseSnap.data().title as string) : courseId;
+    silentAudit({
+      userId,
+      userEmail: auth.currentUser?.email ?? "",
+      action: `Participante inscripto en: ${courseTitle}`,
+      resourceType: "course",
+      resourceTitle: courseTitle,
     });
-  }
-  updateDoc(statsRef, {
-    cursosInscritos: increment(1),
-    [`courses.${courseId}.completedCount`]: 0,
-    [`courses.${courseId}.enrolledAt`]: serverTimestamp(),
-    [`courses.${courseId}.creditEarned`]: false,
+  }).catch(() => {});
+
+  // Write/update participantStats pre-aggregated doc (fire-and-forget)
+  const statsRef = doc(db, "participantStats", userId);
+  getDoc(statsRef).then(statsSnap => {
+    const email = auth.currentUser?.email ?? userId;
+    if (!statsSnap.exists()) {
+      return setDoc(statsRef, {
+        email,
+        creditos: 0,
+        ultimaActividad: null,
+        cursosInscritos: 0,
+      });
+    }
+  }).then(() => {
+    updateDoc(statsRef, {
+      cursosInscritos: increment(1),
+      [`courses.${courseId}.completedCount`]: 0,
+      [`courses.${courseId}.enrolledAt`]: serverTimestamp(),
+      [`courses.${courseId}.creditEarned`]: false,
+    }).catch(() => {});
   }).catch(() => {});
 }
 

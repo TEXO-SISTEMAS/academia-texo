@@ -81,13 +81,16 @@ export default function CourseViewPage() {
         }))
       );
 
-      await enrollParticipant(firebaseUser.uid, courseId);
+      // Enrollment es fire-and-forget — no debe bloquear ni romper la carga
+      enrollParticipant(firebaseUser.uid, courseId).catch(() => {});
 
       setShowIntro(true);
 
       setCourse(courseData);
       setChaptersData(chaptersWithResources);
       setProgress(progressMap);
+    } catch (err) {
+      console.error("[CourseViewPage] error cargando curso:", err);
     } finally {
       setLoading(false);
     }
