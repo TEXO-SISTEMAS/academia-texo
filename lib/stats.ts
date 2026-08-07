@@ -1,4 +1,5 @@
 import { collection, collectionGroup, query, where, getDocs, getDoc, doc, orderBy, Timestamp, documentId } from 'firebase/firestore'
+import type { QuerySnapshot, DocumentData } from 'firebase/firestore'
 import { db } from './firebase'
 import type { QuizContent, QuizAnswer } from '@/types'
 
@@ -390,11 +391,9 @@ export async function getQuizResponses(): Promise<QuizResponse[]> {
   return responses.sort((a, b) => b.fecha.getTime() - a.fecha.getTime())
 }
 
-type ResourceSnap = Awaited<ReturnType<typeof getDocs>>
-
 function _getQuizResponsesFromProgress(
-  coursesSnap: ResourceSnap,
-  allResourcesSnap: ResourceSnap
+  coursesSnap: QuerySnapshot<DocumentData>,
+  allResourcesSnap: QuerySnapshot<DocumentData>
 ): QuizResponse[] {
   const courseNameMap = new Map(coursesSnap.docs.map(d => [d.id, d.data().title as string]))
 
