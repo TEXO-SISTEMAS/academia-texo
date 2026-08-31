@@ -22,6 +22,48 @@ const tooltipStyle = {
   itemStyle: { color: '#d1d5db' },
 }
 
+function GlobalKPIs() {
+  const [kpis, setKpis] = useState<{ total: number; cursando: number; completaron: number; creditos: number } | null>(null)
+
+  useEffect(() => {
+    fetch('/api/stats/participants')
+      .then(r => r.json())
+      .then((data: ParticipantStats[]) => {
+        if (!Array.isArray(data)) return
+        const total = data.length
+        const cursando = data.filter(p => p.cursosInscritos > 0 && p.progresoPromedio > 0 && p.progresoPromedio < 100).length
+        const completaron = data.filter(p => p.progresoPromedio === 100).length
+        const creditos = data.reduce((s, p) => s + (p.creditos ?? 0), 0)
+        setKpis({ total, cursando, completaron, creditos })
+      })
+      .catch(() => {})
+  }, [])
+
+  const items = [
+    { label: 'Participantes en plataforma', value: kpis?.total ?? '—', color: 'texo-azul', icon: '👥' },
+    { label: 'Cursando actualmente', value: kpis?.cursando ?? '—', color: 'texo-amarillo', icon: '📖' },
+    { label: 'Completaron al menos 1 curso', value: kpis?.completaron ?? '—', color: 'texo-verde', icon: '✅' },
+    { label: 'Créditos otorgados', value: kpis?.creditos ?? '—', color: 'texo-rojo', icon: '🎖️' },
+  ]
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {items.map(({ label, value, color, icon }) => (
+        <div key={label} className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 border-l-4 p-5 border-l-${color === 'texo-azul' ? 'texo-azul' : color === 'texo-verde' ? 'texo-verde' : color === 'texo-amarillo' ? 'texo-amarillo' : 'texo-rojo'}`}
+          style={{ borderLeftColor: color === 'texo-azul' ? '#31484E' : color === 'texo-verde' ? '#3A9688' : color === 'texo-amarillo' ? '#E8B84B' : '#C0544A' }}
+        >
+          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1">
+            <span>{icon}</span> {label}
+          </p>
+          <p className="text-3xl font-bold" style={{ color: color === 'texo-azul' ? '#31484E' : color === 'texo-verde' ? '#3A9688' : color === 'texo-amarillo' ? '#E8B84B' : '#C0544A' }}>
+            {value}
+          </p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function ArtesanoDashboard() {
   const [activeTab, setActiveTab] = useState<'propedeuticos' | 'participantes' | 'cuestionarios'>('propedeuticos')
   const [searchQuery, setSearchQuery] = useState('')
@@ -31,6 +73,9 @@ export default function ArtesanoDashboard() {
       <h1 className="text-3xl font-bold text-texo-azul dark:text-white mb-6">
         Estadísticas de progreso
       </h1>
+
+      {/* KPIs globales */}
+      <GlobalKPIs />
 
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b border-gray-300 dark:border-gray-700">
