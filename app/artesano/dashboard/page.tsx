@@ -61,7 +61,9 @@ function KpiCard({ label, desc, value, color, icon }: { label: string; desc: str
 
 function GlobalKPIs() {
   const [kpis, setKpis] = useState<{
-    total: number; cursando: number; completaron: number; creditos: number; esteMes: number; estaSemana: number
+    total: number; cursando: number; completaron: number; creditos: number
+    hoy: number; estaSemana: number; esteMes: number
+    rangoHoy: string; rangoSemana: string; rangoMes: string
   } | null>(null)
 
   useEffect(() => {
@@ -70,23 +72,29 @@ function GlobalKPIs() {
       .then((data: ParticipantStats[]) => {
         if (!Array.isArray(data)) return
         const now = new Date()
+        const inicioHoy = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const inicioSemana = new Date(inicioHoy); inicioSemana.setDate(inicioHoy.getDate() - 6)
         const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1)
-        const inicioSemana = new Date(now); inicioSemana.setDate(now.getDate() - 7)
+
+        const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        const rangoHoy = fmt(inicioHoy)
+        const rangoSemana = `${fmt(inicioSemana)} al ${fmt(inicioHoy)}`
+        const rangoMes = `${fmt(inicioMes)} al ${fmt(inicioHoy)}`
+
+        const actividadFecha = (p: ParticipantStats) => {
+          const d = p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null
+          return d
+        }
 
         const total = data.length
         const cursando = data.filter(p => p.cursosInscritos > 0 && p.progresoPromedio > 0 && p.progresoPromedio < 100).length
         const completaron = data.filter(p => p.progresoPromedio === 100).length
         const creditos = data.reduce((s, p) => s + (p.creditos ?? 0), 0)
-        const esteMes = data.filter(p => {
-          const d = p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null
-          return d && d >= inicioMes
-        }).length
-        const estaSemana = data.filter(p => {
-          const d = p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null
-          return d && d >= inicioSemana
-        }).length
+        const hoy = data.filter(p => { const d = actividadFecha(p); return d && d >= inicioHoy }).length
+        const estaSemana = data.filter(p => { const d = actividadFecha(p); return d && d >= inicioSemana }).length
+        const esteMes = data.filter(p => { const d = actividadFecha(p); return d && d >= inicioMes }).length
 
-        setKpis({ total, cursando, completaron, creditos, esteMes, estaSemana })
+        setKpis({ total, cursando, completaron, creditos, hoy, estaSemana, esteMes, rangoHoy, rangoSemana, rangoMes })
       })
       .catch(() => {})
   }, [])
@@ -106,20 +114,24 @@ function GlobalKPIs() {
     },
     {
       label: 'Créditos otorgados', icon: '🎖️', value: kpis?.creditos ?? '—', color: 'texo-rojo',
-      desc: 'Total de créditos ganados en la plataforma. Una persona puede tener más de uno si completó varios cursos.',
+      desc: 'Total de créditos ganados. Una persona puede tener más de uno si completó varios cursos.',
     },
     {
-      label: 'Activos este mes', icon: '📅', value: kpis?.esteMes ?? '—', color: 'texo-purple',
-      desc: 'Personas que tuvieron actividad (completaron algún recurso) en el mes actual.',
+      label: 'Activos hoy', icon: '🔴', value: kpis?.hoy ?? '—', color: 'texo-purple',
+      desc: `Personas que completaron algún recurso el día de hoy (${kpis?.rangoHoy ?? '...'}).`,
     },
     {
-      label: 'Activos esta semana', icon: '⚡', value: kpis?.estaSemana ?? '—', color: 'texo-cyan',
-      desc: 'Personas que tuvieron actividad en los últimos 7 días.',
+      label: 'Activos esta semana', icon: '📅', value: kpis?.estaSemana ?? '—', color: 'texo-cyan',
+      desc: `Personas con actividad del ${kpis?.rangoSemana ?? '...'}.`,
+    },
+    {
+      label: 'Activos este mes', icon: '⚡', value: kpis?.esteMes ?? '—', color: 'texo-azul',
+      desc: `Personas con actividad del ${kpis?.rangoMes ?? '...'}.`,
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
       {items.map(item => <KpiCard key={item.label} {...item} />)}
     </div>
   )
