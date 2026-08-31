@@ -14,6 +14,7 @@ import {
   PieChart,
   Pie,
   Cell,
+  LabelList,
 } from 'recharts'
 
 const tooltipStyle = {
@@ -233,6 +234,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
 
   const totalEnrolled = filtered.reduce((s, c) => s + c.enrolledCount, 0)
   const totalCompleted = filtered.reduce((s, c) => s + c.completedCount, 0)
+  const totalPendientes = totalEnrolled - totalCompleted
   const avgRate = filtered.length > 0
     ? Math.round(filtered.reduce((s, c) => s + c.completionRate, 0) / filtered.length)
     : 0
@@ -241,7 +243,7 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
     name: c.title.length > 20 ? c.title.slice(0, 20) + '…' : c.title,
     Inscriptos: c.enrolledCount,
     Completaron: c.completedCount,
-    'En progreso': Math.max(0, c.enrolledCount - c.completedCount),
+    Pendientes: Math.max(0, c.enrolledCount - c.completedCount),
   }))
 
   if (loading) {
@@ -257,10 +259,11 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
   return (
     <div className="flex flex-col gap-8">
       {/* Cards de resumen */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <SummaryCard label="Total inscriptos" value={totalEnrolled} color="texo-azul" />
-        <SummaryCard label="Total completaron" value={totalCompleted} color="texo-verde" />
-        <SummaryCard label="Tasa promedio" value={`${avgRate}%`} color="texo-amarillo" />
+        <SummaryCard label="Completaron" value={totalCompleted} color="texo-verde" />
+        <SummaryCard label="Pendientes" value={totalPendientes} color="texo-amarillo" />
+        <SummaryCard label="Tasa promedio" value={`${avgRate}%`} color="texo-rojo" />
       </div>
 
       {/* Gráfico — dónde están los participantes */}
@@ -302,19 +305,28 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
       {/* Gráfico de barras */}
       {filtered.length > 0 ? (
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
-          <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-            Inscriptos · En progreso · Completaron
+          <h2 className="text-lg font-bold text-gray-800 dark:text-white mb-1">
+            Inscriptos · Pendientes · Completaron
           </h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Pendientes = inscriptos que aún no completaron el propedéutico
+          </p>
+          <ResponsiveContainer width="100%" height={320}>
+            <BarChart data={chartData} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
               <Tooltip {...tooltipStyle} />
               <Legend />
-              <Bar dataKey="Inscriptos" fill="#31484E" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="En progreso" fill="#E8B84B" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Completaron" fill="#3A9688" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="Inscriptos" fill="#31484E" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="Inscriptos" position="top" style={{ fontSize: 11, fill: '#6b7280' }} />
+              </Bar>
+              <Bar dataKey="Pendientes" fill="#E8B84B" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="Pendientes" position="top" style={{ fontSize: 11, fill: '#6b7280' }} />
+              </Bar>
+              <Bar dataKey="Completaron" fill="#3A9688" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="Completaron" position="top" style={{ fontSize: 11, fill: '#6b7280' }} />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -375,26 +387,38 @@ function PropedeuticosView({ searchQuery }: { searchQuery: string }) {
                 <th className="px-4 py-3 text-left">Propedéutico</th>
                 <th className="px-4 py-3 text-center">Inscriptos</th>
                 <th className="px-4 py-3 text-center">Completaron</th>
-                <th className="px-4 py-3 text-center">Tasa %</th>
+                <th className="px-4 py-3 text-center">Pendientes</th>
+                <th className="px-4 py-3 text-center min-w-[140px]">Tasa de completado</th>
+                <th className="px-4 py-3 text-center">Tiempo prom.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{c.title}</td>
-                  <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{c.enrolledCount}</td>
-                  <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{c.completedCount}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`font-semibold ${
-                      c.completionRate >= 70 ? 'text-texo-verde'
-                      : c.completionRate >= 40 ? 'text-texo-amarillo'
-                      : 'text-texo-rojo'
-                    }`}>
-                      {c.completionRate}%
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {filtered.map(c => {
+                const pendientes = Math.max(0, c.enrolledCount - c.completedCount)
+                const color = c.completionRate >= 70 ? '#3A9688' : c.completionRate >= 40 ? '#E8B84B' : '#C0544A'
+                const tiempoProm = c.avgCompletionMinutes > 0
+                  ? c.avgCompletionMinutes >= 60
+                    ? `${Math.floor(c.avgCompletionMinutes / 60)}h ${c.avgCompletionMinutes % 60}min`
+                    : `${c.avgCompletionMinutes} min`
+                  : '—'
+                return (
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{c.title}</td>
+                    <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 font-semibold">{c.enrolledCount}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-texo-verde">{c.completedCount}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-texo-amarillo">{pendientes}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all" style={{ width: `${c.completionRate}%`, backgroundColor: color }} />
+                        </div>
+                        <span className="text-xs font-bold w-10 text-right" style={{ color }}>{c.completionRate}%</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-xs">{tiempoProm}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -819,15 +843,19 @@ function ParticipantesView({ searchQuery }: { searchQuery: string }) {
                 {p.email.includes('@') ? p.email.split('@')[0] : p.email || '—'}
                 <span className="block text-xs text-gray-400 font-normal">{p.email || ''}</span>
               </td>
-              <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300">{p.cursosInscritos}</td>
-              <td className="px-4 py-3 text-center">
-                <span className={`font-semibold ${
-                  p.progresoPromedio >= 70 ? 'text-texo-verde'
-                  : p.progresoPromedio >= 40 ? 'text-texo-amarillo'
-                  : 'text-texo-rojo'
-                }`}>
-                  {p.progresoPromedio}%
-                </span>
+              <td className="px-4 py-3 text-center text-gray-700 dark:text-gray-300 font-semibold">{p.cursosInscritos}</td>
+              <td className="px-4 py-3 min-w-[140px]">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{
+                      width: `${p.progresoPromedio}%`,
+                      backgroundColor: p.progresoPromedio >= 70 ? '#3A9688' : p.progresoPromedio >= 40 ? '#E8B84B' : '#C0544A'
+                    }} />
+                  </div>
+                  <span className={`text-xs font-bold w-10 text-right ${p.progresoPromedio >= 70 ? 'text-texo-verde' : p.progresoPromedio >= 40 ? 'text-texo-amarillo' : 'text-texo-rojo'}`}>
+                    {p.progresoPromedio}%
+                  </span>
+                </div>
               </td>
               <td className="px-4 py-3 text-center">
                 {p.creditos > 0 ? (
