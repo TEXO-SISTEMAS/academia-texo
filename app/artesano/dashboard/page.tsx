@@ -22,44 +22,105 @@ const tooltipStyle = {
   itemStyle: { color: '#d1d5db' },
 }
 
+const KPI_COLORS: Record<string, string> = {
+  'texo-azul': '#31484E',
+  'texo-verde': '#3A9688',
+  'texo-amarillo': '#E8B84B',
+  'texo-rojo': '#C0544A',
+  'texo-purple': '#7C3AED',
+  'texo-cyan': '#0891B2',
+}
+
+function KpiCard({ label, desc, value, color, icon }: { label: string; desc: string; value: string | number; color: string; icon: string }) {
+  const [showTip, setShowTip] = useState(false)
+  const hex = KPI_COLORS[color] ?? '#31484E'
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 relative" style={{ borderLeft: `4px solid ${hex}` }}>
+      <div className="flex items-start justify-between mb-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1">
+          <span>{icon}</span> {label}
+        </p>
+        <button
+          onMouseEnter={() => setShowTip(true)}
+          onMouseLeave={() => setShowTip(false)}
+          onFocus={() => setShowTip(true)}
+          onBlur={() => setShowTip(false)}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs leading-none ml-1 mt-0.5 shrink-0"
+          aria-label="Más información"
+        >ⓘ</button>
+      </div>
+      <p className="text-3xl font-bold" style={{ color: hex }}>{value}</p>
+      {showTip && (
+        <div className="absolute z-20 top-full left-0 mt-1 w-56 bg-texo-azul text-white text-xs rounded-lg px-3 py-2 shadow-xl leading-relaxed">
+          {desc}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function GlobalKPIs() {
-  const [kpis, setKpis] = useState<{ total: number; cursando: number; completaron: number; creditos: number } | null>(null)
+  const [kpis, setKpis] = useState<{
+    total: number; cursando: number; completaron: number; creditos: number; esteMes: number; estaSemana: number
+  } | null>(null)
 
   useEffect(() => {
     fetch('/api/stats/participants')
       .then(r => r.json())
       .then((data: ParticipantStats[]) => {
         if (!Array.isArray(data)) return
+        const now = new Date()
+        const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1)
+        const inicioSemana = new Date(now); inicioSemana.setDate(now.getDate() - 7)
+
         const total = data.length
         const cursando = data.filter(p => p.cursosInscritos > 0 && p.progresoPromedio > 0 && p.progresoPromedio < 100).length
         const completaron = data.filter(p => p.progresoPromedio === 100).length
         const creditos = data.reduce((s, p) => s + (p.creditos ?? 0), 0)
-        setKpis({ total, cursando, completaron, creditos })
+        const esteMes = data.filter(p => {
+          const d = p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null
+          return d && d >= inicioMes
+        }).length
+        const estaSemana = data.filter(p => {
+          const d = p.ultimaActividad ? new Date(p.ultimaActividad as unknown as string) : null
+          return d && d >= inicioSemana
+        }).length
+
+        setKpis({ total, cursando, completaron, creditos, esteMes, estaSemana })
       })
       .catch(() => {})
   }, [])
 
   const items = [
-    { label: 'Participantes en plataforma', value: kpis?.total ?? '—', color: 'texo-azul', icon: '👥' },
-    { label: 'Cursando actualmente', value: kpis?.cursando ?? '—', color: 'texo-amarillo', icon: '📖' },
-    { label: 'Completaron al menos 1 curso', value: kpis?.completaron ?? '—', color: 'texo-verde', icon: '✅' },
-    { label: 'Créditos otorgados', value: kpis?.creditos ?? '—', color: 'texo-rojo', icon: '🎖️' },
+    {
+      label: 'Total en plataforma', icon: '👥', value: kpis?.total ?? '—', color: 'texo-azul',
+      desc: 'Todas las personas que tienen cuenta en La Academia, hayan entrado o no a algún curso.',
+    },
+    {
+      label: 'Cursando ahora', icon: '📖', value: kpis?.cursando ?? '—', color: 'texo-amarillo',
+      desc: 'Personas que ingresaron a un curso y tienen progreso entre 1% y 99%. Están en camino.',
+    },
+    {
+      label: 'Completaron un curso', icon: '✅', value: kpis?.completaron ?? '—', color: 'texo-verde',
+      desc: 'Personas que terminaron el 100% de al menos un propedéutico.',
+    },
+    {
+      label: 'Créditos otorgados', icon: '🎖️', value: kpis?.creditos ?? '—', color: 'texo-rojo',
+      desc: 'Total de créditos ganados en la plataforma. Una persona puede tener más de uno si completó varios cursos.',
+    },
+    {
+      label: 'Activos este mes', icon: '📅', value: kpis?.esteMes ?? '—', color: 'texo-purple',
+      desc: 'Personas que tuvieron actividad (completaron algún recurso) en el mes actual.',
+    },
+    {
+      label: 'Activos esta semana', icon: '⚡', value: kpis?.estaSemana ?? '—', color: 'texo-cyan',
+      desc: 'Personas que tuvieron actividad en los últimos 7 días.',
+    },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {items.map(({ label, value, color, icon }) => (
-        <div key={label} className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 border-l-4 p-5 border-l-${color === 'texo-azul' ? 'texo-azul' : color === 'texo-verde' ? 'texo-verde' : color === 'texo-amarillo' ? 'texo-amarillo' : 'texo-rojo'}`}
-          style={{ borderLeftColor: color === 'texo-azul' ? '#31484E' : color === 'texo-verde' ? '#3A9688' : color === 'texo-amarillo' ? '#E8B84B' : '#C0544A' }}
-        >
-          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1 flex items-center gap-1">
-            <span>{icon}</span> {label}
-          </p>
-          <p className="text-3xl font-bold" style={{ color: color === 'texo-azul' ? '#31484E' : color === 'texo-verde' ? '#3A9688' : color === 'texo-amarillo' ? '#E8B84B' : '#C0544A' }}>
-            {value}
-          </p>
-        </div>
-      ))}
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      {items.map(item => <KpiCard key={item.label} {...item} />)}
     </div>
   )
 }
