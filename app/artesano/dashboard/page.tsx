@@ -74,7 +74,8 @@ function GlobalKPIs() {
         if (!Array.isArray(data)) return
         const now = new Date()
         const inicioHoy = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        const inicioSemana = new Date(inicioHoy); inicioSemana.setDate(inicioHoy.getDate() - 6)
+        // Semana domingo→sábado: retroceder getDay() días (domingo=0, lunes=1, ..., sábado=6)
+        const inicioSemana = new Date(inicioHoy); inicioSemana.setDate(inicioHoy.getDate() - inicioHoy.getDay())
         const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1)
 
         const fmt = (d: Date) => d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
