@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+import { sendChatAlert } from "@/lib/chat-alert";
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
     // 2. Verificar contraseña contra Firestore
     const storedPassword: string = userData.password ?? "";
     if (!storedPassword || storedPassword !== password) {
+      sendChatAlert('Contraseña incorrecta — artesano', {
+        Email: email,
+        Hora: new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' }),
+      })
       return NextResponse.json({ error: "invalid_password" }, { status: 401 });
     }
 
@@ -55,6 +60,10 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Error desconocido";
     console.error("[login-artesano] ERROR:", message);
+    sendChatAlert('Error de servidor en /api/auth/login-artesano', {
+      Error: message,
+      Hora: new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' }),
+    })
     return NextResponse.json({ error: "server_error", detail: message }, { status: 500 });
   }
 }

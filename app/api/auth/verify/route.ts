@@ -23,6 +23,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth, getAdminDb } from "@/lib/firebase-admin";
+import { sendChatAlert } from "@/lib/chat-alert";
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
     console.log('[verify] doc data:', docSnap.data());
 
     if (!docSnap.exists) {
+      sendChatAlert('Login rechazado — email no autorizado', {
+        Email: normalizedEmail,
+        Hora: new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' }),
+      })
       return NextResponse.json({ error: "not_authorized" }, { status: 403 });
     }
 
@@ -100,6 +105,10 @@ export async function POST(req: NextRequest) {
     const message = err instanceof Error ? err.message : "Error desconocido";
     console.error("[verify] ERROR:", message);
     if (err instanceof Error && err.stack) console.error(err.stack);
+    sendChatAlert('Error de servidor en /api/auth/verify', {
+      Error: message,
+      Hora: new Date().toLocaleString('es-PY', { timeZone: 'America/Asuncion' }),
+    })
     return NextResponse.json(
       { error: "server_error", detail: message },
       { status: 500 }
