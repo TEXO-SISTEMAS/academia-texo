@@ -248,7 +248,10 @@ export default function LoginPage() {
               )}
             </>
           ) : (
-            <p className="text-xs text-texo-verde">✓ Soporte notificado, te contactamos pronto.</p>
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-texo-verde">✓ ¡Mensaje enviado! En breve nos ponemos en contacto.</p>
+              <p className="text-xs text-white/50">También podés escribirnos a <span className="text-white/70 font-medium">danilo.sosa@texo.com.py</span></p>
+            </div>
           )}
           <p className="text-white/30 text-xs">
             © {new Date().getFullYear()} Desarrollado por Danilo Sosa | Texo Sistemas
