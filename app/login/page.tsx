@@ -15,6 +15,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [notified, setNotified] = useState(false);
   const [notifying, setNotifying] = useState(false);
+  const [showNotifyForm, setShowNotifyForm] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,17 +67,28 @@ export default function LoginPage() {
     }
   }
 
-  async function handleNotifySupport() {
+  function handleNotifyClick() {
+    // Si ya hay email en el campo principal, enviamos directo
+    if (email.trim()) {
+      sendNotify(email.trim());
+    } else {
+      setShowNotifyForm(true);
+    }
+  }
+
+  async function sendNotify(emailToSend: string) {
     setNotifying(true);
     try {
       await fetch("/api/auth/notify-support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() || "no ingresado" }),
+        body: JSON.stringify({ email: emailToSend || "no ingresado" }),
       });
       setNotified(true);
+      setShowNotifyForm(false);
     } catch {
       setNotified(true);
+      setShowNotifyForm(false);
     } finally {
       setNotifying(false);
     }
@@ -195,15 +208,45 @@ export default function LoginPage() {
           )}
         </div>
 
-        <div className="text-center mt-4 flex flex-col gap-1">
+        <div className="text-center mt-4 flex flex-col gap-2">
           {!notified ? (
-            <button
-              onClick={handleNotifySupport}
-              disabled={notifying}
-              className="text-xs text-white/50 hover:text-white/80 underline transition-colors disabled:opacity-40"
-            >
-              {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
-            </button>
+            <>
+              <button
+                onClick={handleNotifyClick}
+                disabled={notifying}
+                className="text-xs text-white/50 hover:text-white/80 underline transition-colors disabled:opacity-40"
+              >
+                {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
+              </button>
+              {showNotifyForm && (
+                <div className="bg-white/10 rounded-xl px-4 py-3 flex flex-col gap-2 text-left">
+                  <p className="text-xs text-white/70">Ingresá tu correo para que podamos contactarte:</p>
+                  <input
+                    type="email"
+                    value={notifyEmail}
+                    onChange={(e) => setNotifyEmail(e.target.value)}
+                    placeholder="tucorreo@ejemplo.com"
+                    autoFocus
+                    className="w-full rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-texo-verde"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => sendNotify(notifyEmail)}
+                      disabled={notifying || !notifyEmail.trim()}
+                      className="flex-1 rounded-lg px-3 py-2 text-xs font-semibold text-white bg-texo-verde hover:bg-texo-verde/90 disabled:opacity-50 transition-colors"
+                    >
+                      {notifying ? "Enviando..." : "Enviar"}
+                    </button>
+                    <button
+                      onClick={() => setShowNotifyForm(false)}
+                      className="px-3 py-2 text-xs text-white/50 hover:text-white/80"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-xs text-texo-verde">✓ Soporte notificado, te contactamos pronto.</p>
           )}
