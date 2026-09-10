@@ -13,11 +13,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notified, setNotified] = useState(false);
+  const [notifying, setNotifying] = useState(false);
 
   async function handleEmailSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email.trim()) return;
     setError(null);
+    setNotified(false);
     setLoading(true);
     try {
       const role = await checkEmailRole(email.trim().toLowerCase());
@@ -37,6 +40,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!password) return;
     setError(null);
+    setNotified(false);
     setLoading(true);
     try {
       await loginArtesano(email.trim().toLowerCase(), password);
@@ -48,6 +52,7 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     setError(null);
+    setNotified(false);
     setLoadingGoogle(true);
     try {
       await loginWithGoogle();
@@ -57,6 +62,22 @@ export default function LoginPage() {
         setError("No se pudo iniciar sesión con Google. Intentá de nuevo.");
       }
       setLoadingGoogle(false);
+    }
+  }
+
+  async function handleNotifySupport() {
+    setNotifying(true);
+    try {
+      await fetch("/api/auth/notify-support", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() || "no ingresado" }),
+      });
+      setNotified(true);
+    } catch {
+      setNotified(true);
+    } finally {
+      setNotifying(false);
     }
   }
 
@@ -86,7 +107,20 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+                  {!notified ? (
+                    <button
+                      onClick={handleNotifySupport}
+                      disabled={notifying}
+                      className="text-xs text-texo-azul dark:text-texo-verde underline text-center disabled:opacity-50"
+                    >
+                      {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-texo-verde text-center">✓ Soporte notificado, te contactamos pronto.</p>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
@@ -109,7 +143,7 @@ export default function LoginPage() {
               </form>
 
               <button
-                onClick={() => { setStep("email"); setPassword(""); setError(null); }}
+                onClick={() => { setStep("email"); setPassword(""); setError(null); setNotified(false); }}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-center"
               >
                 ← Volver
@@ -126,7 +160,20 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
+                  {!notified ? (
+                    <button
+                      onClick={handleNotifySupport}
+                      disabled={notifying}
+                      className="text-xs text-texo-azul dark:text-texo-verde underline text-center disabled:opacity-50"
+                    >
+                      {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-texo-verde text-center">✓ Soporte notificado, te contactamos pronto.</p>
+                  )}
+                </div>
               )}
 
               <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2">
