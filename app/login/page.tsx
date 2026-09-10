@@ -107,20 +107,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
-                  {!notified ? (
-                    <button
-                      onClick={handleNotifySupport}
-                      disabled={notifying}
-                      className="text-xs text-texo-azul dark:text-texo-verde underline text-center disabled:opacity-50"
-                    >
-                      {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
-                    </button>
-                  ) : (
-                    <p className="text-xs text-texo-verde text-center">✓ Soporte notificado, te contactamos pronto.</p>
-                  )}
-                </div>
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
               )}
 
               <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
@@ -160,20 +147,7 @@ export default function LoginPage() {
               </div>
 
               {error && (
-                <div className="flex flex-col gap-2">
-                  <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
-                  {!notified ? (
-                    <button
-                      onClick={handleNotifySupport}
-                      disabled={notifying}
-                      className="text-xs text-texo-azul dark:text-texo-verde underline text-center disabled:opacity-50"
-                    >
-                      {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
-                    </button>
-                  ) : (
-                    <p className="text-xs text-texo-verde text-center">✓ Soporte notificado, te contactamos pronto.</p>
-                  )}
-                </div>
+                <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
               )}
 
               <form onSubmit={handleEmailSubmit} className="flex flex-col gap-2">
@@ -221,9 +195,22 @@ export default function LoginPage() {
           )}
         </div>
 
-        <p className="text-center text-white/40 text-xs mt-6">
-          © {new Date().getFullYear()} Desarrollado por Danilo Sosa | Texo Sistemas
-        </p>
+        <div className="text-center mt-4 flex flex-col gap-1">
+          {!notified ? (
+            <button
+              onClick={handleNotifySupport}
+              disabled={notifying}
+              className="text-xs text-white/50 hover:text-white/80 underline transition-colors disabled:opacity-40"
+            >
+              {notifying ? "Enviando..." : "¿No podés ingresar? Notificar al soporte"}
+            </button>
+          ) : (
+            <p className="text-xs text-texo-verde">✓ Soporte notificado, te contactamos pronto.</p>
+          )}
+          <p className="text-white/30 text-xs">
+            © {new Date().getFullYear()} Desarrollado por Danilo Sosa | Texo Sistemas
+          </p>
+        </div>
       </div>
     </div>
   );
