@@ -73,6 +73,10 @@ export default function LoginPage() {
             <p className="text-sm text-texo-rojo bg-texo-rojo/10 px-3 py-2 rounded-lg text-center">{error}</p>
           )}
 
+          <p className="text-xs text-gray-400 dark:text-gray-500 text-center">
+            Si ya usabas la plataforma y no ves tu progreso, hacé click en &quot;¿No podés ingresar?&quot; debajo.
+          </p>
+
           <button
             onClick={handleGoogle}
             disabled={loadingGoogle}
